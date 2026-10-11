@@ -43,7 +43,7 @@ jobs:
         with:
           persist-credentials: false
       - id: triage
-        uses: jonmumm/skills/sre-agent/runtime@a0d9e662e4f9c2cabcf1e3f80ebf51ee704a41aa
+        uses: jonmumm/skills/sre-agent/runtime@5b756c8cf9e5f2a869e663ddae6f265c58da22a2
         with:
           dry: ${{ inputs.dry || 'false' }}
 
@@ -102,4 +102,4 @@ jobs:
             Do not edit anything else under .github/, and do not change existing tests to make them pass.
           claude_args: |
             --max-turns 60
-            --allowedTools Read,Edit,Write,Glob,Grep,Bash(pnpm:*),Bash(node:*),Bash(git:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*)
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(pnpm:*),Bash(node:*),Bash(git:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*)"
