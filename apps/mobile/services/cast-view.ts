@@ -62,10 +62,14 @@ export async function connectViewChannel(
   streamServerUrl: string,
   trace: CastTrace = noTrace,
   context: () => { sessionId?: string } = () => ({}),
-): Promise<{ send(reason?: string): Promise<void> } | null> {
+): Promise<{ send(reason?: string): Promise<void>; close(): void } | null> {
+  // Once the session is suspended or ending its socket may be gone, and the Cast SDK crashes the
+  // whole app (SIGSEGV in SSLWrite) when asked to write to it: so nothing is sent after close().
+  let closed = false;
   try {
     const channel = await session.addChannel(CAST_VIEW_NAMESPACE);
     const send = async (reason = "change") => {
+      if (closed) return;
       const viewUrl = getViewUrl();
       if (!viewUrl) {
         trace.event("load_view.skipped", { level: "warn", data: { reason } });
@@ -88,7 +92,12 @@ export async function connectViewChannel(
       void send("request");
     });
     await send("connect");
-    return { send };
+    return {
+      send,
+      close() {
+        closed = true;
+      },
+    };
   } catch (err) {
     trace.event("view_channel.failed", { error: err });
     console.warn("[Cast] Could not open the view channel:", err);

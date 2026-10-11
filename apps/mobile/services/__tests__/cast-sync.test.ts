@@ -44,12 +44,16 @@ function fakeSessionManager(current: FakeSession | null = null) {
 
 function fakeSession(name = "Chromecast HD", id = "cc-1") {
   const sent: unknown[] = [];
+  type Message = Record<string, unknown> | string;
+  const listeners: ((m: Message) => void)[] = [];
   return {
     sent,
+    /** The receiver says something to the phone. */
+    receive: (m: Message) => listeners.forEach((l) => void l(m)),
     getCastDevice: async () => ({ deviceId: id, friendlyName: name }),
     addChannel: async () => ({
       sendMessage: async (m: unknown) => void sent.push(m),
-      onMessage: () => {},
+      onMessage: (l: (m: Message) => void) => void listeners.push(l),
     }),
   };
 }
@@ -229,6 +233,22 @@ describe("cast sync: ordering", () => {
     store.dispatch({ type: "SET_VIEW_URL", url: "https://game/tv/CD" });
     store.dispatch({ type: "RESET_ERROR" });
     store.dispatch({ type: "SET_ERROR", error: "unrelated" });
+    await flush();
+    expect(session.sent.map(viewUrlOf)).toEqual(["https://game/tv/AB", "https://game/tv/CD"]);
+  });
+
+  it("never writes to a suspended session's dead socket (native SSLWrite crash, #44)", async () => {
+    const { sm, store } = setup();
+    store.dispatch({ type: "SET_VIEW_URL", url: "https://game/tv/AB" });
+    const session = fakeSession();
+    sm.emitStarted(session);
+    await flush();
+    sm.emitSuspended();
+    store.dispatch({ type: "SET_VIEW_URL", url: "https://game/tv/CD" });
+    session.receive({ type: "REQUEST_VIEW" });
+    await flush();
+    expect(session.sent.map(viewUrlOf)).toEqual(["https://game/tv/AB"]);
+    sm.emitResumed(session);
     await flush();
     expect(session.sent.map(viewUrlOf)).toEqual(["https://game/tv/AB", "https://game/tv/CD"]);
   });

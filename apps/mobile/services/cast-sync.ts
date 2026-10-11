@@ -72,7 +72,7 @@ export function startCastSync(
   viewContext: () => { sessionId?: string } = () => ({}),
 ): () => void {
   commands.bind(sm);
-  let channel: { send(): Promise<void> } | null = null;
+  let channel: { send(): Promise<void>; close(): void } | null = null;
   let generation = 0;
   let stopped = false;
 
@@ -80,6 +80,7 @@ export function startCastSync(
     // A lookup still in flight at teardown (the initial getCurrentCastSession) must change nothing.
     if (stopped) return;
     const mine = ++generation;
+    channel?.close();
     channel = null;
     void connectViewChannel(
       session,
@@ -89,6 +90,7 @@ export function startCastSync(
       viewContext,
     ).then((c) => {
       if (mine === generation) channel = c;
+      else c?.close();
     });
     void session
       .getCastDevice()
@@ -105,9 +107,14 @@ export function startCastSync(
           store.dispatch(sessionConnectedEvent(device, store.getSnapshot().devices));
       });
   };
-  const ended = () => {
+  // The session's socket can't be trusted from here until a session is (re)connected.
+  const quiet = () => {
     generation++;
+    channel?.close();
     channel = null;
+  };
+  const ended = () => {
+    quiet();
     store.dispatch({ type: "SESSION_ENDED" });
   };
 
@@ -126,6 +133,7 @@ export function startCastSync(
     }),
     sm.onSessionSuspended(() => {
       trace.event("session.suspended", { level: "warn" });
+      quiet();
       store.dispatch({ type: "SESSION_STARTING" });
     }),
     sm.onSessionStartFailed((_session, error) => {
@@ -138,7 +146,13 @@ export function startCastSync(
       ended();
     }),
   ];
-  if (sm.onSessionEnding) subs.push(sm.onSessionEnding(() => trace.event("session.ending")));
+  if (sm.onSessionEnding)
+    subs.push(
+      sm.onSessionEnding(() => {
+        trace.event("session.ending");
+        quiet();
+      }),
+    );
 
   // The game's TV page changed (e.g. a new room): tell the receiver.
   let lastViewUrl = store.getSnapshot().viewUrl;
