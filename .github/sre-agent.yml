@@ -4,7 +4,7 @@
 # 0 = observe: job summary only (start here for a day or two)
 # 1 = file and update GitHub issues
 # 2 = also let Claude attempt a fix PR for new and regressed issues
-autonomy: 1
+autonomy: 2
 
 # Keep this a few minutes longer than the cron interval. Overlap is safe:
 # events already counted in an issue are skipped.
