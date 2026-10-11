@@ -38,6 +38,9 @@ errorFields:
 notify:
   url: https://sre-notify.jonathanrmumm.workers.dev/notify
 
+# First line of every issue: where the report came from.
+issueIntro: Seen by sre-agent in production logs or a TestFlight report.
+
 sources:
   - type: cloudflare
     service: opengame-api           # services/api/wrangler.jsonc (API, CouchSession DO, client events)
@@ -59,3 +62,9 @@ sources:
     service: peekaboo-garden
   - type: cloudflare
     service: night-flight
+  # TestFlight screenshot feedback (one issue per report) and crashes (grouped by exception + top
+  # app frames) for the OGS app (apps/mobile). Re-reads the last 72 hours every run; reports already
+  # filed are skipped. Secrets ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (App Store Connect key).
+  - type: testflight
+    bundleId: org.opengame.app        # apps/mobile/app.json → expo.ios.bundleIdentifier
+    service: opengame-ios
