@@ -14,6 +14,7 @@ import {
   type Provider,
   upsertDevice,
 } from "../lib/profiles";
+import { signInAudiences } from "../lib/native-apps";
 import { recordError } from "../lib/wide-event";
 import { claimsFromHeader, type ProfileEnv } from "../middleware/profile-auth";
 import type { Env } from "../types";
@@ -147,6 +148,53 @@ for (const provider of ["apple", "google"] as const) {
     if (!login) return apiError(c, 401, "invalid_id_token", `Not a valid ${provider} ID token`);
     return finish(c, w, provider, login);
   });
+}
+
+const NativeBodySchema = z.object({
+  provider: z.enum(["apple", "google"]),
+  identityToken: z.string().min(1),
+  nonce: z.string().min(1).optional(),
+  deviceProfileId: z.string().min(1).optional(),
+  device: DeviceSchema.optional(),
+});
+
+/**
+ * POST /auth/native — a game's white-label app (2026-10-18-white-label-native-sign-in.feature):
+ * `{ provider, identityToken, nonce?, deviceProfileId?, device? }`. Apple / Google audiences: the OGS
+ * app's plus every registered app's. With a guest (its own device token as Bearer + deviceProfileId),
+ * a new login backs the guest up, and a login that backs another profile takes the device.
+ */
+auth.post("/native", async (c) => {
+  const body = await parseBody(c, NativeBodySchema);
+  if (!body) return invalidBody(c, "provider (apple | google) and identityToken are required");
+  let guest: Claims | null = null;
+  if (body.deviceProfileId) {
+    const result = c.req.header("Authorization") ? await claimsFromHeader(c) : null;
+    if (!result || "error" in result || result.claims.sub !== body.deviceProfileId || result.claims.kind === "launcher")
+      return apiError(c, 403, "not_your_profile", "Send the guest profile's own device token with deviceProfileId");
+    guest = result.claims;
+  } else if (!body.device) return invalidBody(c, "deviceProfileId (with its token) or device is required");
+  const base = oidcProvider(c.env, body.provider);
+  const provider = { ...base, clientIds: [...base.clientIds, ...(await signInAudiences(c.env.DB, body.provider))] };
+  const login = await verifyIdToken(body.identityToken, provider, { now: Date.now(), nonce: body.nonce });
+  if (!login) return apiError(c, 401, "invalid_id_token", `Not a valid ${body.provider} identity token for a registered app`);
+  const ownerId = await loginOwner(c.env.DB, body.provider, login.subject);
+  if (!guest) return signIn(c, ownerId, body.device ?? { deviceId: "", kind: "phone", name: "Phone" });
+  const named = await c.env.DB.prepare("SELECT name FROM profile_devices WHERE device_id = ?").bind(guest.did).first<{ name: string }>();
+  const device: Device = { deviceId: guest.did, kind: guest.kind === "tablet" ? "tablet" : "phone", name: named?.name ?? "Phone" };
+  if (!ownerId || ownerId === guest.sub) {
+    const linked = await link(c, guest.sub, ownerId, body.provider, login);
+    if (linked.status !== 200) return linked;
+    return withToken(c, guest.sub, device);
+  }
+  // The login backs another profile: this device signs in to it (the guest profile stays as it was).
+  return signIn(c, ownerId, device);
+});
+
+async function withToken(c: Context<ProfileEnv>, profileId: string, device: Device) {
+  const view = await getMe(c.env.DB, profileId);
+  if (!view) return apiError(c, 404, "profile_not_found", "Profile not found");
+  return c.json({ ...view, token: await deviceToken(profileId, device, c.env.OGS_JWT_SECRET) });
 }
 
 /**

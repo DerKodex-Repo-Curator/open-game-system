@@ -4,6 +4,7 @@ import { anyToken } from "./middleware/profile-auth";
 import { onError, wideEvent } from "./middleware/wide-event";
 import appRelease from "./routes/app-release";
 import apps from "./routes/apps";
+import appDevices from "./routes/app-devices";
 import auth from "./routes/auth";
 import catalogue from "./routes/catalogue";
 import clientEvents from "./routes/client-events";
@@ -43,6 +44,7 @@ app.get("/api/v1/health", (c) => {
 app.route("/api/v1/devices", devices);
 // White-label apps: registration, push credentials (game API key), app links (public).
 app.route("/api/v1/apps", apps);
+app.route("/api/v1/apps", appDevices);
 
 // Profiles (docs/product-specs/ogs-profiles.html): POST /profiles, GET /handles (no token)
 app.route("/api/v1", profiles);
