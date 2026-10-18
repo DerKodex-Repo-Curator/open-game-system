@@ -16,7 +16,7 @@ export class FixtureRoom extends DurableObject<Env> {
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    this.life = new RoomLifeStore(ctx, Number(env.IDLE_MS));
+    this.life = new RoomLifeStore(ctx, { idleMs: Number(env.IDLE_MS) });
   }
 
   claim(): Promise<boolean> {

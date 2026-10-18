@@ -20,10 +20,21 @@ const stamp = (v: unknown): number | null => (typeof v === "number" ? v : null);
  * `online()` for presence. Storage keys start with `try:`.
  */
 export class RoomLifeStore {
+  private readonly idleMs: number;
+  private readonly isOpened: () => Promise<boolean>;
+
+  /**
+   * `idleMs`: how long an empty room lives (default IDLE_MS). `opened`: how this game knows a TV made
+   * the room, when it already records that itself (an actor-kit room: its `actorId` is stored once
+   * spawned); default: `markOpened()` was called.
+   */
   constructor(
     private readonly ctx: DurableObjectState,
-    private readonly idleMs = IDLE_MS,
-  ) {}
+    opts: { idleMs?: number; opened?: () => Promise<boolean> } = {},
+  ) {
+    this.idleMs = opts.idleMs ?? IDLE_MS;
+    this.isOpened = opts.opened ?? (async () => (await ctx.storage.get(OPENED)) === true);
+  }
 
   #openSockets(): WebSocket[] {
     return this.ctx.getWebSockets().filter((ws) => ws.readyState === WebSocket.OPEN);
@@ -31,8 +42,8 @@ export class RoomLifeStore {
 
   async life(): Promise<RoomLife> {
     const s = this.ctx.storage;
-    const [opened, createdAt, idleSince] = await Promise.all([s.get(OPENED), s.get(CREATED_AT), s.get(IDLE_SINCE)]);
-    return { opened: opened === true, sockets: this.#openSockets().length, idleSince: stamp(idleSince), createdAt: stamp(createdAt), now: Date.now() };
+    const [opened, createdAt, idleSince] = await Promise.all([this.isOpened(), s.get(CREATED_AT), s.get(IDLE_SINCE)]);
+    return { opened, sockets: this.#openSockets().length, idleSince: stamp(idleSince), createdAt: stamp(createdAt), now: Date.now() };
   }
 
   /**
