@@ -29,7 +29,7 @@ export async function mountNetworkBanner(opts: {
     banner.setAttribute("role", "alert");
     banner.textContent = opts.text ?? DEFAULT_TEXT;
     banner.style.cssText =
-      "position:fixed;left:.8rem;right:.8rem;top:.8rem;z-index:2147483000;margin:0 auto;max-width:36rem;padding:.8rem 1rem;border-radius:1rem;background:#7f1d1d;color:#fff;font:600 15px/1.35 system-ui,sans-serif;box-shadow:0 .4rem 1.4rem rgba(0,0,0,.6)";
+      "position:fixed;left:.8rem;right:.8rem;top:calc(.8rem + env(safe-area-inset-top));z-index:2147483000;margin:0 auto;max-width:36rem;padding:.8rem 1rem;border-radius:1rem;background:#7f1d1d;color:#fff;font:600 15px/1.35 system-ui,sans-serif;box-shadow:0 .4rem 1.4rem rgba(0,0,0,.6)";
     document.body.appendChild(banner);
   }
   return verdict;
