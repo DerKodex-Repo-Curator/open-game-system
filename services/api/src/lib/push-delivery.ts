@@ -25,10 +25,23 @@ export interface WebSubscriptionRow {
 /** `ok`: the push service took it. `gone`: the subscription no longer exists (drop it). */
 export type WebSendResult = "ok" | "gone" | "error";
 
+/** A device running a game's own white-label app (app_devices). */
+export interface AppDeviceRow {
+  device_id: string;
+  platform: "ios" | "android";
+  token: string;
+  apns_environment: "sandbox" | "production" | null;
+}
+
 /** How OGS reaches each kind of surface; injected so tests (and step 4's web push) can swap them. */
 export interface PushSenders {
   expo(platform: "ios" | "android", pushToken: string, n: PushNotification): Promise<PushResult>;
   web(appId: string, sub: WebSubscriptionRow, payload: WebPushPayload): Promise<WebSendResult>;
+  /**
+   * A game's own white-label app, with that app's credentials (ADR 2026-10-18-multi-tenant-push).
+   * Senders without it don't reach white-label apps.
+   */
+  native?(appId: string, device: AppDeviceRow, n: PushNotification): Promise<PushResult>;
 }
 
 const SurfaceRowSchema = z.object({
@@ -63,6 +76,26 @@ async function phonesOf(db: D1Database, profileId: string) {
   return z.array(DeviceRowSchema).parse(results);
 }
 
+const AppDeviceSchema = z.object({
+  device_id: z.string(),
+  platform: z.enum(["ios", "android"]),
+  token: z.string(),
+  apns_environment: z.enum(["sandbox", "production"]).nullable(),
+});
+
+/** The profile's phones running this game's own app (never another game's app, never a tablet). */
+async function appPhonesOf(db: D1Database, profileId: string, appId: string) {
+  const { results } = await db
+    .prepare(
+      `SELECT ad.device_id, ad.platform, ad.token, ad.apns_environment FROM app_devices ad
+       JOIN profile_devices pd ON pd.device_id = ad.device_id
+       WHERE pd.profile_id = ? AND pd.kind = 'phone' AND ad.app_id = ?`,
+    )
+    .bind(profileId, appId)
+    .all();
+  return z.array(AppDeviceSchema).parse(results);
+}
+
 async function granted(db: D1Database, profileId: string, appId: string) {
   const row = await db
     .prepare("SELECT granted FROM push_grants WHERE profile_id = ? AND app_id = ?")
@@ -86,18 +119,23 @@ async function toApp(
     whenOpen: m.whenOpen,
     ...(m.tag ? { tag: m.tag } : {}),
   };
-  const results = await Promise.all(
-    phones.map(async (p) => {
-      const r = await senders.expo(p.platform, p.push_token, {
-        title: m.title,
-        body: m.body,
-        data: { ...data },
-      });
-      if (!r.success && !r.deviceActive)
-        await db.prepare("DELETE FROM devices WHERE ogs_device_id = ?").bind(p.ogs_device_id).run();
-      return r;
-    }),
-  );
+  const n = { title: m.title, body: m.body, data: { ...data } };
+  const toOgsApp = phones.map(async (p) => {
+    const r = await senders.expo(p.platform, p.push_token, n);
+    if (!r.success && !r.deviceActive)
+      await db.prepare("DELETE FROM devices WHERE ogs_device_id = ?").bind(p.ogs_device_id).run();
+    return r;
+  });
+  const native = senders.native;
+  const toOwnApp = native
+    ? (await appPhonesOf(db, profileId, m.appId)).map(async (d) => {
+        const r = await native(m.appId, d, n);
+        if (!r.success && !r.deviceActive)
+          await db.prepare("DELETE FROM app_devices WHERE device_id = ? AND app_id = ?").bind(d.device_id, m.appId).run();
+        return r;
+      })
+    : [];
+  const results = await Promise.all([...toOgsApp, ...toOwnApp]);
   if (results.some((r) => r.success)) return "sent";
   return results.some((r) => r.deviceActive) ? "failed" : "gone";
 }
