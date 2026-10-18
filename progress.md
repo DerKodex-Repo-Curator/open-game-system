@@ -32,3 +32,10 @@ Updated 2026-10-18.
 - Rocket Crew moved onto it: rocket-crew-try `try/show-hn` 2749828, preview redeployed. 1,062 unit tests green.
 - Docs: apps/docs/content/try-kit.md + PAGES entry (docs tests 19/19; the page-count tripwire 9 → 10).
 - Proposal for Jon: docs/research/try-kit-proposal.md (starter adoption in ~20 lines, tarball at ogs-docs.pages.dev/pkg).
+
+## 2026-10-18, rollout
+- Trivia Jam on the kit (29e9451); e2e 8/8 on the preview.
+- New try paths, each merged to its main, -try preview only: Peekaboo Garden (a3ce454), Night Flight (c110c36), Bake Shop (4d77055), Story Nook (7ed7bee). E2E 5/5, 5/5, 5/5, 4/4; load 50/50 each.
+- Rocket Crew and Trivia Jam try branches merged to main (no CI deploy in either; production not redeployed).
+- Skipped: silk-and-stone (not room-based), ogs-codebreakers (a monorepo checkout).
+- Kit fixes from the friction notes: 525f47c0. URLs sent to ogs-front-door.

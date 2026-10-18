@@ -61,6 +61,33 @@ https://rocket-crew-try.jonathanrmumm.workers.dev.
 One visible change: the blocked-network banner is the kit's (same red, same place, one paragraph
 instead of a bold first line).
 
+## Rollout: six games on the kit (Oct 18)
+
+Each try branch is merged to its game's main (none of these repos deploys production on push; only
+the -try preview Workers were deployed).
+
+| Game | Preview | E2E on preview | Load (50 rooms, 10 in flight) | A stranger's first round |
+|---|---|---|---|---|
+| Rocket Crew | https://rocket-crew-try.jonathanrmumm.workers.dev/?ref=hn | try-path 4/4, rehearsal 5/5, room-life, mission | 1,400/1,400 (earlier, 200 at once) | Captain + Fixer fly problem 1 |
+| Trivia Jam | https://trivia-jam-try.jonathanrmumm.workers.dev/?ref=hn | 4/4 + rehearsal 4/4 | 250/250 (earlier) | sample pack, phones answer |
+| Peekaboo Garden | https://peekaboo-garden-try.jonathanrmumm.workers.dev/?ref=hn | 5/5 | 50/50 | clue phone + magnifier phone find a critter |
+| Night Flight | https://night-flight-try.jonathanrmumm.workers.dev/?ref=hn | 5/5 | 50/50 | grown-up owl + little owl play a card each |
+| Bake Shop | https://bake-shop-try.jonathanrmumm.workers.dev/?ref=hn | 5/5 | 50/50 | grown-up reads the order, Baker phone bakes it |
+| Story Nook | https://story-nook-try.jonathanrmumm.workers.dev/?ref=hn | 4/4 | 50/50 | reader phone reads, kid phone picks the hero |
+
+Not done: silk-and-stone is a persistent trading MMO (no rooms, no TV; uncommitted work, no remote),
+and ogs-codebreakers is a checkout of this monorepo, not a game. Midnight Museum keeps its own try
+path (museum-hillclimb owns it). Nothing has been checked on a real device since the move.
+
+**What the kit made hard (fixed in 525f47c0):** a second play-on-this-computer window replaced the
+first; the dead-end page's inline colours and font had to be overridden (now CSS variables); a game
+couldn't pass its own code generator; three games kept their own `/ws-probe` for its push mode (now in
+the kit). Documented rather than coded: family rooms must not close after 30 minutes (every game
+gated recycling to its try Worker), actor-kit subclassing, per-role "full", first deploy with
+`[secrets] required`, vitest hiding `runLoad`'s numbers. The games still vendor the 0.1.0 tarball
+from before these fixes; their workarounds keep working, and moving them to the new tarball is a
+follow-up.
+
 ## The starter, in about 20 lines
 
 In `templates/ogs-starter`, add the tarball and change two files.
