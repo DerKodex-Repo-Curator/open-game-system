@@ -88,6 +88,29 @@ try {
   await tv.getByTestId("home").waitFor({ timeout: 20000 });
   await tv.screenshot({ path: join(EVIDENCE, "01-tv-home.png") });
 
+  // The older game link (the front door's today) opened without the app: not a 404 (bug bash
+  // bb-001, 2026-10-18): the app, or the game's page in the browser.
+  {
+    const ctx = await browser.newContext({ ...devices["iPhone 15"] });
+    const page = await ctx.newPage();
+    const game = "https://bake-shop.jonathanrmumm.workers.dev/";
+    await page.goto(`${WEB}/open?url=${encodeURIComponent(game)}`);
+    await page.getByTestId("open-link").waitFor({ timeout: 15000 });
+    const text = await page.locator("body").innerText();
+    check(
+      "opengame.org/open?url= isn't a 404 without the app",
+      !/404/.test(text),
+      text.slice(0, 80),
+    );
+    check(
+      "it offers the app and the game's page",
+      (await page.getByTestId("open-in-app").getAttribute("href")) ===
+        `opengame://open?url=${encodeURIComponent(game)}` &&
+        (await page.getByTestId("open-in-browser").getAttribute("href")) === game,
+    );
+    await ctx.close();
+  }
+
   // The guest scans the QR: decoded off the TV, as a phone camera would.
   t0 = Date.now();
   const png = PNG.sync.read(await tv.getByTestId("join-qr").screenshot());

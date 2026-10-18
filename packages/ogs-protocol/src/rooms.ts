@@ -40,6 +40,19 @@ export function readGameLink(url: string): { appId: string } | null {
   return m?.[1] ? { appId: m[1] } : null;
 }
 
+/**
+ * The older game link, `opengame.org/open?url=<game page>`, as the game's https page, its host, and
+ * the app's link for it (`opengame://open?url=…`). Null for anything else, or a page that isn't
+ * https (the site must not send a stranger to another scheme).
+ */
+export function readOpenLink(url: string): { page: string; host: string; app: string } | null {
+  const m = /^[a-z]+:\/\/[^/?#]+\/open\/?\?([^#]*)/.exec(url);
+  if (!m) return null;
+  const page = queryParam(m[1] ?? "", "url");
+  const host = /^https:\/\/([^/?#\s@]+)(?:[/?#]\S*)?$/.exec(page)?.[1];
+  return host ? { page, host, app: `opengame://open?url=${encodeURIComponent(page)}` } : null;
+}
+
 /** POST /games/:appId/invites: the room and the friends (profile ids) to invite. */
 export const GameInviteRequestSchema = z.object({
   room: RoomIdSchema,

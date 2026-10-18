@@ -9,6 +9,7 @@ import {
   GameInviteRequestSchema,
   playLink,
   readGameLink,
+  readOpenLink,
   readPlayLink,
   whoIsPlaying,
 } from "./rooms";
@@ -349,5 +350,30 @@ describe("a game link (a play link without a room)", () => {
     "not a url",
   ])("ignores %s", (url) => {
     expect(readGameLink(url)).toBeNull();
+  });
+});
+
+// The older game link (opengame.org/open?url=<game page>) opened without the app: the site offers
+// the app (opengame://open?url=…) and the game's own page in the browser. https pages only, so the
+// site never sends anyone to another scheme or a plain-http page.
+describe("an open link (opengame.org/open?url=<game page>)", () => {
+  it("reads the game's page and the app link for it", () => {
+    const page = "https://bake-shop.jonathanrmumm.workers.dev/";
+    expect(readOpenLink(`https://opengame.org/open?url=${encodeURIComponent(page)}`)).toEqual({
+      page,
+      host: "bake-shop.jonathanrmumm.workers.dev",
+      app: `opengame://open?url=${encodeURIComponent(page)}`,
+    });
+  });
+
+  it.each([
+    "https://opengame.org/open",
+    "https://opengame.org/open?url=",
+    `https://opengame.org/open?url=${encodeURIComponent("http://bake.example/")}`,
+    `https://opengame.org/open?url=${encodeURIComponent("javascript:alert(1)")}`,
+    "https://opengame.org/open?url=%E0%A4%A",
+    "https://opengame.org/play/bake-shop",
+  ])("ignores %s", (url) => {
+    expect(readOpenLink(url)).toBeNull();
   });
 });

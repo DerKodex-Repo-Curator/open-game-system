@@ -7,6 +7,7 @@ import Collective from "./pages/Collective";
 import Index from "./pages/Index";
 import Join from "./pages/Join";
 import NotFound from "./pages/NotFound";
+import Open from "./pages/Open";
 import Play from "./pages/Play";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/collective" element={<Collective />} />
           <Route path="/play/:appId" element={<Play />} />
+          <Route path="/open" element={<Open />} />
           <Route path="/join" element={<Join />} />
           <Route path="/join/:code" element={<Join />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
