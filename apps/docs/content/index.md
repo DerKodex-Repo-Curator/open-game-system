@@ -5,8 +5,12 @@ app; after that the TV shows one page for as long as the cast lasts, the **TV la
 it. Phones and iPads join the couch and play each game's phone page. Your game stays an ordinary web
 game: it gets a few `postMessage`s and a small library, and it keeps working in a plain browser.
 
-> **Building with a coding agent?** Point it at [the Quickstart](quickstart.md) or at
-> `https://ogs-docs.pages.dev/llms.txt`. Every page here is also plain Markdown: add `.md` to its URL.
+> **Building with a coding agent?** Paste this one line into it, in your game's repository:
+>
+> `Make this game OGS-compatible: follow https://ogs-docs.pages.dev/llms.txt`
+>
+> Starting fresh? The [starter template](starter.md) already works with OGS. Every page here is also
+> plain Markdown: add `.md` to its URL.
 
 ## How it works
 
@@ -58,6 +62,7 @@ The short version of [the rules](rules.md):
 ## Where to go next
 
 - [Quickstart for agents](quickstart.md): the step-by-step checklist.
+- [Starter template](starter.md): a small game that already does all of it.
 - [The game contract](contract.md): the single source of truth.
 - [profile-kit reference](profile-kit.md) and [Messages and manifest](messages.md): exact APIs.
 - [Testing your game](testing.md), [Art kit and catalogue](art-and-catalogue.md).

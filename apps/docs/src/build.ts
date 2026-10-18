@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { renderHtml, rewriteLinks } from "./markdown";
 import { PAGES, type PageDef } from "./pages";
 import { DIST_DIR, DOCS_ROOT, SITE_URL } from "./paths";
+import { packKits, packStarter } from "./kits";
 import { fillSchemaBlocks } from "./schemas";
 import { notFoundHtml, pageHtml } from "./template";
 
@@ -40,7 +41,16 @@ function llmsTxt(built: BuiltPage[]): string {
 
 > ${SITE_SUMMARY}
 
-Start with the Quickstart for agents: it is a step-by-step checklist. The game contract is the single source of truth; when it and the code disagree, the zod schemas in packages/ogs-protocol win. Every page is also served as HTML at the same path without \`.md\`.
+## If you were asked to make a game OGS-compatible
+
+1. Read the [Quickstart for agents](${SITE_URL}/quickstart.md) and follow its checklist in order. Its table "Before you start" says which steps your game needs (a one-screen game with no server first gets a small realtime room: step 0).
+2. Install the kits from this site (they are not on npm): [profile-kit](${SITE_URL}/pkg/profile-kit.tgz), and for room games [cast-kit-core](${SITE_URL}/pkg/cast-kit-core.tgz) (no React) or [cast-kit-react](${SITE_URL}/pkg/cast-kit-react.tgz). Download each into \`vendor/\` and install it from there (quickstart step 1).
+3. Use the [starter template](${SITE_URL}/starter.md) ([starter.tgz](${SITE_URL}/starter.tgz)) as a working reference: it does every step, in plain TypeScript, with seam tests you can copy.
+4. Work test-first with the seam tests in [Testing your game](${SITE_URL}/testing.md): a stand-in launcher for the TV page, a fake OGS app for the phone page.
+5. Keep the [rules](${SITE_URL}/rules.md): never cast or show a cast button; on an OGS TV no room code, join QR or "join at" URL; nothing over the TV's focal area; silent on \`ogs:suspend\`; trust names only from \`verifyOgsToken\` on a server; everything still works in a plain browser.
+6. When done, say which steps are done, which tests prove each, and what you could not verify (a real TV needs the OGS app and a catalogue entry).
+
+The game contract is the single source of truth; when it and the code disagree, the zod schemas in packages/ogs-protocol win. Every page is also served as HTML at the same path without \`.md\`.
 
 ## Docs
 
@@ -69,9 +79,20 @@ const HEADERS = `/*.md
 /llms-full.txt
   Content-Type: text/plain; charset=utf-8
   Access-Control-Allow-Origin: *
+/pkg/*
+  Content-Type: application/gzip
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=300
+/starter.tgz
+  Content-Type: application/gzip
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=300
 `;
 
-/** Renders every page to `outDir` (HTML + Markdown twin), plus llms.txt, llms-full.txt, CSS. */
+/**
+ * Renders every page to `outDir` (HTML + Markdown twin), plus llms.txt, llms-full.txt, CSS, the
+ * kits (/pkg/<kit>.tgz) and the starter template (/starter.tgz).
+ */
 export function buildSite(outDir: string = DIST_DIR): BuiltPage[] {
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
@@ -90,5 +111,7 @@ export function buildSite(outDir: string = DIST_DIR): BuiltPage[] {
   writeFileSync(resolve(outDir, "404.html"), notFoundHtml());
   writeFileSync(resolve(outDir, "_headers"), HEADERS);
   copyFileSync(resolve(DOCS_ROOT, "src/style.css"), resolve(outDir, "style.css"));
+  packKits(outDir);
+  packStarter(outDir);
   return built;
 }

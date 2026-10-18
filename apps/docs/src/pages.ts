@@ -31,6 +31,13 @@ export const PAGES: PageDef[] = [
     source: content("quickstart.md"),
   },
   {
+    slug: "starter",
+    nav: "Starter template",
+    summary:
+      "Comet Catch, a minimal game that already works with OGS (TV page, phone controller, room Worker, seam tests): download, run, make it yours.",
+    source: content("starter.md"),
+  },
+  {
     slug: "contract",
     nav: "The game contract",
     summary:

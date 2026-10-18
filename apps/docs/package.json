@@ -18,6 +18,9 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@open-game-system/cast-kit-core": "workspace:*",
+    "@open-game-system/cast-kit-react": "workspace:*",
+    "@open-game-system/profile-kit": "workspace:*",
     "@types/node": "^25.5.0",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",

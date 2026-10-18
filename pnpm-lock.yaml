@@ -48,6 +48,15 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
+      '@open-game-system/cast-kit-core':
+        specifier: workspace:*
+        version: link:../../packages/cast-kit-core
+      '@open-game-system/cast-kit-react':
+        specifier: workspace:*
+        version: link:../../packages/cast-kit-react
+      '@open-game-system/profile-kit':
+        specifier: workspace:*
+        version: link:../../packages/profile-kit
       '@types/node':
         specifier: ^25.5.0
         version: 25.5.0

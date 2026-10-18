@@ -6,57 +6,74 @@ test-first and commit after each green step.
 
 ## Prompt for your agent
 
-Copy this into your agent, in the game's repository:
+One line, in the game's repository:
 
 ```text
-Make this web game OGS-compatible. Follow the step-by-step checklist at
-https://ogs-docs.pages.dev/quickstart.md and treat https://ogs-docs.pages.dev/contract.md as the
-contract (if the two disagree, the contract wins). APIs: https://ogs-docs.pages.dev/profile-kit.md and
-https://ogs-docs.pages.dev/messages.md. Everything in one file: https://ogs-docs.pages.dev/llms-full.txt
-
-Rules: the game never casts and shows no cast button; on an OGS TV it shows no room code, join QR or
-"join at" URL; nothing covers the TV's focal area; the TV page goes silent on ogs:suspend; the game
-still works in a plain browser. Work test-first: write the seam tests from
-https://ogs-docs.pages.dev/testing.md before the code they cover. Tell me which steps are done,
-which tests prove each one, and anything you could not verify.
+Make this game OGS-compatible: follow https://ogs-docs.pages.dev/llms.txt
 ```
+
+That is enough: llms.txt sends the agent here, to the kits and to the tests. Starting a new game
+instead? Start from the [starter template](starter.md), which already does every step below.
 
 ## Before you start
 
-You need:
+Decide what OGS does for your game. This picks the steps:
 
-- A web game with a page for the TV and a page for phones. One page can be both if it changes layout,
-  but most OGS games have a separate TV page (big shared screen) and phone page (controller).
-- Node 20+ and pnpm. A server is optional; you need one only to trust names and seats (step 6).
-- A local clone of the OGS repo for profile-kit (step 1):
-  `git clone https://github.com/open-game-system/open-game-system`.
+| Your game today | OGS shape | What you build |
+|---|---|---|
+| Plays on one screen, no server (a Phaser or canvas game) | TV + phones (`tv: "required"`) | A **TV page** (your game, big) and a **phone page** (a controller). Phones talk to the TV through a small realtime server: copy the starter's room Worker (step 0) |
+| Already has rooms: a TV/host screen and phones that join with a code | TV + phones | Steps 1–12 as written; your rooms are the room in steps 8–9 |
+| Plays on each phone, no shared screen | Phone only (`tv: "none"`) | Steps 1, 5, 6, 7, 10–12 |
 
-Pick an `appId` now: lowercase letters, digits and hyphens (`[a-z0-9-]+`), for example `space-bakery`.
-It names your game everywhere: the catalogue, the art folder and the `aud` of your game tokens.
+You need Node 20+ and a package manager (examples use pnpm; npm works the same). Pick an `appId`
+now: lowercase letters, digits and hyphens (`[a-z0-9-]+`), for example `space-bakery`. It names your
+game everywhere: the catalogue, the art folder and the `aud` of your game tokens.
+
+Every profile-kit call returns `null` or does nothing in a plain browser, so after each step the game
+must still play exactly as before outside OGS. Check that after every step.
 
 ## The checklist
 
-### 1. Install profile-kit
+### 0. No server yet? Add one for phone controllers
 
-profile-kit is not on npm yet. Build it in the OGS repo and pack a tarball into your game (it bundles
-`ogs-protocol` and the app bridge; it needs `zod` and, for the hooks, `react`):
+A one-screen game has nothing that carries a phone's input to the TV. The
+[starter template](starter.md) has a small one you can copy: a Cloudflare Worker with one Durable
+Object per room (`src/worker/`), the messages (`src/shared/protocol.ts`, zod) and a reconnecting
+client (`src/client/socket.ts`). The TV page joins its room as the screen; each phone joins as a
+player and sends its stick; the room forwards sticks to the screen. Your game loop stays on the TV
+page and reads the sticks instead of the keyboard.
 
 ```bash
-cd open-game-system
-pnpm install
-pnpm --filter @open-game-system/profile-kit build
-cd packages/profile-kit && pnpm pack --pack-destination <your-game>/vendor
+curl -fsSL https://ogs-docs.pages.dev/starter.tgz | tar xz   # → ./ogs-starter
 ```
 
-In your game's `package.json`:
+Any realtime server works (PartyKit, Colyseus, your own WebSocket server); OGS only needs a room
+code the TV page reports (step 9).
 
-```json
-"dependencies": {
-  "@open-game-system/profile-kit": "file:vendor/open-game-system-profile-kit-0.1.0.tgz"
-}
+**Done when** in a plain browser the TV page shows a room code and a phone that joins it moves
+something on the TV.
+
+### 1. Install profile-kit
+
+profile-kit is not on npm yet. The docs site hosts it, built from the OGS repo's `main`. Vendor the
+tarball into your game (it bundles everything OGS-specific; it needs `zod`, and `react` only for
+`/react`):
+
+```bash
+mkdir -p vendor
+curl -fsSLo vendor/profile-kit.tgz https://ogs-docs.pages.dev/pkg/profile-kit.tgz
+pnpm add ./vendor/profile-kit.tgz zod@^3.25   # npm: npm install ./vendor/profile-kit.tgz zod@^3.25
 ```
 
-Then `pnpm install`. After re-packing a newer build under the same file name, use
+Room games also need cast-kit (step 8): `cast-kit-core` without React, or `cast-kit-react` with it.
+Same pattern:
+
+```bash
+curl -fsSLo vendor/cast-kit-core.tgz https://ogs-docs.pages.dev/pkg/cast-kit-core.tgz
+pnpm add ./vendor/cast-kit-core.tgz
+```
+
+Commit `vendor/`: the lockfile pins each tarball's hash. To update, download again and run
 `pnpm install --force`.
 
 **Done when** `import { onOgsPause } from "@open-game-system/profile-kit"` type-checks.
@@ -83,6 +100,19 @@ import { getOgsSessionSource, onOgsPause } from "@open-game-system/profile-kit";
 
 getOgsSessionSource(); // start listening now
 onOgsPause((paused) => audio.setPaused(paused)); // ogs:suspend → true, ogs:resume → false
+```
+
+Without React, read the same store:
+
+```ts
+const session = getOgsSessionSource();
+const render = () => {
+  const s = session.getSnapshot(); // undefined: waiting · null: plain browser · else on the OGS TV
+  joinPanel.hidden = s !== null; // no code or QR on the OGS TV, and none while still waiting
+  if (s) showCouch(s.players.map((p) => p.name));
+};
+session.subscribe(render);
+render();
 ```
 
 In React, read the couch with the hook:
@@ -155,6 +185,32 @@ function Join() {
 }
 ```
 
+Without React, wait for the app's answer once, then decide:
+
+```ts
+import { getOgsProfileSource, type OgsProfile } from "@open-game-system/profile-kit";
+
+function profileOnce(): Promise<OgsProfile | null> {
+  const source = getOgsProfileSource();
+  return new Promise((resolve) => {
+    const done = () => {
+      const p = source.getSnapshot();
+      if (p === undefined) return false; // still asking the app
+      resolve(p);
+      return true;
+    };
+    if (done()) return;
+    const off = source.subscribe(() => {
+      if (done()) off();
+    });
+  });
+}
+
+const profile = await profileOnce();
+if (profile) joinRoom({ ogsToken: profile.token }); // no form
+else showNameForm(); // plain browser: unchanged
+```
+
 - Join **once** per seat. The app refreshes the token before it expires; a new token must not join again.
 - Hide your join code entry: OGS puts the phone in the right game already.
 - No React? `getOgsProfileSource()` is the same store: `getSnapshot()` and `subscribe(listener)`.
@@ -176,7 +232,11 @@ seat({ id: claims.sub, name: claims.name, avatar: claims.avatar, couch: claims.c
 
 - It checks the ES256 signature against OGS's JWKS, `aud === appId`, and expiry; anything else is `null`.
 - Make `jwksUrl` configuration (a Worker var such as `OGS_JWKS_URL`), so seam tests can serve a local
-  key set. Point it at the OGS API's `/.well-known/jwks.json`.
+  key set. In production it is
+  `https://opengame-api.jonathanrmumm.workers.dev/.well-known/jwks.json`. Always pass it: profile-kit's
+  built-in default (`api.opengame.org`) does not resolve yet.
+- Send the token over your own connection (the join message, a header); a game server that has no
+  token, or a token that fails, falls back to the guest path.
 - In the page, `readGameToken(token)` only decodes (for display). Never trust it for anything else.
 
 **Done when** a test signs a token with a local key and your server seats that player, and rejects a
@@ -200,7 +260,9 @@ goes over the app bridge, on the TV to the launcher, in a plain browser nowhere.
 ### 8. Room games: declare the TV page from the phone
 
 Skip this if your manifest has a static `tvUrl`. If each room has its own TV URL, the host's phone
-page declares it while inside OGS (cast-kit, packed from the OGS repo like profile-kit):
+page declares it while inside OGS. Inside OGS the phone that starts the game makes the room (the TV
+page opens later, at the URL you declare, with the room in it); in a plain browser your TV page may
+keep making its own room as before. Declare it (cast-kit, packed from the OGS repo like profile-kit):
 
 ```tsx
 import { isOGSCastAvailable } from "@open-game-system/cast-kit-core";
@@ -217,7 +279,31 @@ export function HostPanel({ tvUrl }: { tvUrl: string }) {
 }
 ```
 
-No `<CastButton>`: the app ignores a game's own cast actions.
+Without React, dispatch `SET_VIEW_URL` on cast-kit-core's `cast` store. The app sends that store a
+moment after the page loads, and a dispatch before it exists is dropped, so wait for it:
+
+```ts
+import { getCastBridge, isOGSCastAvailable } from "@open-game-system/cast-kit-core";
+
+function declareTvPage(url: string) {
+  const bridge = getCastBridge();
+  if (!bridge || !isOGSCastAvailable()) return; // a plain browser: show your own TV link instead
+  const send = () => {
+    const store = bridge.getStore("cast");
+    store?.dispatch({ type: "SET_VIEW_URL", url });
+    return Boolean(store);
+  };
+  if (send()) return;
+  const off = bridge.subscribe(() => {
+    if (send()) off();
+  });
+}
+
+// the phone that starts the game, once its room exists:
+declareTvPage(`${location.origin}/tv?room=${code}`);
+```
+
+No `<CastButton>` and no cast calls: the app ignores a game's own cast actions.
 
 ### 9. Rooms: the couch's phones, and other homes
 
