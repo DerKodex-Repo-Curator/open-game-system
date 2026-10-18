@@ -66,8 +66,16 @@ screens.get("/:id", async (c) => {
   if (row instanceof Response) return row;
   if (!timingSafeEqual(await hashSecret(secret), row.secret_hash))
     return apiError(c, 403, "wrong_secret", "That isn't this screen's secret");
+  // A launcher whose token expired (the household never stopped casting) can't connect: forget it,
+  // so the screen shows its code again.
+  const live = row.token && (await readClaims(row.token, c.env.OGS_JWT_SECRET, Date.now()));
+  if (row.token && !live)
+    await c.env.DB.prepare("UPDATE screens SET token = NULL WHERE id = ?").bind(row.id).run();
   return c.json(
-    ScreenStateSchema.parse({ code: row.code, show: row.token ? { token: row.token } : null }),
+    ScreenStateSchema.parse({
+      code: row.code,
+      show: row.token && live ? { token: row.token } : null,
+    }),
   );
 });
 
