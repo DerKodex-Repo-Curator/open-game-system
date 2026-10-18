@@ -131,15 +131,13 @@ describe("A stranger household on the preview, from the catalogue to the first r
           break;
         // A screen tap (the WebView fills the screen): the first one also dismisses a covering hint.
         await device.tap({ x: Number(point.x), y: Number(point.y) });
-        for (const answer of ["Allow", "OK", "Cancel"]) {
-          try {
-            await waitFor(element(by.label(answer)))
-              .toBeVisible()
-              .withTimeout(1500);
-            await element(by.label(answer)).tap();
-            break;
-          } catch {}
-        }
+        // iOS asks "<the game's domain> Would Like to Access Motion and Orientation" a moment later.
+        try {
+          await waitFor(element(by.text("Allow")))
+            .toExist()
+            .withTimeout(10000);
+          await element(by.text("Allow")).tap();
+        } catch {}
         await new Promise((r) => setTimeout(r, 2000));
       }
       await step("captain-ready");

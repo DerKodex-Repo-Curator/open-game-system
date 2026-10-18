@@ -37,6 +37,13 @@ Audit and ranking: [docs/funnel-audit.md](../../../funnel-audit.md).
   guest's Remote button over a game's corner (moved), no join QR mid-game (#13), the front door's
   Open in OGS skipping the TV (#14).
 
+- 2026-10-18 **The whole stranger funnel passes against the preview** (`e2e/stranger-funnel-preview.ts`):
+  front door catalogue tap → game link → fresh app, onboarding → Rocket Crew's page → browser TV
+  paired → cast → guest scans the QR, joins from the browser → Rocket Crew: guest follows in as the
+  Fixer → first problem fixed on the TV, 137 s end to end. Only warning: the front door's Open in OGS
+  still uses the old link (#14). Evidence: `evidence/preview-funnel/`. It found #15 (iOS motion
+  prompt naming a raw domain).
+
 ## Decisions
 
 - The launcher e2e's old copy assertion ("Join from your phone") follows the owner-approved join

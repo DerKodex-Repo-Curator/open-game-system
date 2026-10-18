@@ -1,0 +1,116 @@
+{
+  "timeline": [
+    {
+      "step": "start",
+      "at": 0.3
+    },
+    {
+      "step": "app-link",
+      "at": 3.3
+    },
+    {
+      "step": "onboarded",
+      "at": 64
+    },
+    {
+      "step": "tv-code",
+      "at": 64
+    },
+    {
+      "step": "cast",
+      "at": 73.8
+    },
+    {
+      "step": "guest-on-couch",
+      "at": 79.2
+    },
+    {
+      "step": "host-in-game",
+      "at": 83.9
+    },
+    {
+      "step": "captain-ready",
+      "at": 103.9
+    },
+    {
+      "step": "launched",
+      "at": 125
+    },
+    {
+      "step": "captain-line",
+      "at": 125
+    },
+    {
+      "step": "round-done",
+      "at": 137.2
+    }
+  ],
+  "results": [
+    {
+      "name": "the front door's Open in OGS is the game link (opengame.org/play/<appId>)",
+      "ok": false,
+      "detail": "https://opengame.org/open?url=https%3A%2F%2Frocket-crew.jonathanrmumm.workers.dev%2F",
+      "soft": true
+    },
+    {
+      "name": "the game link's page opens the OGS app on that game",
+      "ok": true,
+      "detail": "opengame://play/rocket-crew",
+      "soft": false
+    },
+    {
+      "name": "the TV page shows a code to pair with",
+      "ok": true,
+      "detail": "6KAMTH",
+      "soft": false
+    },
+    {
+      "name": "the phone's cast shows the launcher on the browser TV",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "the TV's QR is a join link",
+      "ok": true,
+      "detail": "https://opengame.org/join/E42ZHJ",
+      "soft": false
+    },
+    {
+      "name": "the guest is on the TV's couch",
+      "ok": true,
+      "detail": "Dana, Grandma",
+      "soft": false
+    },
+    {
+      "name": "the TV frames Rocket Crew",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "the guest is the Fixer",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "the Captain's first problem is one the Fixer can fix",
+      "ok": true,
+      "detail": "Lights are blinking! Press the moon button! → single",
+      "soft": false
+    },
+    {
+      "name": "the first round is played: the TV says it's fixed",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "the host's phone finished its half",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    }
+  ]
+}
