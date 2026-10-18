@@ -65,7 +65,7 @@ main{max-width:980px;margin:0 auto;padding:24px 16px 48px}h1{font-size:24px;marg
 .status.pass{color:var(--pass)}.status.fail{color:var(--fail)}.status.running{color:var(--run)}.status.between,.status.missing{color:var(--warn)}
 .lines{color:var(--muted);margin:8px 0 12px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:7px 8px;border-top:1px solid var(--line);vertical-align:top}
 th{font-size:12px;color:var(--muted);font-weight:600}.num{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}.note{color:var(--muted);font-size:13px}
-tr.missing .num{color:var(--warn)}fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 12px;padding:8px 12px}label{display:inline-block;margin:4px 12px 4px 0}input{font:inherit;width:6em;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}.manual table td{padding:4px}button{font:inherit;padding:6px 14px}ul{padding-left:20px}li{margin:6px 0}
+tr.missing .num{color:var(--warn)}fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 12px;padding:8px 12px}label{display:inline-block;margin:4px 12px 4px 0}input{font:inherit;width:6em;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}.manual table td{padding:4px}.scroll{overflow-x:auto;max-width:100%}.manual .scroll input{width:4.5em}fieldset{min-width:0}button{font:inherit;padding:6px 14px}ul{padding-left:20px}li{margin:6px 0}
 @media (max-width:640px){th:nth-child(4),td.note{display:none}}
 </style></head><body><main>
 <h1>Distribution bets scoreboard</h1>
@@ -76,7 +76,7 @@ ${cards}
 <table><thead><tr><th>Clip</th><th>Landings</th><th>By platform</th></tr></thead><tbody>${clipRows || `<tr><td class="note" colspan="3">No clip landings yet.</td></tr>`}</tbody></table></section>
 <section class="bet"><h2>Numbers to type in</h2><p class="muted">From App Store Connect (TestFlight → testers by public link) and each app's analytics. Last saved ${esc(manual.updatedAt ?? "never")}.</p>
 <form method="post" action="/manual" class="manual"><fieldset><legend>TestFlight joins</legend>${field("joins_total", manual.joins.total, "All")}${field("joins_invite", manual.joins.invite, "Through an invite (bet 1)")}${field("joins_coop", manual.joins.coop, "Co-op (bet 5)")}</fieldset>
-<fieldset><legend>Clip views (bet 2)</legend><table><thead><tr><th>Clip</th>${PLATFORMS.map((p) => `<th>${p}</th>`).join("")}</tr></thead><tbody>${CLIPS.map((c) => `<tr><td>${esc(c)}</td>${PLATFORMS.map((p) => `<td>${field(`views:${c}:${p}`, manual.clipViews[`${c}:${p}`], "")}</td>`).join("")}</tr>`).join("")}</tbody></table></fieldset>
+<fieldset><legend>Clip views (bet 2)</legend><div class="scroll"><table><thead><tr><th>Clip</th>${PLATFORMS.map((p) => `<th>${p}</th>`).join("")}</tr></thead><tbody>${CLIPS.map((c) => `<tr><td>${esc(c)}</td>${PLATFORMS.map((p) => `<td>${field(`views:${c}:${p}`, manual.clipViews[`${c}:${p}`], "")}</td>`).join("")}</tr>`).join("")}</tbody></table></div></fieldset>
 <button>Save</button></form></section>
 <section class="bet"><h2>Sources</h2><table><tbody>${Object.entries(health).map(([name, state]) => `<tr><td>${esc(name)}</td><td class="note">${esc(state)}</td></tr>`).join("") || `<tr><td class="note">Not read yet.</td></tr>`}</tbody></table></section>
 <section class="bet"><h2>Can't measure yet</h2><ul>${missing.join("")}${CAVEATS.map((c) => `<li>${esc(c)}</li>`).join("")}</ul></section>
