@@ -309,3 +309,213 @@ describe("collectAnswers", () => {
     expect(asked).toHaveLength(1);
   });
 });
+
+describe("AnswersSchema, to the letter", () => {
+  it.each([
+    ["appId", "rocket-crew!"],
+    ["appId", "rocket--crew"],
+    ["name", '"Rocket'],
+    ["name", "Rocket\nCrew"],
+    ["bundleId", ".tv.rocketcrew"],
+    ["bundleId", "tv.rocketcrew!"],
+    ["androidPackage", "tv.r-c.app"],
+    ["androidPackage", "_tv.rocketcrew"],
+    ["teamId", "X34S957HD77"],
+    ["teamId", "34S957HD77X"],
+  ])("refuses %s = %j", (key, value) => {
+    expect(AnswersSchema.safeParse({ ...rocketCrew, [key]: value }).success).toBe(false);
+  });
+
+  it.each([
+    ["a-.tv"],
+    ["-a.tv"],
+    [`${"a".repeat(250)}.tv`],
+    ["play.opengame.org"],
+    ["rocketcrew.tv/"],
+  ])("refuses link domain %j", (domain) => {
+    expect(AnswersSchema.safeParse({ ...rocketCrew, linkDomains: [domain] }).success).toBe(false);
+  });
+
+  it("accepts a one-letter label and the longest names", () => {
+    expect(AnswersSchema.safeParse({ ...rocketCrew, linkDomains: ["a.tv"] }).success).toBe(true);
+    expect(AnswersSchema.safeParse({ ...rocketCrew, name: "R".repeat(30) }).success).toBe(true);
+    expect(AnswersSchema.safeParse({ ...rocketCrew, appId: "a".repeat(40) }).success).toBe(true);
+    expect(AnswersSchema.safeParse({ ...rocketCrew, appId: "a".repeat(41) }).success).toBe(false);
+  });
+
+  it("trims every answer", () => {
+    const padded = Object.fromEntries(
+      Object.entries(rocketCrew).map(([k, v]) => [k, typeof v === "string" ? ` ${v} ` : v]),
+    );
+    expect(AnswersSchema.parse({ ...padded, linkDomains: [" RocketCrew.tv "] })).toEqual(
+      rocketCrew,
+    );
+  });
+
+  it.each([
+    ["dir", "", "the directory can't be empty"],
+    ["appId", "X", "must be your OGS catalogue id, like rocket-crew"],
+    ["name", "", "the app needs a name"],
+    ["name", "N".repeat(31), "App Store names are at most 30 characters"],
+    ["name", "`", "no quotes, backslashes or backticks"],
+    ["gameUrl", "http://x.tv", "must be an https:// URL (the game's phone page)"],
+    ["bundleId", "x", "must be reverse-DNS, like tv.rocketcrew.app"],
+    [
+      "androidPackage",
+      "x",
+      "must be like tv.rocketcrew.app (letters, digits and _; each part starts with a letter)",
+    ],
+    ["teamId", "x", "must be 10 characters (A-Z, 0-9), like 34S957HD77"],
+  ])("says why %s %j is wrong", (key, value, message) => {
+    const parsed = AnswersSchema.safeParse({ ...rocketCrew, [key]: value });
+    expect(parsed.error?.issues[0]?.message).toBe(message);
+  });
+
+  it("says why a link domain is wrong", () => {
+    const messages = (domain: string) =>
+      AnswersSchema.safeParse({ ...rocketCrew, linkDomains: [domain] }).error?.issues.map(
+        (i) => i.message,
+      );
+    expect(messages("https://x.tv")).toEqual([
+      "must be a bare domain like rocketcrew.tv (no https://, no path)",
+    ]);
+    expect(messages("opengame.org")).toEqual([
+      "opengame.org/play/<appId> is always on; list only your own domains",
+    ]);
+  });
+});
+
+describe("parseArgs, exactly", () => {
+  it("sets nothing it wasn't given (not even undefined keys)", () => {
+    const parsed = parseArgs(["--app-id", "x"]);
+    expect(parsed).toStrictEqual({ ok: true, args: { yes: false, help: false, appId: "x" } });
+  });
+
+  it("drops blanks and spaces from link domain lists", () => {
+    const parsed = parseArgs(["--link-domain", " a.tv , ,b.tv,"]);
+    expect(parsed.ok && parsed.args.linkDomains).toEqual(["a.tv", "b.tv"]);
+  });
+
+  it("says how many directories it got", () => {
+    expect(parseArgs(["a", "b"])).toEqual({ ok: false, error: "give one directory, not 2: a b" });
+  });
+});
+
+describe("defaults, exactly", () => {
+  it.each([
+    "pages.dev",
+    "workers.dev",
+    "vercel.app",
+    "netlify.app",
+    "github.io",
+    "web.app",
+    "firebaseapp.com",
+    "onrender.com",
+    "fly.dev",
+    "herokuapp.com",
+    "itch.io",
+  ])("no domain defaults on %s", (host) => {
+    expect(defaultBundleId(`https://game.${host}/`)).toBeUndefined();
+    expect(defaultBundleId(`https://${host}/`)).toBeUndefined();
+    expect(defaultLinkDomains(`https://game.${host}/`)).toEqual([]);
+  });
+
+  it("a host that only ends like a shared host is the game's own", () => {
+    expect(defaultBundleId("https://mypages.dev/")).toBe("dev.mypages.app");
+  });
+
+  it("no defaults from an IP address or localhost", () => {
+    expect(defaultBundleId("https://localhost:5173/")).toBeUndefined();
+    expect(defaultBundleId("https://192.168.0.10/")).toBeUndefined();
+  });
+
+  it("only a leading www. is dropped", () => {
+    expect(defaultBundleId("https://play.www.example.com/")).toBe("com.example.www.play.app");
+  });
+
+  it("names skip empty words", () => {
+    expect(defaultName("rocket--crew-")).toBe("Rocket Crew");
+  });
+});
+
+describe("collectAnswers, exactly", () => {
+  it("a reply of spaces takes the default", async () => {
+    const { ask } = fakeAsk(["   "]);
+    const { name: _n, ...given } = rocketCrew;
+    const result = await collectAnswers({ ...given, yes: false, help: false }, { ask });
+    expect(result.ok && result.answers.name).toBe("Rocket Crew");
+  });
+
+  it("warns with the question's label and the reason", async () => {
+    const warnings: string[] = [];
+    const { ask } = fakeAsk(["nope", "34S957HD77"]);
+    const { teamId: _t, ...given } = rocketCrew;
+    await collectAnswers(
+      { ...given, yes: false, help: false },
+      { ask, warn: (m) => warnings.push(m) },
+    );
+    expect(warnings).toEqual(["Apple Team ID must be 10 characters (A-Z, 0-9), like 34S957HD77"]);
+  });
+
+  it("works without a warn function", async () => {
+    const { ask } = fakeAsk(["nope", "34S957HD77"]);
+    const { teamId: _t, ...given } = rocketCrew;
+    const result = await collectAnswers({ ...given, yes: false, help: false }, { ask });
+    expect(result.ok).toBe(true);
+  });
+
+  it("with --yes, lists what is missing first, then what is wrong, one per line", async () => {
+    const { ask } = fakeAsk([]);
+    const result = await collectAnswers(
+      { gameUrl: "https://rocketcrew.tv/phone", teamId: "nope", yes: true, help: false },
+      { ask },
+    );
+    expect(result).toEqual({
+      ok: false,
+      error: "--yes needs --app-id\n--team-id must be 10 characters (A-Z, 0-9), like 34S957HD77",
+    });
+  });
+
+  it("with --yes, a bad default from a good earlier answer is still taken as asked", async () => {
+    const { ask } = fakeAsk([]);
+    const result = await collectAnswers(
+      {
+        appId: "rocket-crew",
+        gameUrl: "https://rocketcrew.tv/phone",
+        teamId: "34S957HD77",
+        bundleId: "tv.1up.app",
+        yes: true,
+        help: false,
+      },
+      { ask },
+    );
+    expect(result).toEqual({ ok: false, error: "--yes needs --package" });
+  });
+
+  it("asks with each field's own question", async () => {
+    const { ask, asked } = fakeAsk([
+      "app",
+      "rocket-crew",
+      "",
+      "https://rocketcrew.tv/phone",
+      "",
+      "",
+      "34S957HD77",
+      "",
+      "",
+    ]);
+    await collectAnswers({ yes: false, help: false }, { ask });
+    expect(asked.map((a) => a.question)).toEqual(FIELDS.map((f) => f.question));
+    expect(FIELDS.map((f) => f.question.split(" (")[0])).toEqual([
+      "Directory for the app",
+      "OGS app id",
+      "App name",
+      "Game URL",
+      "iOS bundle id",
+      "Android package",
+      "Apple Team ID",
+      "Your link domains",
+      "Branding: hidden, or powered-by",
+    ]);
+  });
+});

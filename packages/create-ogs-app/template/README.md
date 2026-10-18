@@ -113,7 +113,7 @@ Install the OGS CLI (`pnpm add -g @open-game-system/cli`). Log in with your game
 the one your server uses to send pushes:
 
 ```bash
-ogs login --app __OGS_APP_ID__
+ogs login --app __OGS_APP_ID__ --key ogsk_…   # your game API key; OGS_API=<url> points at a preview
 ogs apps register --ios __OGS_BUNDLE_ID__ --team-id __OGS_APPLE_TEAM_ID__
 ogs apps register --android __OGS_ANDROID_PACKAGE__ --sha256 <SHA-256 from eas credentials> --google-client-id <id>.apps.googleusercontent.com
 ```

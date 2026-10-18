@@ -21,7 +21,7 @@ export function nextSteps(a: Answers, dir: string): string {
     "",
     "Tell OGS about the app (pnpm add -g @open-game-system/cli):",
     "",
-    `  ogs login --app ${a.appId}`,
+    `  ogs login --app ${a.appId} --key <your game API key, ogsk_…>`,
     `  ogs apps register --ios ${a.bundleId} --team-id ${a.teamId}`,
     `  ogs apps register --android ${a.androidPackage} --sha256 <from eas credentials> --google-client-id <id>`,
     `  ogs push credentials --ios AuthKey_<KEYID>.p8 --key-id <KEYID> --team-id ${a.teamId}`,

@@ -33,6 +33,8 @@ function decode(png: Buffer) {
     colorType: ihdr.data[9],
     types: chunks.map((c) => c.type),
     pixel,
+    /** Alpha at (x, y), unchecked (fast). */
+    alpha: (x: number, y: number) => raw[y * (width * 4 + 1) + 1 + x * 4 + 3],
   };
 }
 
@@ -92,5 +94,39 @@ describe("drawAsset", () => {
     const png = decode(drawAsset("adaptive-icon", brand));
     const safeEdge = Math.floor(1024 * 0.17);
     for (let x = 0; x < safeEdge; x += 8) expect(png.pixel(x, 512)[3]).toBe(0);
+  });
+});
+
+describe("drawAsset geometry", () => {
+  /** The ring by definition: pixel centres between 20% and 30% of the size from the middle. */
+  const onRing = (x: number, y: number) => {
+    const d = (x + 0.5 - 512) ** 2 + (y + 0.5 - 512) ** 2;
+    return d <= (0.3 * 1024) ** 2 && d >= (0.2 * 1024) ** 2;
+  };
+
+  it("lights exactly the ring's pixels, every row", () => {
+    const png = decode(drawAsset("splash-icon", "#2a5c8a"));
+    const wrong: string[] = [];
+    for (let y = 0; y < 1024; y += 1) {
+      for (let x = 0; x < 1024; x += 1) {
+        const lit = png.alpha(x, y) === 255;
+        if (lit !== onRing(x, y)) wrong.push(`${x},${y}`);
+      }
+    }
+    expect(wrong.slice(0, 5)).toEqual([]);
+    expect(png.pixel(0, 1023)).toEqual([0x2a, 0x5c, 0x8a, 0]);
+    expect(png.pixel(512 + 250, 512)).toEqual([0xf5, 0xf1, 0xe8, 255]);
+  });
+
+  it("parseHexColor wants the whole string", () => {
+    expect(() => parseHexColor("x#112233")).toThrow();
+    expect(() => parseHexColor("#112233x")).toThrow();
+  });
+
+  it("encodePng copies every row", () => {
+    const rgba = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]);
+    const png = decode(encodePng(1, 2, rgba));
+    expect(png.pixel(0, 1)).toEqual([5, 6, 7, 8]);
+    expect(() => encodePng(1, 2, Buffer.alloc(9))).toThrow("encodePng: 1×2 needs 8 bytes, got 9");
   });
 });

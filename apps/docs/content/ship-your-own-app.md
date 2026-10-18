@@ -111,10 +111,13 @@ Install the OGS CLI and log in with your game's API key (the one your server sen
 
 ```bash
 pnpm add -g @open-game-system/cli
-ogs login --app rocket-crew
+ogs login --app rocket-crew --key ogsk_…   # your game API key
 ogs apps register --ios tv.rocketcrew.app --team-id 34S957HD77
 ogs apps register --android tv.rocketcrew.app --sha256 AB:CD:… --google-client-id 123-abc.apps.googleusercontent.com
 ```
+
+Every command takes `--app <appId>` (default: the app you logged in with); `OGS_API=<url>` points
+it at a preview API. `--sha256` and `--google-client-id` take comma-separated lists.
 
 Registering lets OGS accept your app's sign-ins (Apple's audience is your bundle id, Google's your
 client id) and pushes, and lists your app in opengame.org's link files for `/play/<appId>`. A bundle

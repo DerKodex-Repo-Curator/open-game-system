@@ -39,3 +39,33 @@ describe("createLinePrompt", () => {
     await expect(prompt.ask("B?")).rejects.toBeInstanceOf(InputEndedError);
   });
 });
+
+describe("createLinePrompt after the end", () => {
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+  it("a question asked once the input has closed fails at once, saying why", async () => {
+    const { input, prompt } = setup();
+    input.end();
+    await settle();
+    const error = await prompt.ask("A?").catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(InputEndedError);
+    expect(error instanceof Error && error.message).toBe(
+      "the input ended before every question was answered (or pass the flags with --yes)",
+    );
+  });
+
+  it("close() ends it too", async () => {
+    const { prompt } = setup();
+    prompt.close();
+    await settle();
+    await expect(prompt.ask("A?")).rejects.toBeInstanceOf(InputEndedError);
+  });
+
+  it("shows no default when there is none", async () => {
+    const { input, prompt, shown } = setup();
+    input.write("x\n");
+    await prompt.ask("Q?");
+    expect(shown()).toBe("? Q? ");
+    prompt.close();
+  });
+});

@@ -7,7 +7,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
@@ -15,7 +15,13 @@ import { type CliIO, main } from "../src/cli";
 import { findPlaceholders } from "../src/placeholders";
 
 const PACKAGE_DIR = resolve(__dirname, "..");
-const REPO_ROOT = resolve(PACKAGE_DIR, "../..");
+/** The monorepo root: the nearest pnpm-workspace.yaml (Stryker runs from a sandbox inside the package). */
+function findRepoRoot(from: string): string {
+  const parent = dirname(from);
+  if (existsSync(join(from, "pnpm-workspace.yaml")) || parent === from) return from;
+  return findRepoRoot(parent);
+}
+const REPO_ROOT = findRepoRoot(PACKAGE_DIR);
 
 const PackageJsonSchema = z.object({
   name: z.string(),
@@ -95,7 +101,7 @@ describe("create-ogs-app generates an app", () => {
       "package.json",
       "tsconfig.json",
     ]);
-    expect(out.join("\n")).toContain("ogs login --app rocket-crew");
+    expect(out.join("\n")).toContain("ogs login --app rocket-crew --key");
   });
 
   it("leaves no placeholder anywhere", async () => {

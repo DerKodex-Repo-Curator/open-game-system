@@ -70,7 +70,11 @@ export const AnswersSchema = z.object({
     .trim()
     .regex(/^[A-Z0-9]{10}$/, "must be 10 characters (A-Z, 0-9), like 34S957HD77"),
   linkDomains: z.array(linkDomain).transform((domains) => [...new Set(domains)]),
-  branding: z.enum(["hidden", "powered-by"]).default("hidden"),
+  branding: z
+    .string()
+    .trim()
+    .pipe(z.enum(["hidden", "powered-by"]))
+    .default("hidden"),
   shellVersion: z.string().trim().min(1).default(SHELL_VERSION),
 });
 

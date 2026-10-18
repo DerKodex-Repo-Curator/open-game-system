@@ -35,4 +35,43 @@ describe("runCli", () => {
     expect(await runCli([], value)).toBe(1);
     expect(err.join("\n")).toMatch(/disk on fire/);
   });
+
+  it("generating into the current directory says so", async () => {
+    const { value, out } = io(async () => "");
+    const code = await runCli(
+      [
+        ".",
+        "--app-id",
+        "rocket-crew",
+        "--game-url",
+        "https://rocketcrew.tv/p",
+        "--team-id",
+        "34S957HD77",
+        "-y",
+      ],
+      value,
+    );
+    expect(code).toBe(0);
+    expect(out[0]).toMatch(/^Made Rocket Crew \(\d+ files\)\.\n$/);
+    expect(out[1]).toContain("Your app is in .");
+  });
+
+  it("a broken template is a crash (exit 1 with the stack), not a refusal", async () => {
+    const { value, err } = io(async () => "");
+    const code = await runCli(
+      [
+        "app",
+        "--app-id",
+        "rocket-crew",
+        "--game-url",
+        "https://rocketcrew.tv/p",
+        "--team-id",
+        "34S957HD77",
+        "-y",
+      ],
+      { ...value, templateDir: join(value.cwd, "no-template") },
+    );
+    expect(code).toBe(1);
+    expect(err.join("\n")).toMatch(/ENOENT[\s\S]*\n\s+at /);
+  });
 });

@@ -80,3 +80,22 @@ describe("planFiles", () => {
     expect(() => planFiles(["assets/icon.png"], answers)).toThrow(/assets\/icon\.png/);
   });
 });
+
+describe("planFiles order", () => {
+  it("sorts whatever order the directory walk gives", () => {
+    const shuffled = ["z.md", "b/a.ts", "a.ts", "b.ts", "assets-notes.md"];
+    expect(targets(planFiles(shuffled, answers))).toEqual([
+      "a.ts",
+      "assets-notes.md",
+      "assets/adaptive-icon.png",
+      "assets/icon.png",
+      "assets/splash-icon.png",
+      "b.ts",
+      "b/a.ts",
+      "z.md",
+    ]);
+    expect(targets(planFiles([...shuffled].reverse(), answers))).toEqual(
+      targets(planFiles(shuffled, answers)),
+    );
+  });
+});

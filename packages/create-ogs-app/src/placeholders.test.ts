@@ -89,3 +89,18 @@ describe("findPlaceholders", () => {
     expect(findPlaceholders("style={{ a: 1 }}")).toEqual([]);
   });
 });
+
+describe("brandColor, exactly", () => {
+  it("pins the colors (icons stay the same across versions)", () => {
+    expect(
+      ["rocket-crew", "codebreakers", "a", "trivia-jam"].map(brandColor),
+    ).toMatchInlineSnapshot(`
+      [
+        "#29698e",
+        "#4b298e",
+        "#508e29",
+        "#308e29",
+      ]
+    `);
+  });
+});

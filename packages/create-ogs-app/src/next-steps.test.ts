@@ -23,7 +23,7 @@ describe("nextSteps", () => {
       "cd app",
       "pnpm install",
       "pnpm ios",
-      "ogs login --app rocket-crew",
+      "ogs login --app rocket-crew --key <your game API key, ogsk_…>",
       "ogs apps register --ios tv.rocketcrew.app --team-id 34S957HD77",
       "ogs apps register --android tv.rocketcrew.app",
       "ogs push credentials --ios",
@@ -81,5 +81,65 @@ describe("HELP", () => {
       expect(HELP).toContain(flag);
     }
     expect(HELP).toContain("pnpm create ogs-app");
+  });
+});
+
+describe("nextSteps, word for word", () => {
+  it("with a link domain", () => {
+    expect(nextSteps(answers, "app")).toMatchInlineSnapshot(`
+      "Your app is in app. Next:
+
+        cd app
+        pnpm install
+        pnpm ios                 # or: pnpm android (a development build on a simulator/emulator)
+
+      Tell OGS about the app (pnpm add -g @open-game-system/cli):
+
+        ogs login --app rocket-crew --key <your game API key, ogsk_…>
+        ogs apps register --ios tv.rocketcrew.app --team-id 34S957HD77
+        ogs apps register --android tv.rocketcrew.app --sha256 <from eas credentials> --google-client-id <id>
+        ogs push credentials --ios AuthKey_<KEYID>.p8 --key-id <KEYID> --team-id 34S957HD77
+        ogs push credentials --android service-account.json
+
+      Build and ship:
+
+        eas build --profile preview --platform ios      # TestFlight-ready
+        eas submit --profile preview --platform ios
+        ogs doctor --domain rocketcrew.tv
+
+      Links: serve link-files/.well-known/ at https://rocketcrew.tv/.well-known/apple-app-site-association
+      and /.well-known/assetlinks.json (fill in the SHA-256 from \`eas credentials\`).
+      opengame.org/play/rocket-crew/… opens the app too.
+
+      README.md walks through all of it; REVIEW_NOTES.md is your App Review note."
+    `);
+  });
+
+  it("without one", () => {
+    expect(nextSteps({ ...answers, linkDomains: [] }, "app")).toMatchInlineSnapshot(`
+      "Your app is in app. Next:
+
+        cd app
+        pnpm install
+        pnpm ios                 # or: pnpm android (a development build on a simulator/emulator)
+
+      Tell OGS about the app (pnpm add -g @open-game-system/cli):
+
+        ogs login --app rocket-crew --key <your game API key, ogsk_…>
+        ogs apps register --ios tv.rocketcrew.app --team-id 34S957HD77
+        ogs apps register --android tv.rocketcrew.app --sha256 <from eas credentials> --google-client-id <id>
+        ogs push credentials --ios AuthKey_<KEYID>.p8 --key-id <KEYID> --team-id 34S957HD77
+        ogs push credentials --android service-account.json
+
+      Build and ship:
+
+        eas build --profile preview --platform ios      # TestFlight-ready
+        eas submit --profile preview --platform ios
+        ogs doctor
+
+      Links: https://opengame.org/play/rocket-crew/… opens the app (add your own domain later).
+
+      README.md walks through all of it; REVIEW_NOTES.md is your App Review note."
+    `);
   });
 });
