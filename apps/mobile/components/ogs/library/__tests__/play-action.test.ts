@@ -159,3 +159,18 @@ describe("createCastPrompt: the one cast prompt the app shows", () => {
     expect(listener).not.toHaveBeenCalled();
   });
 });
+
+describe("castPromptView after the app restarted (the second visit)", () => {
+  const living = { id: "tv-1", name: "Living room TV", type: "chromecast" as const };
+  const laptop = { id: "screen:abc", name: "Browser TV", type: "browser" as const };
+  it("aims Cast at the TV this phone cast to last, not the first one found", () => {
+    const view = castPromptView({
+      devices: [living, laptop],
+      searching: false,
+      picked: null,
+      stopped: null,
+      last: { id: "screen:abc", name: "Browser TV" },
+    });
+    expect(view).toEqual({ kind: "choose", devices: [living, laptop], target: laptop });
+  });
+});

@@ -46,6 +46,7 @@ import {
   couchHub,
   deviceId,
   endTonight,
+  lastTv,
   moveToTv,
   useApp,
   useCast,
@@ -226,7 +227,8 @@ function NotCast({ connecting }: { connecting: boolean }) {
     return () => clearTimeout(t);
   }, [phase, devices.length]);
 
-  const tv = castTarget(devices, picked, stopped);
+  const last = useSyncExternalStore(lastTv.subscribe, lastTv.get, lastTv.get);
+  const tv = castTarget(devices, picked, stopped, last);
   // With several TVs the chooser names the one Cast goes to; the caption would repeat it.
   const choosing = devices.length > 1 && !connecting && phase !== "searching";
 

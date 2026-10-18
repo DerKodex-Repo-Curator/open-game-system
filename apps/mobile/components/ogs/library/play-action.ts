@@ -36,8 +36,10 @@ export function castPromptView(input: {
   searching: boolean;
   picked: CastDevice | null;
   stopped: StoppedTv | null;
+  /** The TV this phone cast to last (kept across launches). */
+  last?: StoppedTv | null;
 }): CastPromptView {
-  const target = castTarget(input.devices, input.picked, input.stopped);
+  const target = castTarget(input.devices, input.picked, input.stopped, input.last ?? null);
   if (target) return { kind: "choose", devices: input.devices, target };
   return input.searching ? { kind: "looking" } : { kind: "noTv" };
 }
