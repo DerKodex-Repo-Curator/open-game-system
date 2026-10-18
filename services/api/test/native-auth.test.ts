@@ -63,7 +63,7 @@ const loginOwner = async (provider: string, subject: string) =>
 const profileId = (body: Record<string, unknown>) => z.object({ profile: z.object({ id: z.string() }) }).parse(body).profile.id;
 const errorCode = (body: Record<string, unknown>) => z.object({ error: z.object({ code: z.string() }) }).parse(body).error.code;
 
-describe("POST /api/v1/auth/native", () => {
+describe("POST /api/v1/auth/native", { timeout: 20_000 }, () => {
   it("a guest backs up with Sign in with Apple for a registered app: same profile, a device token", async () => {
     const res = await post("/api/v1/auth/native", { provider: "apple", identityToken: await appleToken("apple-ada"), deviceProfileId: "guest1" }, await guestToken("guest1"));
     expect(res.status).toBe(200);

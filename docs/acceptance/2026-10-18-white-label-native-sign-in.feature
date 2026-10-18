@@ -1,4 +1,4 @@
-# Status: PLANNED (branch claude/shell-platform).
+# Status: BUILT on claude/shell-platform (API preview opengame-api-pr-shell).
 # Design: docs/design-docs/white-label-shell.md (decision 8: guest first, native upgrade).
 # POST /api/v1/auth/native { provider, identityToken, deviceProfileId?, device? }.
 

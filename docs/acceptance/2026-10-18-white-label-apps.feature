@@ -1,4 +1,4 @@
-# Status: PLANNED (branch claude/shell-platform).
+# Status: BUILT on claude/shell-platform (API preview opengame-api-pr-shell); opengame.org functions not deployed.
 # Design: docs/design-docs/white-label-shell.md. ADR: docs/adrs/2026-10-18-multi-tenant-push.md.
 # The platform half: apps are registered, their push credentials stored, pushes sent with the right
 # app's credentials, and opengame.org's link files list every registered app.

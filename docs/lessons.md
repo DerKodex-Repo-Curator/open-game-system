@@ -269,3 +269,10 @@ Persistent project knowledge. Review at the start of each task.
 - **On Android, react-native-webview's `postMessage` fires the page's `message` event on `document`, not `window`** (`RNCWebViewManagerImpl.kt`: `document.dispatchEvent(event)`, no bubbling). iOS fires it on `window`, where app-bridge-web listens. So in the Android app no game ever got a bridge store: Rocket Crew asked "Who's playing here?" and the TV said it couldn't open. `BridgedWebView` now hands the bridge a target that injects `window.dispatchEvent(new MessageEvent("message", …))` on both platforms (`windowMessage`), so already-deployed games work with no rebuild. Found by the stranger funnel e2e on an emulator; nothing iOS-only catches it.
 - **Android onboarding has no notifications page** when Android already allows notifications; Detox walks tap Maybe later only when it shows.
 - **`assembleAndroidTest` across every module fails dexing expo-eas-client**: build only `:app:assembleRelease :app:assembleAndroidTest`.
+
+- **Workers can send to APNs and FCM directly (checked 2026-10-18).** A probe Worker's fetch to
+  api.sandbox.push.apple.com got APNs' own HTTP/2 answer (`403 InvalidProviderToken`), and FCM HTTP v1
+  answered too, so white-label push needs no relay (ADR 2026-10-18-multi-tenant-push). Expo's push
+  service can't send for an app built in someone else's EAS project.
+- **TanStack Router holds a data-only route pending for 500 ms by default** (`defaultPendingMinMs`),
+  showing a blank page if there's no pending UI. Trivia Jam's phone join was 500 ms late from it.

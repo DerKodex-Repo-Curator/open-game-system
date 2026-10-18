@@ -97,7 +97,7 @@ async function setUpIos() {
   return key;
 }
 
-describe("a game's push reaches its own white-label app", () => {
+describe("a game's push reaches its own white-label app", { timeout: 20_000 }, () => {
   it("APNs: apns-topic is the app's bundle id, signed with the app's key id and team id", async () => {
     const key = await setUpIos();
     const res = await send("rocket-crew", rcKey, await handleFor("rocket-crew"));

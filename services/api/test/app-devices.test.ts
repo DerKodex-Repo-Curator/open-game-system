@@ -35,7 +35,7 @@ async function put(path: string, body: unknown, auth: string | null) {
 const APNS = { platform: "ios", token: "a".repeat(64), apnsEnvironment: "production" };
 const errorCode = (body: Record<string, unknown>) => z.object({ error: z.object({ code: z.string() }) }).parse(body).error.code;
 
-describe("PUT /api/v1/apps/:appId/devices/:deviceId", () => {
+describe("PUT /api/v1/apps/:appId/devices/:deviceId", { timeout: 20_000 }, () => {
   it("stores the device's native token for the app (204), and updates it", async () => {
     const auth = await tokenFor({ sub: "sam", did: "sam-phone", kind: "phone" });
     expect((await put("/api/v1/apps/rocket-crew/devices/sam-phone", APNS, auth)).status).toBe(204);

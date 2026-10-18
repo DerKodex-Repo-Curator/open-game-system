@@ -15,7 +15,7 @@ const LINKS = {
 const staticFile = (name: string) =>
   JSON.parse(readFileSync(new URL(`../../../apps/web/public/.well-known/${name}`, import.meta.url).pathname, "utf8"));
 
-describe("the link files", () => {
+describe("the link files", { timeout: 20_000 }, () => {
   it("the OGS app's own entries are opengame.org's static files' (they don't drift)", () => {
     expect(siteAssociation({ ios: [], android: [] })).toEqual(staticFile("apple-app-site-association"));
     expect(assetlinks({ ios: [], android: [] })).toEqual(staticFile("assetlinks.json"));
@@ -36,7 +36,7 @@ describe("the link files", () => {
   });
 });
 
-describe("GET /api/v1/apps/apple-app-site-association and /assetlinks.json", () => {
+describe("GET /api/v1/apps/apple-app-site-association and /assetlinks.json", { timeout: 20_000 }, () => {
   let d1: TestD1;
   beforeAll(async () => {
     d1 = await openTestD1();

@@ -183,6 +183,11 @@ route → 403 `profile_token_required`.
 | POST | `/api/v1/client-events` | the app: phone/tablet/launcher token (signature only, no DB); the cast receiver: none | Client wide events (`routes/client-events.ts`): `{ context: { app: mobile\|receiver, build?, version?, platform?, profileId?, sessionId?, deviceHash? }, events: [{ name, at, level: debug\|info\|warn\|error, attemptId?, durationMs?, error?, errorType?, errorStack?, data?: { k: scalar } }] }` (1–50 events, 64 KB) → 202 `{ accepted }`. Nothing stored: each event is one JSON `console.log` line (`console.error` for level error) in Workers Logs with `message` (`client <app> <name>[: error]`, the SRE agent's fingerprint), `kind: "client_event"`, `source`, `authenticated`, the token's `profileId` (never the body's), `receivedAt`; error events add `errorType` (the client's, else the event name) and `errorStack`, and emails are scrubbed from error text. `token=` values and JWTs redacted, secret-named data keys dropped. 400 `invalid_body`, 413 `payload_too_large`, 401 `missing_auth` (the app without a token) / `invalid_token`, 429 `rate_limited` (`CLIENT_EVENTS_LIMITER`, a Workers rate-limit binding: 120/min per profile, the receiver per IP) |
 | GET | `/api/v1/app-release/:platform` | none | The latest beta build CI shipped for `ios`\|`android` (`routes/app-release.ts`, ADR 2026-10-07 beta distribution) → `{ platform, build, fingerprint, updateUrl, updatedAt }`; the app shows "Update OGS" when its native build number is lower. 404 `not_found` (none recorded), 400 `invalid_platform` |
 | PUT | `/api/v1/app-release/:platform` | `Bearer <RELEASE_TOKEN>` (a Worker secret; unset refuses every write) | CI records `{ build (positive int), fingerprint, updateUrl (https) }` once the build is installable → the release. 401 `unauthorized`, 400 `invalid_body` / `invalid_platform`, 409 `stale_build` (an older build than the recorded one; the same build again is accepted) |
+| POST | `/api/v1/auth/native` | optional phone/tablet (a guest's own token, with `deviceProfileId`) | White-label sign-in (`2026-10-18-white-label-native-sign-in.feature`): `{ provider: apple\|google, identityToken, nonce?, deviceProfileId?, device? }`; audiences = the OGS app's + every registered app's (bundle ids / Google client ids). New login → backs the guest up; a login backing another profile → the device moves there. → `{ profile, logins, token }`; 401 `invalid_id_token`, 403 `not_your_profile` |
+| PUT / GET | `/api/v1/apps/:appId/native/ios`, `/native/android` · GET `/native` | game API key (this game's) | Register the game's own app: ios `{ bundleId, teamId }`, android `{ package, sha256CertFingerprints, googleClientIds }` → 201 / 200; 409 `app_id_taken` (another game's), 400 `invalid_body`, 403 `wrong_game` |
+| PUT / GET | `/api/v1/apps/:appId/push-credentials` | game API key | `{ ios: { p8, keyId, teamId } }` or `{ android: { serviceAccount } }` → 204, sealed with PUSH_KEY_SECRET; GET says what's configured (ids, never a key); 409 `app_not_registered`, 400 `invalid_credentials`, 503 without PUSH_KEY_SECRET |
+| PUT | `/api/v1/apps/:appId/devices/:deviceId` | phone/tablet (its own `did`) | The shell's native push token: `{ platform: ios, token (hex), apnsEnvironment: sandbox\|production }` or `{ platform: android, token }` → 204; 403 `not_your_device`, 409 `app_not_registered` |
+| GET | `/api/v1/apps/app-links` · `/apps/apple-app-site-association` · `/apps/assetlinks.json` | none | Every registered app; the latter two are opengame.org's finished link files (registered apps first for `/play/<appId>` and `/play/<appId>/*`, then the OGS app), passed through by `apps/web/functions/.well-known/*` (static files as fallback). Cache 5 min |
 
 The mobile app currently signs in with email only (owner, 2026-10-04); `/auth/apple` and
 `/auth/google` stay in the API, tested, for when the app adds them back (see `roadmap.md`).
@@ -298,6 +303,9 @@ someone drops it deliberately.
 | `push_surfaces` | `id` | handle_id, kind (ogs/web), profile_id (ogs), endpoint/p256dh/auth/vapid_kid (web), last_active_at, created_at (ms) | Where a handle is reached; unique per (handle, profile) and (handle, endpoint) |
 | `push_grants` | `(profile_id, app_id)` | granted (0/1), updated_at (ms) | Consent in the app; 0 = turned off in Settings |
 | `instances` | `(profile_id, instance_id)` | app_id, status, title, detail, your_turn, starts_at, resume_url, source, updated_at (ms) | ogs-protocol `InstanceSchema` |
+| `native_apps` | `(app_id, platform)` | store_id (bundle id / package, unique per platform), team_id (ios), sha256_fingerprints, google_client_ids (JSON, android), created_at, updated_at (ms) | A game's own App Store / Play Store app (ADR 2026-10-18-multi-tenant-push) |
+| `app_push_credentials` | `(app_id, platform)` | key_id, team_id (ios) · project_id, client_email (android) · secret_enc, iv (AES-GCM, PUSH_KEY_SECRET), updated_at (ms) | The app's APNs .p8 / FCM service account, sealed |
+| `app_devices` | `(device_id, app_id)` | platform, token (native APNs / FCM), apns_environment, updated_at (ms) | A device running a game's own app; dead tokens removed on send |
 
 Canonical schema: `services/api/schema.sql`
 
@@ -334,6 +342,9 @@ Game server
   POST /games/:appId/notifications { to: [handle], title, body, url?, tag?, whenOpen? }
   (game API key) ──────────────────────────► per handle: surfaces by last_active_at DESC
                                                ogs: grant? → phones of the profile ─► Expo
+                                                      + the profile's phones running THIS game's own app
+                                                        (app_devices) ─► APNs / FCM v1 with that app's
+                                                        credentials (ADR 2026-10-18-multi-tenant-push)
                                                web: subscription ──────────────────► Web Push
                                                first that takes it wins; gone → drop, next
   ◄── { results: [{ to, status: sent | not_permitted | gone | failed }] }

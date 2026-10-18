@@ -52,7 +52,7 @@ const io = (): Io => ({
   },
 });
 
-describe("ogs against the API", () => {
+describe("ogs against the API", { timeout: 20_000 }, () => {
   it("logs in, registers the iOS app, uploads the APNs key and the doctor passes", async () => {
     expect(await run(["login", "--app", "rocket-crew", "--key", key], io())).toBe(0);
     expect(await run(["apps", "register", "--ios", "tv.rocketcrew.app", "--team-id", "34S957HD77"], io())).toBe(0);

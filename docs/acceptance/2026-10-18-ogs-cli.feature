@@ -1,10 +1,10 @@
-# Status: PLANNED (branch claude/shell-platform).
+# Status: BUILT on claude/shell-platform (packages/cli; not published).
 # Design: docs/design-docs/white-label-shell.md (decision 15). Package @open-game-system/cli, bin `ogs`.
 
 Feature: The ogs CLI sets up a game's white-label app
 
   Scenario: Logging in with the game's API key
-    When the developer runs "ogs login --app rocket-crew" and pastes the game's API key
+    When the developer runs "ogs login --app rocket-crew --key <the game's API key>"
     Then the CLI checks it against the API and saves it to ~/.config/ogs/credentials.json (mode 0600)
     And a wrong key is refused without saving
 

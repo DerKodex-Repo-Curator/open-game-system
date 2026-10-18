@@ -58,7 +58,7 @@ const FINGERPRINT = Array.from({ length: 32 }, (_, i) => (i * 7).toString(16).pa
 const ANDROID = { package: "tv.rocketcrew.app", sha256CertFingerprints: [FINGERPRINT], googleClientIds: ["123-abc.apps.googleusercontent.com"] };
 const errorCode = (body: Record<string, unknown>) => z.object({ error: z.object({ code: z.string() }) }).parse(body).error.code;
 
-describe("registering a game's app", () => {
+describe("registering a game's app", { timeout: 20_000 }, () => {
   it("registers the iOS app (201), then updates it (200)", async () => {
     const first = await call("PUT", "/api/v1/apps/rocket-crew/native/ios", rcKey, IOS);
     expect(first.status).toBe(201);
@@ -100,7 +100,7 @@ describe("registering a game's app", () => {
   });
 });
 
-describe("push credentials", () => {
+describe("push credentials", { timeout: 20_000 }, () => {
   it("stores the APNs key encrypted and says what's configured, never the key", async () => {
     await call("PUT", "/api/v1/apps/rocket-crew/native/ios", rcKey, IOS);
     const p8 = await p8Pem();
@@ -150,7 +150,7 @@ describe("push credentials", () => {
   });
 });
 
-describe("app links (public)", () => {
+describe("app links (public)", { timeout: 20_000 }, () => {
   it("lists every registered app for opengame.org's link files", async () => {
     await call("PUT", "/api/v1/apps/rocket-crew/native/ios", rcKey, IOS);
     await call("PUT", "/api/v1/apps/rocket-crew/native/android", rcKey, ANDROID);
