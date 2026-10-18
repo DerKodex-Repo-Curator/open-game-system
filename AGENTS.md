@@ -11,6 +11,7 @@
   - `apps/web/` — opengame.org marketing website (Vite + React + Tailwind + Cloudflare Pages)
   - `apps/tv/` — OGS TV launcher (Vite + React): the page the Chromecast stream shows for the whole cast; frames each game's TV page
   - `apps/docs/` — game-developer docs site (ogs-docs.pages.dev): Markdown in `apps/docs/content/` + the contract from `docs/specification.md` → static HTML, `.md` twins, `llms.txt`
+  - `apps/scoreboard/` — the distribution bets' scoreboard (preview Worker): reads what OGS already records and shows each bet against its pass/fail lines
   - `packages/app-bridge-*/` — WebView-to-native two-way communication (6 packages)
   - `packages/cast-kit/` — TV casting SDK for web games (Google Cast via native bridge)
   - `packages/profile-kit/` — Games know who you are: OGS profile + couch players for games, `verifyOgsToken` for game servers
