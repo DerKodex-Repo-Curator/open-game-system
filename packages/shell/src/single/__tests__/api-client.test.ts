@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { createShellRequest, ShellApiError } from "../api-client";
 import { fakeFetch } from "../__fixtures__/fake-fetch";
+import { createShellRequest, ShellApiError } from "../api-client";
 
 const Thing = z.object({ ok: z.literal(true) });
 

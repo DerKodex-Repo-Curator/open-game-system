@@ -1,3 +1,4 @@
+import { type FakeAnswer, fakeFetch } from "../__fixtures__/fake-fetch";
 import { createShellRequest } from "../api-client";
 import type { ShellIdentity } from "../identity";
 import {
@@ -6,7 +7,6 @@ import {
   type NativePushDeps,
   type PushNotificationsModule,
 } from "../native-push";
-import { type FakeAnswer, fakeFetch } from "../__fixtures__/fake-fetch";
 
 const identity: ShellIdentity = {
   profile: { id: "p-1", handle: "player", name: "Player", sticker: "owl" },

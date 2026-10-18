@@ -1,8 +1,8 @@
+import { fakeFetch } from "../__fixtures__/fake-fetch";
+import { fakeStorage } from "../__fixtures__/fake-storage";
 import { createShellRequest } from "../api-client";
 import { createGuestApi, ensureGuestProfile, GUEST_STICKERS } from "../guest-profile";
 import { IDENTITY_KEY, loadIdentity, saveIdentity } from "../identity";
-import { fakeFetch } from "../__fixtures__/fake-fetch";
-import { fakeStorage } from "../__fixtures__/fake-storage";
 
 const device = { deviceId: "dev-1", kind: "phone" as const, name: "Jon's iPhone" };
 const created = {
