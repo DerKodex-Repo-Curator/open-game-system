@@ -29,7 +29,8 @@
     "build",
     "plugin/build",
     "src",
-    "!src/**/__tests__"
+    "!src/**/__tests__",
+    "!src/**/__fixtures__"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && pnpm run build:plugin",

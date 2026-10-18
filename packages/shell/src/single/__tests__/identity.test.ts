@@ -1,5 +1,5 @@
 import { IDENTITY_KEY, loadIdentity, type ShellIdentity, saveIdentity } from "../identity";
-import { fakeStorage } from "./fake-storage";
+import { fakeStorage } from "../__fixtures__/fake-storage";
 
 const identity: ShellIdentity = {
   profile: { id: "p1", handle: "player", name: "Player", sticker: "owl" },

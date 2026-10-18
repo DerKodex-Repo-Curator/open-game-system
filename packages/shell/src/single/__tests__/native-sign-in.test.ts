@@ -6,8 +6,8 @@ import {
   type NativeSignInProvider,
   type SignInState,
 } from "../native-sign-in";
-import { type FakeAnswer, fakeFetch } from "./fake-fetch";
-import { fakeStorage } from "./fake-storage";
+import { type FakeAnswer, fakeFetch } from "../__fixtures__/fake-fetch";
+import { fakeStorage } from "../__fixtures__/fake-storage";
 
 const device = { deviceId: "dev-1", kind: "phone" as const, name: "iPhone" };
 const guest: ShellIdentity = {
