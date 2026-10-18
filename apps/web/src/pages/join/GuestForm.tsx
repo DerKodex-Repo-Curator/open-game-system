@@ -1,15 +1,28 @@
 import {
   GUEST_STICKERS,
   type GuestJoined,
+  type GuestStorage,
   joinAsGuest,
+  rememberedGuest,
+  rememberGuest,
   stickerArt,
 } from "@open-game-system/ogs-protocol";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
+/** This browser's localStorage, or none (private browsing can throw on access). */
+function browserStorage(): GuestStorage {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Join from this browser (spec ogs-join, "Guests from the browser"): a name and a sticker, no
- * install, no account. The app stays an option, never a requirement.
+ * install, no account. The app stays an option, never a requirement. A browser that joined before
+ * offers "Join as <name>" in one tap (docs/acceptance/2026-10-18-second-visit.feature).
  */
 export function GuestForm({
   api,
@@ -22,32 +35,72 @@ export function GuestForm({
   code: string;
   onJoined: (joined: GuestJoined) => void;
 }) {
+  const [remembered] = useState(() => rememberedGuest(browserStorage()));
+  const [asSomeoneElse, setAsSomeoneElse] = useState(false);
   const [name, setName] = useState("");
   const [sticker, setSticker] = useState<string>(GUEST_STICKERS[0]);
   const [busy, setBusy] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
+
+  const join = (guest: { name: string; sticker: string }) => {
+    setBusy(true);
+    setSaid(null);
+    void joinAsGuest(api, code, guest, (url, init) => fetch(url, init)).then((r) => {
+      setBusy(false);
+      if (r.kind === "joined") {
+        rememberGuest(browserStorage(), guest);
+        onJoined(r.joined);
+      } else
+        setSaid(
+          r.kind === "gone"
+            ? "That couch isn't on any more. Check the code on the TV."
+            : r.kind === "bad"
+              ? "Type your name (up to 30 letters)."
+              : "Couldn't reach OGS. Try again.",
+        );
+    });
+  };
+  const saidLine = said ? (
+    <p className="text-sm text-destructive mt-3" data-testid="guest-said">
+      {said}
+    </p>
+  ) : null;
+
+  if (remembered && !asSomeoneElse)
+    return (
+      <div data-testid="guest-again">
+        <img
+          src={stickerArt(launcher, remembered.sticker) ?? ""}
+          alt=""
+          className="w-24 h-24 mx-auto mb-4 object-contain"
+        />
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={busy}
+          data-testid="guest-join-again"
+          onClick={() => join(remembered)}
+        >
+          {busy ? "Joining…" : `Join as ${remembered.name}`}
+        </Button>
+        <button
+          type="button"
+          className="mt-4 text-sm underline text-muted-foreground"
+          data-testid="guest-not-me"
+          onClick={() => setAsSomeoneElse(true)}
+        >
+          Not {remembered.name}?
+        </button>
+        {saidLine}
+      </div>
+    );
 
   return (
     <form
       data-testid="guest-form"
       onSubmit={(e) => {
         e.preventDefault();
-        setBusy(true);
-        setSaid(null);
-        void joinAsGuest(api, code, { name, sticker }, (url, init) => fetch(url, init)).then(
-          (r) => {
-            setBusy(false);
-            if (r.kind === "joined") onJoined(r.joined);
-            else
-              setSaid(
-                r.kind === "gone"
-                  ? "That couch isn't on any more. Check the code on the TV."
-                  : r.kind === "bad"
-                    ? "Type your name (up to 30 letters)."
-                    : "Couldn't reach OGS. Try again.",
-              );
-          },
-        );
+        join({ name, sticker });
       }}
     >
       <label className="block text-left text-sm font-medium mb-1" htmlFor="guest-name">
@@ -93,11 +146,7 @@ export function GuestForm({
       >
         {busy ? "Joining…" : "Join"}
       </Button>
-      {said ? (
-        <p className="text-sm text-destructive mt-3" data-testid="guest-said">
-          {said}
-        </p>
-      ) : null}
+      {saidLine}
     </form>
   );
 }
