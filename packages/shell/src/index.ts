@@ -28,3 +28,39 @@ export * from "./push-api";
 export * from "./push-foreground";
 export * from "./push-registration";
 export * from "./screen-cast";
+
+// --- Single-game app runtime (src/single) ---
+export { createAccountStore } from "./single/account-store";
+export { createShellRequest, ShellApiError } from "./single/api-client";
+export { castLauncherUrl } from "./single/cast-launcher-url";
+export { defaultShellDeps } from "./single/default-deps";
+export { createDeviceSource } from "./single/device";
+export { expoHapticsPlayer } from "./single/expo-haptics-player";
+export { createGuestApi, ensureGuestProfile, type ShellDevice } from "./single/guest-profile";
+export { createHapticsStore, type HapticsPlayer } from "./single/haptics-store";
+export { loadIdentity, type ShellIdentity, saveIdentity } from "./single/identity";
+export {
+  apnsEnvironmentFromEntitlement,
+  createNativePush,
+  type PushRegistration,
+} from "./single/native-push";
+export {
+  createNativeAuthApi,
+  createNativeSignIn,
+  type NativeSignInProvider,
+  type SignInState,
+} from "./single/native-sign-in";
+export { DEFAULT_OFFLINE_THEME, OfflineScreen, type OfflineTheme } from "./single/OfflineScreen";
+export { type LinkingLike, OgsShell, type OgsShellProps } from "./single/OgsShell";
+export { DEFAULT_OGS_API, type OgsShellConfig, readRuntimeConfig } from "./single/runtime-config";
+export { ShellWebView } from "./single/ShellWebView";
+export { SignInSheet } from "./single/SignInSheet";
+export { webViewUrlFor } from "./single/shell-links";
+export {
+  createShellRuntime,
+  type ShellContext,
+  type ShellRuntime,
+  type ShellRuntimeDeps,
+} from "./single/shell-runtime";
+export { appleSignIn, unavailableSignIn } from "./single/sign-in-providers";
+export { watchForeground, webViewStatus } from "./single/webview-status";
