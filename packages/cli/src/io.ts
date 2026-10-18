@@ -13,6 +13,13 @@ export type Io = {
   stderr: (line: string) => void;
   readFile: (path: string) => string;
   fetch: typeof fetch;
+  /** The directory commands work in (the game's repo); default process.cwd(). */
+  cwd?: string;
+  /**
+   * Runs a shell command in `cwd`, its output shown to the user as it runs; resolves with its exit
+   * code and everything it printed (`ogs try` reads the deployed URL from it). Absent: no processes.
+   */
+  exec?: (command: string, opts: { cwd: string }) => Promise<{ code: number; output: string }>;
 };
 
 const DEFAULT_API = "https://opengame-api.jonathanrmumm.workers.dev";
