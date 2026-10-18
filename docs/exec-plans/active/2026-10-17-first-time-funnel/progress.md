@@ -44,6 +44,11 @@ Audit and ranking: [docs/funnel-audit.md](../../../funnel-audit.md).
   still uses the old link (#14). Evidence: `evidence/preview-funnel/`. It found #15 (iOS motion
   prompt naming a raw domain).
 
+- 2026-10-18 Bet 1, invite another family (6f279668): the two-household e2e passes on the preview
+  (`e2e/invite-family-preview.ts`): invite_sent, link_opened, testflight_tap and first_session all
+  counted on Dana's invite. Evidence `evidence/invite-family/`. Merge/deploy order and the TestFlight
+  click-path (submit build 7) are in ~/.claude/usage-burn/morning.md under Waiting on you.
+
 ## Decisions
 
 - The launcher e2e's old copy assertion ("Join from your phone") follows the owner-approved join

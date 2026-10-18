@@ -1,4 +1,7 @@
-# Status: BUILDING (2026-10-18, branch claude/first-time-funnel-0e55ec). Bet 1 of the usage-burn plan:
+# Status: BUILT 2026-10-18 (branch claude/first-time-funnel-0e55ec; not deployed). Tests: API
+# services/api/test/family-invite-routes.test.ts; protocol family-invite.test.ts; app link-routing, app-state,
+# ogs-api, invite-attribution, invite-family tests; e2e across two households on the preview:
+# e2e/invite-family-preview.ts (all steps counted on the invite). Bet 1 of the usage-burn plan:
 # households bring households. Audit: docs/funnel-audit.md.
 # Funnel events (wide events in Workers Logs, one invite_id through all four):
 #   funnel.invite_sent → funnel.link_opened → funnel.testflight_tap → funnel.first_session

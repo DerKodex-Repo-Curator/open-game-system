@@ -1,0 +1,83 @@
+{
+  "timeline": [
+    {
+      "step": "start",
+      "at": 0.2
+    },
+    {
+      "step": "dana-tv-code",
+      "at": 2.6
+    },
+    {
+      "step": "dana-played",
+      "at": 150.2
+    },
+    {
+      "step": "invite-link",
+      "at": 183
+    },
+    {
+      "step": "lee-app-link",
+      "at": 190.9
+    },
+    {
+      "step": "lee-tv-code",
+      "at": 190.9
+    },
+    {
+      "step": "lee-cast",
+      "at": 273.7
+    },
+    {
+      "step": "done",
+      "at": 275.7
+    }
+  ],
+  "results": [
+    {
+      "name": "the Okafors's TV page shows a code",
+      "ok": true,
+      "detail": "NFAXSC"
+    },
+    {
+      "name": "Stop casting offers Invite another family: a game link with an invite",
+      "ok": true,
+      "detail": "https://opengame.org/play/rocket-crew?inv=476783f7-411c-47b1-b278-f8b0385fcd74"
+    },
+    {
+      "name": "funnel.invite_sent: the invite exists, nothing counted yet",
+      "ok": true,
+      "detail": "{\"opened\":0,\"testflightTaps\":0,\"firstSession\":false}"
+    },
+    {
+      "name": "funnel.link_opened: the page counted the visit",
+      "ok": true,
+      "detail": "{\"opened\":1,\"testflightTaps\":0,\"firstSession\":false}"
+    },
+    {
+      "name": "the page's app link keeps the invite",
+      "ok": true,
+      "detail": "opengame://play/rocket-crew?inv=476783f7-411c-47b1-b278-f8b0385fcd74"
+    },
+    {
+      "name": "funnel.testflight_tap: the Get OGS tap counted",
+      "ok": true,
+      "detail": "{\"opened\":1,\"testflightTaps\":1,\"firstSession\":false}"
+    },
+    {
+      "name": "the Lees's TV page shows a code",
+      "ok": true,
+      "detail": "DFGVA8"
+    },
+    {
+      "name": "funnel.first_session: the Lees' first couch counted for Dana's invite",
+      "ok": true,
+      "detail": "{\"opened\":1,\"testflightTaps\":1,\"firstSession\":true}"
+    },
+    {
+      "name": "the phones finished",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}
