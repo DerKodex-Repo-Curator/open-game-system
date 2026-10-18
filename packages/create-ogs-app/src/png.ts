@@ -59,23 +59,30 @@ const RING_INNER = 0.2;
 
 /** The placeholder icon (opaque, brand color), adaptive-icon foreground and splash mark. */
 export function drawAsset(name: AssetName, brandHex: string): Buffer {
-  const brand = parseHexColor(brandHex);
-  const opaque = name === "icon";
+  const brand = Buffer.from([...parseHexColor(brandHex), name === "icon" ? 255 : 0]);
+  const light = Buffer.from([...LIGHT, 255]);
   const rgba = Buffer.alloc(SIZE * SIZE * 4);
+  rgba.fill(brand);
   const c = SIZE / 2;
   const outer = (RING_OUTER * SIZE) ** 2;
   const inner = (RING_INNER * SIZE) ** 2;
+  // Per row, the ring is one or two spans of pixels whose centres lie between the two circles.
+  const fill = (y: number, from: number, to: number) => {
+    if (to >= from) rgba.fill(light, (y * SIZE + from) * 4, (y * SIZE + to + 1) * 4);
+  };
   for (let y = 0; y < SIZE; y++) {
-    for (let x = 0; x < SIZE; x++) {
-      const d = (x + 0.5 - c) ** 2 + (y + 0.5 - c) ** 2;
-      const onRing = d <= outer && d >= inner;
-      const i = (y * SIZE + x) * 4;
-      const [r, g, b] = onRing ? LIGHT : brand;
-      rgba[i] = r;
-      rgba[i + 1] = g;
-      rgba[i + 2] = b;
-      rgba[i + 3] = onRing || opaque ? 255 : 0;
+    const dy = (y + 0.5 - c) ** 2;
+    if (dy > outer) continue;
+    const o = Math.sqrt(outer - dy);
+    const left = Math.ceil(c - 0.5 - o);
+    const right = Math.floor(c - 0.5 + o);
+    if (dy >= inner) {
+      fill(y, left, right);
+      continue;
     }
+    const n = Math.sqrt(inner - dy);
+    fill(y, left, Math.ceil(c - 0.5 - n) - 1);
+    fill(y, Math.floor(c - 0.5 + n) + 1, right);
   }
   return encodePng(SIZE, SIZE, rgba);
 }
