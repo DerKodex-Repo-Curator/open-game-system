@@ -6,17 +6,20 @@ export const PRODUCTION_API = "https://opengame-api.jonathanrmumm.workers.dev";
 
 /**
  * The TV page with no launcher link is a screen (2026-10-17-browser-tv.feature): a bare page, or
- * `?screen=1&api=<base>` for another API. A launcher link (`token`), fake mode, or a lone `api`
- * (a broken launcher link) is not.
+ * `?screen=1&api=<base>` for another API. A launcher link (`token`), fake mode, or a lone `api` (a
+ * broken launcher link) is not. `defaultApi`: the build's API (VITE_OGS_API, for a preview).
  */
-export function screenParams(search: string): { api: string } | null {
+export function screenParams(
+  search: string,
+  defaultApi: string = PRODUCTION_API,
+): { api: string } | null {
   const q = new URLSearchParams(search);
   if (q.has("token") || q.has("fake")) return null;
-  if (q.get("screen") !== "1") return q.has("api") ? null : { api: PRODUCTION_API };
+  if (q.get("screen") !== "1") return q.has("api") ? null : { api: defaultApi };
   const api = z
     .string()
     .url()
-    .safeParse(q.get("api") ?? PRODUCTION_API);
+    .safeParse(q.get("api") ?? defaultApi);
   return api.success ? { api: api.data.replace(/\/+$/, "") } : null;
 }
 

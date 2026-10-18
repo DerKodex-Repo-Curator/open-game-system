@@ -12,6 +12,15 @@ describe("which TV pages are screens", () => {
     expect(screenParams("?")).toEqual({ api: PROD });
   });
 
+  it("a build can pair bare pages with another API (a preview)", () => {
+    expect(screenParams("", "https://api.preview.test")).toEqual({
+      api: "https://api.preview.test",
+    });
+    expect(screenParams("?screen=1", "https://api.preview.test")).toEqual({
+      api: "https://api.preview.test",
+    });
+  });
+
   it("?screen=1 names another API (local runs)", () => {
     expect(screenParams("?screen=1&api=http://127.0.0.1:8868/")).toEqual({
       api: "http://127.0.0.1:8868",

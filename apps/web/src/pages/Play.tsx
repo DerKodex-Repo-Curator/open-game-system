@@ -4,6 +4,9 @@ import Footer from "@/components/Footer";
 import NavBar from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 
+/** The TV page a browser TV opens (the build's launcher; ogs-tv.pages.dev in production). */
+const TV_ADDRESS = new URL(import.meta.env.VITE_OGS_TV ?? "https://ogs-tv.pages.dev").host;
+
 /** "night-flight" → "Night Flight" (the page has no catalogue; the app names it properly). */
 const gameName = (appId: string) =>
   appId
@@ -57,7 +60,7 @@ const Play = () => {
                 </a>
               </Button>
               <p className="text-muted-foreground mt-6 text-sm">
-                No Chromecast? Any TV with a browser works: open ogs-tv.pages.dev on it.
+                No Chromecast? Any TV with a browser works: open {TV_ADDRESS} on it.
               </p>
             </>
           ) : (
