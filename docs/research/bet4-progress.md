@@ -23,8 +23,12 @@ Branch `claude/dev-starter-58fe9a`. Brief: next-week-bets.md §4 (research branc
 
 Previews: https://bet4.ogs-docs.pages.dev (docs + landing), https://bet4.ogs-docs.pages.dev/on-tv
 
-## In progress
-- Proof, round 2 (Phaser Paddle Pop, fresh subagent, docs with round-1 fixes).
+- **Proof, round 2** (Phaser Paddle Pop, fresh subagent, fixed docs): steps 0–11 done, 38 unit +
+  12 seam tests (agent-reported). 17 friction items, fixes in 3f749f49
+  ([bet4-proof-2.md](bet4-proof-2.md)). It killed a rocket-crew preview server on port 8791 by
+  mistake (see that file); restart it from that worktree.
+- Final check: the redeployed `starter.tgz` installs with `--frozen-lockfile` and passes typecheck,
+  lint, 26 unit and 8 seam tests in a clean folder.
 
 ## Waiting on Jon
 - Create `open-game-system/ogs-starter` on GitHub (template repo) from `templates/ogs-starter`.
