@@ -87,10 +87,17 @@ export class RoomLifeStore {
   }
 }
 
-/** Asks rooms for codes until one is free. A claim that throws (a recycled room reset itself) is asked once more. */
-export async function claimRoomCode(claim: (code: string) => Promise<boolean>, rand: () => number = Math.random): Promise<string> {
+/**
+ * Asks rooms for codes until one is free. A claim that throws (a recycled room reset itself) is asked
+ * once more. A game with its own codes passes `newCode`.
+ */
+export async function claimRoomCode(
+  claim: (code: string) => Promise<boolean>,
+  rand: () => number = Math.random,
+  newCode: (rand: () => number) => string = newRoomCode,
+): Promise<string> {
   for (let i = 0; i < 8; i++) {
-    const code = newRoomCode(rand);
+    const code = newCode(rand);
     const ok = await claim(code).catch(() => claim(code).catch(() => false));
     if (ok) return code;
   }
@@ -105,13 +112,26 @@ export function tvStartPath(url: URL, roomCode: string, tvPrefix = "/tv/"): stri
 
 /**
  * `/ws-probe`: a WebSocket echo, so pages can tell whether this network lets WebSockets through
- * (`probeWebSocket`, `mountNetworkBanner`).
+ * (`probeWebSocket`, `mountNetworkBanner`). `?push` also sends `tick:1`, `tick:2`… every 2 s (30 at
+ * most), like a game server pushing state, for checking a stream server or proxy.
  */
 export function wsProbe(req: Request): Response {
   if (req.headers.get("Upgrade")?.toLowerCase() !== "websocket") return new Response("expected websocket", { status: 426 });
   const { 0: client, 1: server } = new WebSocketPair();
   server.accept();
   server.addEventListener("message", (e) => server.send(`echo:${String(e.data)}`));
+  if (new URL(req.url).searchParams.has("push")) {
+    let n = 0;
+    const timer = setInterval(() => {
+      try {
+        server.send(`tick:${++n}`);
+      } catch {
+        clearInterval(timer);
+      }
+      if (n >= 30) clearInterval(timer);
+    }, 2000);
+    server.addEventListener("close", () => clearInterval(timer));
+  }
   return new Response(null, { status: 101, webSocket: client });
 }
 
@@ -126,7 +146,8 @@ const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt
 /**
  * The page for a phone that can't join a room (`joinGate`): what happened, the code, a box to type
  * the code again (GET `/go?code=`, see `goPath`) and "Start a game". One primary action: Join for a
- * wrong code, Start a game when the room ended or is full. Bring your look with `stylesheets`.
+ * wrong code, Start a game when the room ended or is full. Bring your look with `stylesheets` (fonts
+ * too): set `--try-accent`, `--try-on-accent`, `--try-bg`, `--try-ink` and `--try-font` on `:root`.
  */
 export function deadEndPage(input: {
   game: string;
@@ -143,7 +164,7 @@ export function deadEndPage(input: {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${game}</title>
-<style>.try-dead-end{max-width:30rem;margin:0 auto;padding:2rem 1.4rem;font:1rem/1.45 system-ui,sans-serif;text-align:center}.try-dead-end form{display:flex;gap:.5rem;justify-content:center;margin:1rem 0}.try-dead-end input{width:7rem;font:700 1.4rem system-ui;text-align:center;text-transform:uppercase;letter-spacing:.15em}.try-dead-end a,.try-dead-end button{display:inline-block;padding:.8rem 1.2rem;border-radius:.8rem;font-weight:700;text-decoration:none}.try-dead-end .primary{background:#4f46e5;color:#fff;border:0}.try-dead-end .secondary{background:none;color:inherit;border:2px solid currentColor}</style>${links}</head>
+<style>body{margin:0;background:var(--try-bg,#fff);color:var(--try-ink,#111)}.try-dead-end{max-width:30rem;margin:0 auto;padding:2rem 1.4rem;font:1rem/1.45 var(--try-font,system-ui,sans-serif);text-align:center}.try-dead-end form{display:flex;gap:.5rem;justify-content:center;margin:1rem 0}.try-dead-end input{width:7rem;font:700 1.4rem var(--try-font,system-ui,sans-serif);text-align:center;text-transform:uppercase;letter-spacing:.15em}.try-dead-end a,.try-dead-end button{display:inline-block;padding:.8rem 1.2rem;border-radius:.8rem;font:700 1rem var(--try-font,system-ui,sans-serif);text-decoration:none}.try-dead-end .primary{background:var(--try-accent,#4f46e5);color:var(--try-on-accent,#fff);border:0}.try-dead-end .secondary{background:none;color:inherit;border:2px solid currentColor}</style>${links}</head>
 <body><main class="try-dead-end"><h1>${game}</h1>
 <p><b>${escapeHtml(title)}</b>${code ? ` (${code})` : ""}</p><p>${escapeHtml(line)}</p>
 <form action="/go" method="get"><input name="code" aria-label="Room code" placeholder="ABCD" maxlength="4" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" required><button class="${wrong ? "primary" : "secondary"}">Join</button></form>

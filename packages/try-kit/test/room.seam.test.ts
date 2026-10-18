@@ -91,6 +91,16 @@ describe("try-kit at the Worker / Durable Object seam", () => {
     ws.close();
   });
 
+  it("/ws-probe?push also sends unprompted messages, like a game server pushing state", async () => {
+    const ws = new WebSocket(`${WS}/ws-probe?push`);
+    const first = await new Promise<string>((resolve, reject) => {
+      ws.addEventListener("message", (e) => resolve(String(e.data)));
+      ws.addEventListener("error", () => reject(new Error("socket failed")));
+    });
+    ws.close();
+    expect(first).toBe("tick:1");
+  }, 10_000);
+
   it("/go sends a retyped code to its join page", async () => {
     const res = await fetch(`${BASE}/go?code=ab-cd`, { redirect: "manual" });
     expect(new URL(res.headers.get("location") ?? "").pathname).toBe("/join/ABCD");

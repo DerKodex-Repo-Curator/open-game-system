@@ -58,9 +58,23 @@ Call `life.markOpened()` when a TV page makes the room. If your room already kno
 (an actor-kit room has spawned), pass that instead: `new RoomLifeStore(ctx, { opened: async () =>
 (await ctx.storage.get("actorId")) !== undefined })`.
 
+In an actor-kit room, subclass the class `createMachineServer` returns and override `fetch` and
+`webSocketClose` (call `super` first, then `connected()` / `closed()`), with
+`opened: async () => (await ctx.storage.get("actorId")) !== undefined`.
+
 `claim()` returns `true` for a code nobody is using. For an abandoned room it wipes the room's
 storage and resets the object (the call throws once); `claimRoomCode` asks again, and tries 8 codes
-before it gives up.
+before it gives up. A game with its own code alphabet passes its generator:
+`claimRoomCode(claim, Math.random, myNewCode)`. Parse codes on your routes with `parseRoomCode`
+(or your own parser, consistently), so a code typed in the dead-end box and one in a join URL agree.
+
+### Family rooms and try rooms
+
+A room that has been empty for 30 minutes is over, and that is right for strangers. A family that
+pauses for dinner expects its room back. If your game also runs for families, apply `joinGate`'s
+"ended" and code recycling on the try deployment only (a `TRY=1` variable on a separate
+`[env.try]` Worker), or pass a much longer `idleMs` there. Every game that adopted the kit did the
+former.
 
 ```ts
 // worker.ts
@@ -86,10 +100,18 @@ if (gate !== "ok") {
 }
 ```
 
-`member` is whether this caller already has a seat (a refresh always gets back in); `full` is
+``member` is whether this caller already has a seat (a refresh always gets back in); `full` is
 whether a new phone can still sit down. The dead-end page has a box to type the code again (it
 submits to `/go`, because `/join` is often a static asset served before your Worker runs) and one
-primary action. Pass `copy` to change its words, or render your own page from the same `gate`.
+primary action. Pass `copy` to change its words and `stylesheets` (your CSS, your web-font CSS) for
+its look: set `--try-accent`, `--try-on-accent`, `--try-bg`, `--try-ink` and `--try-font` on `:root`.
+Or render your own page from the same `gate`.
+
+`full` is one yes/no: work it out from your seats (a game with seats per role says "full" when no
+role a new phone could take is free).
+
+`wsProbe` also has a push mode (`/ws-probe?push`: `tick:1`, `tick:2`… every 2 s), for checking that a
+stream server or proxy passes server-sent messages.
 
 ## The pages
 
@@ -106,7 +128,15 @@ if (offer) button.onclick = () => openPlayerWindow(`${joinUrl}?solo=1`);
 
 On the front page, `isControllerDevice({ coarse: matchMedia("(pointer: coarse)").matches, narrow:
 matchMedia(NARROW_QUERY).matches })` tells a phone (show it "open this on a laptop, or type a code")
-from a laptop (make a room and show the TV).
+from a laptop (make a room and show the TV). The front page's redirect makes a room before the
+page can tell; a room no TV ever connects to is free again after the idle window, so that costs
+nothing lasting. Apply the narrow-screen rule on the try deployment if a family TV might be a
+narrow window.
+
+`offerThisComputer` says whether to offer a seat; which seat is your game's call (Night Flight:
+the grown-up's with no phone, the little owl's with one). `openPlayerWindow` gives each URL its
+own window, so two seats can be open at once; pass `{ width: 1000, height: 700 }` for a seat laid
+out for a tablet.
 
 ## Measuring it
 
@@ -116,7 +146,16 @@ analytics service. Never log names.
 
 `runLoad({ rooms: 200, concurrency: 50, room: async (i) => { /* open a TV, join two phones */ } })`
 returns how many rooms got through and p50/p95/max. Keep `concurrency` modest from one laptop: every
-client runs there.
+client runs there. Vitest hides a passing test's `console.log`: run with `--disableConsoleIntercept`
+(or write the result to a JSON file) to see the numbers.
+
+## Deploying the try Worker
+
+Give it its own `[env.try]` (name `<game>-try`, `TRY = "1"`, the same Durable Object bindings and
+migrations, observability on). A Worker whose config has `[secrets] required` refuses its first
+deploy until the secrets exist, and `wrangler secret put --env try` needs the Worker to exist:
+deploy with `--secrets-file` (a temporary file, deleted after) the first time, and repeat
+`[secrets]` under `[env.try]`.
 
 ## Test it at the seam
 

@@ -43,7 +43,10 @@ export function qrDataUrl(text: string, cellSize = 8): string {
   return qr.createDataURL(cellSize, 2);
 }
 
-/** Opens a seat's screen in a window on this computer ("No phone handy? Play on this computer"). */
-export function openPlayerWindow(url: string, name = "try-player", size: { width: number; height: number } = { width: 460, height: 860 }): Window | null {
+/**
+ * Opens a seat's screen in a window on this computer ("No phone handy? Play on this computer"). Each
+ * URL (each seat) gets its own window. Pass a landscape `size` for a seat laid out for a tablet.
+ */
+export function openPlayerWindow(url: string, name = `try-player-${url.replace(/[^A-Za-z0-9]/g, "-")}`, size: { width: number; height: number } = { width: 460, height: 860 }): Window | null {
   return window.open(url, name, `popup,width=${size.width},height=${size.height}`);
 }

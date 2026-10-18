@@ -27,6 +27,19 @@ describe("claimRoomCode: a code nobody is using, for a new TV", () => {
   });
 });
 
+describe("claimRoomCode with the game's own code generator", () => {
+  it("asks for codes from newCode when given", async () => {
+    const codes = ["WXYZ", "QRST"];
+    const asked: string[] = [];
+    const code = await claimRoomCode(async (c) => {
+      asked.push(c);
+      return asked.length === 2;
+    }, Math.random, () => codes.shift() ?? "");
+    expect(asked).toEqual(["WXYZ", "QRST"]);
+    expect(code).toBe("QRST");
+  });
+});
+
 describe("deadEndPage: a phone that can't join gets a page that says why and offers a way on", () => {
   const base = { game: "Rocket Crew", code: "ABCD" };
 
@@ -73,6 +86,16 @@ describe("tvStartPath: the front page makes a room and opens its TV, keeping ?re
 
   it("the TV route's prefix is the game's", () => {
     expect(tvStartPath(new URL("https://x.dev/?ref=hn"), "ABCD", "/screen/")).toBe("/screen/ABCD?ref=hn");
+  });
+});
+
+describe("deadEndPage looks: a game sets CSS variables instead of fighting inline colours", () => {
+  it("colours, font and background come from --try-accent, --try-font and --try-bg, with defaults", () => {
+    const html = deadEndPage({ game: "G", code: "ABCD", gate: "missing" });
+    expect(html).toContain("var(--try-accent,#4f46e5)");
+    expect(html).toContain("var(--try-font,system-ui,sans-serif)");
+    expect(html).toContain("var(--try-bg,");
+    expect(html).not.toContain("background:#4f46e5");
   });
 });
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { mountNetworkBanner, qrDataUrl } from "../src/browser";
+import { mountNetworkBanner, openPlayerWindow, qrDataUrl } from "../src/browser";
 import type { SocketLike } from "../src/index";
 
 const sockets = (behaviour: "open" | "error") =>
@@ -41,5 +41,18 @@ describe("mountNetworkBanner: says so when this network blocks WebSockets", () =
 describe("qrDataUrl", () => {
   it("draws a QR code of the link as an image data URL", () => {
     expect(qrDataUrl("https://x.dev/join/ABCD")).toMatch(/^data:image\/gif;base64,/);
+  });
+});
+
+describe("openPlayerWindow: a seat's screen in a window on this computer", () => {
+  it("each seat gets its own window (a second seat doesn't replace the first)", () => {
+    const names: string[] = [];
+    window.open = (_url?: string | URL, target?: string) => {
+      names.push(target ?? "");
+      return null;
+    };
+    openPlayerWindow("/join/ABCD?solo=captain");
+    openPlayerWindow("/join/ABCD?solo=fixer");
+    expect(names[0]).not.toBe(names[1]);
   });
 });
