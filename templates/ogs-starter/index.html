@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#070b1f" />
+    <title>Comet Catch</title>
+    <link rel="stylesheet" href="/src/phone/phone.css" />
+  </head>
+  <body>
+    <main id="app">
+      <p id="status" class="status">Joining…</p>
+      <form id="join-form" hidden>
+        <h1>Comet Catch</h1>
+        <label>Room code <input id="code" name="code" autocomplete="off" autocapitalize="characters" maxlength="4" required /></label>
+        <label>Your name <input id="name" name="name" autocomplete="nickname" maxlength="20" required /></label>
+        <button type="submit">Join</button>
+      </form>
+      <section id="pad" hidden aria-label="Steer your comet">
+        <header><i id="me-color"></i><span id="me-name"></span><b id="me-score">0</b></header>
+        <div id="stick-area"><div id="stick-knob"></div></div>
+        <p class="hint">Drag to steer. Catch the stars on the TV.</p>
+      </section>
+    </main>
+    <script type="module" src="/src/phone/main.ts"></script>
+  </body>
+</html>

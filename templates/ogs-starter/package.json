@@ -1,0 +1,40 @@
+{
+  "name": "ogs-starter",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A minimal web game that already works with OGS: a TV page the OGS TV launcher frames, a phone controller that plays in the OGS app, one Cloudflare Worker with a room per game.",
+  "scripts": {
+    "build": "vite build",
+    "dev": "wrangler dev",
+    "deploy": "vite build && wrangler deploy",
+    "typecheck": "tsc -p tsconfig.json && tsc -p src/worker",
+    "lint": "biome check src e2e",
+    "test": "vitest run --project unit",
+    "test:seam": "vitest run --project seam",
+    "kits:update": "node scripts/update-kits.mjs"
+  },
+  "dependencies": {
+    "@open-game-system/cast-kit-core": "file:vendor/open-game-system-cast-kit-core-0.2.0.tgz",
+    "@open-game-system/profile-kit": "file:vendor/open-game-system-profile-kit-0.1.0.tgz",
+    "qrcode-generator": "^1.4.4",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.8",
+    "@cloudflare/workers-types": "^5.20261004.1",
+    "@types/node": "^25.5.0",
+    "playwright": "^1.56.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.0",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.147.0"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd"
+    ]
+  }
+}

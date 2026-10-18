@@ -1,0 +1,16 @@
+{
+  // One Worker: the game's pages (built by Vite into dist/) and a Room Durable Object per room.
+  "name": "ogs-starter",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-09-01",
+  "build": { "command": "pnpm build", "watch_dir": "src" },
+  "assets": { "directory": "dist", "binding": "ASSETS", "not_found_handling": "404-page" },
+  "durable_objects": { "bindings": [{ "name": "ROOM", "class_name": "Room" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }],
+  "vars": {
+    // Must match the appId in ogs.manifest.json: game tokens for any other game are rejected.
+    "OGS_APP_ID": "ogs-starter",
+    // The OGS API's key set (it signs game tokens). Seam tests point it at their own keys.
+    "OGS_JWKS_URL": "https://opengame-api.jonathanrmumm.workers.dev/.well-known/jwks.json"
+  }
+}

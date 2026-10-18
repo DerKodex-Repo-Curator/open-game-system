@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Comet Catch · TV</title>
+    <link rel="stylesheet" href="/src/tv/tv.css" />
+  </head>
+  <body>
+    <canvas id="sky" aria-label="Comet Catch"></canvas>
+    <header class="hud">
+      <ol id="scores" aria-label="Scores"></ol>
+      <p id="clock" aria-live="polite"></p>
+    </header>
+    <aside id="join" hidden>
+      <p class="kicker">Join on your phone</p>
+      <p class="code" id="join-code"></p>
+      <img id="join-qr" alt="QR code to join" width="168" height="168" />
+      <p class="url" id="join-url"></p>
+    </aside>
+    <p id="waiting" class="waiting" hidden></p>
+    <script type="module" src="/src/tv/main.ts"></script>
+  </body>
+</html>

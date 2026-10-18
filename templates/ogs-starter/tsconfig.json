@@ -1,0 +1,17 @@
+{
+  // The pages, shared code and tests (DOM). The Worker has its own: tsconfig.worker.json.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/client", "src/tv", "src/phone", "src/shared", "e2e", "*.ts"]
+}

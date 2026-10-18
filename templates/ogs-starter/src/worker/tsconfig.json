@@ -1,0 +1,6 @@
+{
+  // The Worker: Cloudflare's runtime types, no DOM (the pages use ../../tsconfig.json).
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "lib": ["ES2022"], "types": ["@cloudflare/workers-types"] },
+  "include": [".", "../shared"]
+}
