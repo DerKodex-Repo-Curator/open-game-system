@@ -36,22 +36,32 @@ The losses are before and around it.
 
 ## Friction, ranked by how many new households it loses
 
-Loss figures are estimates (stated assumptions), not measurements.
+Loss figures are estimates (stated assumptions), not measurements. Status as of 2026-10-18:
+"fixed" means committed on this branch and covered by tests; nothing here is deployed.
 
 | # | Friction | Who | Est. loss | Status |
 |---|---|---|---|---|
-| 1 | **The app can't be installed by a stranger.** Not on the App Store (iTunes lookup for `org.opengame.app`: 0 results, 2026-10-17). `IOS_UPDATE_URL` is `beta.itunes.apple.com/v1/app/6820311485`, the internal-tester form; no TestFlight public link is configured (unverified whether one exists in App Store Connect). Android is Firebase invite-by-email. | Host and guests | ~100% | **Owner action** (below) |
-| 2 | **No Chromecast, no game.** 12 of 13 live catalogue games are `tv: "required"` (only Pocket Draft is `optional`); Cast reach is ~10–15% of TVs (ADR 2026-10-06 estimate). "No TV found" offers Settings, Try again, and "Play on this phone" (one game). | Host | ~85% of households | **Fixed (not deployed)**: browser TV. The TV page with no link pairs by code; the cast prompt's No TV found offers "Use a browser TV"; the launcher and game run in that browser (no GPU). Detox `e2e/browser-tv.test.ts` green. A TV whose browser can't run a game's TV page still can't (smart-TV browsers unverified). |
-| 3 | **Cast receiver `807AD5E9` may be unpublished.** An unpublished custom receiver only launches on devices registered in the Cast SDK console, so every stranger's Chromecast would fail with "didn't answer". | Chromecast hosts | 100% of them, if unpublished | **Unverified: owner check** (below) |
-| 4 | **A guest needs the app**: install (blocked by #1) plus onboarding (5 taps, a name) before joining. Jackbox sets the bar at "no install". | Guests | est. 40–60% of guests | **Fixed (not deployed)**: Join from this browser (name, sticker), on the TV's couch, a browser remote that follows the TV into each game's phone page. Measured: 4 taps after the scan. Games see a browser guest without OGS identity (they ask for a name; the guest game-token flag is still planned) |
-| 5 | **The guest's link was lost through onboarding.** A fresh install opened by the TV's link went to onboarding, then to Library; the app didn't know join links at all. | Guests | 100% of QR guests | **Fixed** (`apps/mobile`: join links, held through onboarding; e2e green) |
-| 6 | **The TV said "Join from your phone" and a code**, with no address, no QR: a guest doesn't know which app or where to type. | Guests | est. 30–50% of guests | **Fixed** (QR + "at opengame.org/join"; `opengame.org/join/<code>` page) |
-| 7 | **Cloud GPU stream on the first cast**: Cloud Run L4 scales to zero with `maxScale 1`. The phone waits 8 s (`CAST_WAIT_MS`) for the launcher; a cold GPU start is likely longer (unmeasured), so the first cast may say "didn't answer". One instance may also cap concurrent households (unverified). | Chromecast hosts | unknown | Unverified; browser TV (#2) avoids the GPU entirely |
-| 8 | **Android doesn't claim `opengame.org/join/`** (needs an intent filter, a native build that forces every tester to update). iOS gets it from the AASA file. | Android guests | Android share | Follow-up |
-| 9 | **The join page can't link to the app** until #1 exists: it says "It's in beta: ask <host> to send you an invite". `VITE_OGS_GET_APP` turns on a real link. | Guests | (part of #1) | Waits on #1 |
-| 10 | "No TV found" leads with Chromecast troubleshooting; "Use a browser TV" sits below it. A household that has no Chromecast reads three wrong causes first. | Hosts without Chromecast | est. 5–10% of them | **Fixed**: "No Chromecast? Any TV with a browser works" and the button come first |
-| 12 | **A game link without a room was a dead end** ("That link has no room in it", and the site said "missing its room"): the front door's and games' "Play on your TV" link had nowhere to go. | Hosts from a game's page or the front door | all of them | **Fixed**: `opengame.org/play/<appId>` opens that game's page in the app (after onboarding on a fresh install); the site offers Open in the OGS app. Invite links held through onboarding too (the play screen said "Make your OGS profile first" and stopped). |
-| 11 | Onboarding asks about notifications before any value, and for an @id. Measured 5 taps + a name, ~20 s. | Everyone | est. <5% | Leave |
+| 1 | **The app can't be installed by a stranger.** Not on the App Store (iTunes lookup for `org.opengame.app`: 0 results, 2026-10-17). `IOS_UPDATE_URL` is `beta.itunes.apple.com/v1/app/6820311485`, the internal-tester form; no TestFlight public link is recorded anywhere (whether one exists in App Store Connect is unverified). Android is Firebase invite-by-email. | Hosts | ~100% of hosts | **Owner action** (below). Guests no longer need the app (#4). |
+| 2 | **No Chromecast, no game.** 12 of 13 live catalogue games are `tv: "required"`; Cast reaches ~10–15% of TVs (ADR 2026-10-06 estimate). "No TV found" offered only Settings and Try again. | Hosts | ~85% of households | **Fixed**: browser TV. A bare TV page pairs by code; "No TV found" leads with "No Chromecast? Any TV with a browser works"; the launcher and game run in that browser (no GPU). Detox `browser-tv.test.ts`. A smart-TV browser that can't run a game's TV page still can't (unverified per TV). |
+| 3 | **Cast receiver `807AD5E9` may be unpublished.** An unpublished custom receiver only launches on registered devices, so every stranger's Chromecast would fail with "didn't answer". | Chromecast hosts | 100% of them, if unpublished | **Unverified: owner check** (below). The browser TV works either way. |
+| 4 | **A guest needed the app**: an install (blocked by #1) plus onboarding before joining. Jackbox sets the bar at "no install". | Guests | est. 40–60% of guests | **Fixed**: Join from this browser (name, sticker; 4 taps after the scan), on the TV's couch, a browser remote that follows the TV into each game's phone page. `e2e/first-time-funnel-web.mjs` 6/6. Games see a browser guest without OGS identity (they ask for a name); the guest game-token flag is still planned. |
+| 5 | **The guest's link was lost through onboarding**: a fresh install opened by the TV's link went to onboarding, then Library; the app didn't know join links. | Guests with the app | 100% of them | **Fixed**: join links, held through onboarding. Detox `first-time-funnel.test.ts`. |
+| 6 | **The TV said "Join from your phone" and a code**, no address, no QR. | Guests | est. 30–50% of guests | **Fixed**: QR to `opengame.org/join/<code>` + "Scan to join, or type … at opengame.org/join" (`apps/tv/e2e/join-qr.e2e.ts` decodes it). |
+| 7 | **A game link without a room was a dead end** ("That link has no room in it"; the site said "missing its room"), and invite links stopped at "Make your OGS profile first" on a fresh install. | Hosts arriving from a game or the front door | all of them | **Fixed**: `opengame.org/play/<appId>` opens that game's page (after onboarding); invite links are held through onboarding too. Detox (3rd walk). |
+| 8 | **Cloud GPU stream on the first cast**: Cloud Run L4 scales to zero with `maxScale 1`; the phone waits 8 s (`CAST_WAIT_MS`) for the launcher, and a cold GPU start is likely longer (unmeasured), so a first cast may say "didn't answer". One instance may also cap concurrent households (unverified). | Chromecast hosts | unknown | Unverified. Browser TVs (#2) skip the GPU. |
+| 9 | "No TV found" led with Chromecast troubleshooting. | Hosts without Chromecast | est. 5–10% of them | **Fixed** (with #2). |
+| 10 | **Android doesn't claim `opengame.org/join/`** (needs an intent filter: a native build that forces every tester to update). iOS reads the AASA file. | Android guests with the app | Android share | Follow-up. The browser join works on Android. |
+| 11 | **The join page can't link to the app** until #1: it says "The OGS app is in beta: ask <host> for an invite". `VITE_OGS_GET_APP` turns on a real link. | Guests who want the app | small (browser join works) | Waits on #1. |
+| 12 | Onboarding asks about notifications before any value, and for an @id. Measured 5 taps + a name, ~20 s. | Everyone with the app | est. <5% | Leave. |
+
+## The funnel now (measured, local, fake Chromecast)
+
+| Path | Taps | Fields |
+|---|---|---|
+| Host with a Chromecast: install → profile → game → Play → Cast | 8 | 1 (name) |
+| Host with no Chromecast: … → Play → Use a browser TV → code → Cast | 10 | 2 (name, code), plus opening ogs-tv.pages.dev on the TV |
+| Guest with no app: scan → Join from this browser → name, sticker → Join | 4 | 1 |
+| Guest with the app, first time: scan → onboarding → on the couch | 5 | 1 |
 
 ## Owner actions (only Jon can do these)
 
@@ -65,11 +75,21 @@ Loss figures are estimates (stated assumptions), not measurements.
    page's "Get it here").
 2. **Cast receiver**: Google Cast SDK Developer Console → application `807AD5E9` → if it says
    "Unpublished", **Publish** (needs the receiver URL `https://opengame.org/receiver` to be final).
-3. **Deploy** this branch's API (`GET /api/v1/join/:code`), launcher (QR card) and opengame.org
-   (`/join`, AASA `/join/*`) once merged; the app part ships as a JS update.
+3. **Merge and deploy** (after review). Order matters: the D1 schema first (new tables `screens`,
+   `guest_profiles`; `CREATE TABLE IF NOT EXISTS`, safe to rerun), then the API, the launcher
+   (ogs-tv.pages.dev: QR card, browser-TV pairing), then opengame.org (`/join`, `/play/<appId>`,
+   AASA `/join/*`; diff apps/web against the live deployment first, docs/lessons.md). The app
+   changes are JavaScript only: CI's EAS Update ships them, no new build or forced update.
+   ```bash
+   pnpm --filter @open-game-system/api db:migrate --remote
+   ```
 
 ## What changed on this branch
 
-See progress.md for commits. Seams covered: `GET /api/v1/join/:code` (API route test against D1),
-the join link and page logic (ogs-protocol), link routing + the hold (jest), the TV card (Playwright,
-QR decoded), the whole walk (Detox).
+Commits and decisions: progress.md. Tests at each seam: the API routes against a real local D1
+(`join-routes`, `screen-routes`), the shared rules in ogs-protocol (join link and page, guest,
+screens), the TV's pairing and QR (Vitest; Playwright decodes the QR), the app's link routing,
+hold and browser-TV cast backend (Jest), and three end-to-end walks: Detox
+`first-time-funnel.test.ts` (host; guest via the app; a game link), Detox `browser-tv.test.ts`
+(no Chromecast), and Playwright `e2e/first-time-funnel-web.mjs` (a guest with no app). Mutation
+100% and CRAP < 8 on the new modules (docs/quality.md).
