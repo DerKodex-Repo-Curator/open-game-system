@@ -10,8 +10,8 @@
     "deploy": "vite build && wrangler deploy",
     "typecheck": "tsc -p tsconfig.json && tsc -p src/worker",
     "lint": "biome check src e2e",
-    "test": "vitest run --project unit",
-    "test:seam": "vitest run --project seam",
+    "test": "vitest run",
+    "test:seam": "vitest run --config vitest.seam.config.ts",
     "kits:update": "node scripts/update-kits.mjs"
   },
   "dependencies": {

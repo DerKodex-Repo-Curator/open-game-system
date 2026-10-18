@@ -39,11 +39,15 @@ must still play exactly as before outside OGS. Check that after every step.
 A one-screen game has nothing that carries a phone's input to the TV. First decide the shape:
 
 - **Keep your page as it is** (it is the plain-browser version) and add two pages: a **TV page**
-  (`/tv`, your game drawn big, its loop reading the phones' input) and a **phone page** (the
-  controller; this is the manifest's `startUrl`). Share the game code between your page and `/tv`.
+  (`/tv`, your game drawn big, its loop reading the phones' input) and a **phone page** (`/phone`,
+  the controller; this is the manifest's `startUrl`). Share the game rules between your page and `/tv`.
+  The starter has no original page, so its phone page is `index.html` (`/`): when you copy its
+  `vite.config.ts` and TV page, point them at `phone.html` and make the join QR `/phone?room=CODE`.
 - **One player becomes one per phone.** A single-player game needs a ship (paddle, car…) per seated
-  phone, plus what happens when phones join and leave. This is usually most of the work; keep it in a
-  pure, tested module (the starter's `src/shared/sim.ts`).
+  phone, plus what happens when phones join and leave. A game with fixed sides (two paddles) seats the
+  first phones on the sides, lets later phones wait their turn, and lets the computer play an empty
+  side so one phone can play. This is usually most of the work; keep it in a pure, tested module
+  (the starter's `src/shared/sim.ts`).
 
 Then the realtime room. Copy it from the [starter template](starter.md):
 
@@ -54,16 +58,19 @@ curl -fsSL https://ogs-docs.pages.dev/starter.tgz | tar xz   # → ./ogs-starter
 | Copy | What it is |
 |---|---|
 | `src/worker/index.ts`, `src/worker/room.ts`, `src/worker/tsconfig.json` | The Worker and its Room Durable Object (one per room) |
-| `src/shared/protocol.ts`, `src/shared/room-core.ts` | The messages (zod) and seating; `room-core` imports `Seat` from `src/shared/sim.ts`, so bring that type along |
-| `src/client/socket.ts` | `createRoom()` and a reconnecting `connectRoom()` |
-| `wrangler.jsonc`, `vite.config.ts` | The Worker serves the built pages from `dist/`; Vite builds `index.html` and `tv.html` |
+| `src/shared/protocol.ts`, `src/shared/room-core.ts` | The messages (zod) and seating; `room-core` imports `Seat` from `src/shared/sim.ts`, so bring that type along (drop `color` if you don't use it) |
+| `src/client/socket.ts`, `src/client/config.ts` | `createRoom()`, a reconnecting `connectRoom()`, and your appId read from the manifest |
+| `src/client/ogs-plan.ts` (+ its test) | The OGS decisions steps 4, 5 and 9 rely on: TV join UI, the phone's plan |
+| `src/tv/audio-pause.ts` (+ its test) | The parked-audio gate (step 3) |
+| `e2e/keys.ts`, `e2e/global-setup.ts`, `e2e/*.seam.test.ts`, `vitest.seam.config.ts` | The seam tests (step 11): local key set, wrangler on a free port |
+| `wrangler.jsonc`, `vite.config.ts`, `tsconfig.json` | The Worker serves the built pages from `dist/`; Vite builds each page |
 | `.gitignore` entries | `dist`, `.wrangler`, `.dev.vars` |
 
 And its dependencies:
 
 ```bash
-pnpm add zod qrcode-generator
-pnpm add -D wrangler @cloudflare/workers-types vitest playwright
+pnpm add zod@^3.25 qrcode-generator
+pnpm add -D wrangler @cloudflare/workers-types vitest@^4 playwright @types/node
 ```
 
 wrangler needs the `esbuild` and `workerd` install scripts. pnpm 10 blocks them unless listed: add
@@ -126,7 +133,12 @@ the frame loads; profile-kit says `ogs:ready` so a missed start is re-sent).
 import { getOgsSessionSource, onOgsPause } from "@open-game-system/profile-kit";
 
 getOgsSessionSource(); // start listening now
-onOgsPause((paused) => audio.setPaused(paused)); // ogs:suspend → true, ogs:resume → false
+const gate = createAudioPause(() => audioContext); // below; audioContext is your game's one AudioContext
+let parked = false;
+onOgsPause((paused) => {
+  parked = paused; // ogs:suspend → true, ogs:resume → false
+  gate.setPaused(paused);
+});
 ```
 
 Without React, read the same store:
@@ -162,6 +174,13 @@ function TvPlayers() {
 - `ogs:resume` → `onOgsPause(false)`: resume only what was playing before.
 - A real-time game also **stops its simulation** while parked (skip the update step, keep drawing or
   not), or rocks keep falling in a frame nobody is watching.
+- The plain-browser unlock (resume on first input, step 2) must not resume while parked.
+- **Engines that own audio.** Phaser 3's `WebAudioSoundManager` resumes its own `AudioContext` by
+  itself (on window focus, after visibility changes, on its unlock taps), so suspending it from the
+  gate didn't hold in a seam test (Phaser 3.90). What worked: start Phaser with
+  `audio: { noAudio: true }` and play sound through one `AudioContext` your page owns, which the gate
+  suspends. Whatever the engine, the seam test in [Testing](testing.md#1-the-tv-page-in-a-stand-in-launcher)
+  is the check: every `AudioContext` the page made is `suspended` after `ogs:suspend` and stays so.
 
 A safe audio gate (suspends the shared context on pause, resumes it on Continue only if it was
 running, and keeps a sound unlocked during the pause silent):
@@ -290,7 +309,9 @@ is optional extra text.
 
 ### 8. Room games: declare the TV page from the phone
 
-Skip this if your manifest has a static `tvUrl`. If each room has its own TV URL, the host's phone
+Skip this if your manifest has a static `tvUrl` (a TV page that needs no room). A game with rooms
+omits `tvUrl`: the phone that starts it makes the room and declares the room's TV page, which is
+how OGS learns the room and brings the couch's other phones in (step 9). If each room has its own TV URL, the host's phone
 page declares it while inside OGS. Inside OGS the phone that starts the game makes the room (the TV
 page opens later, at the URL you declare, with the room in it); in a plain browser your TV page may
 keep making its own room as before. Declare it (cast-kit, packed from the OGS repo like profile-kit):

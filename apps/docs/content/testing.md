@@ -10,7 +10,7 @@ Write each test before the code it covers, and see it fail first.
 ## Setup
 
 ```bash
-pnpm add -D vitest playwright
+pnpm add -D vitest@^4 playwright
 pnpm exec playwright install chromium
 ```
 
@@ -31,7 +31,7 @@ iframe and asserts on the page. This one proves the TV goes silent when parked: 
 import { chromium, type Frame } from "playwright";
 import { afterAll, describe, expect, it } from "vitest";
 
-const BASE = process.env.GAME_URL ?? "http://localhost:8787";
+const BASE = process.env.GAME_URL ?? "http://127.0.0.1:8787"; // set GAME_URL to the port your setup picked
 const TV_URL = `${BASE}/tv`; // your TV page
 const browserP = chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required"] });
 afterAll(async () => (await browserP).close());
@@ -99,13 +99,18 @@ Add the same shape for the rest of the TV contract:
     f.evaluate(() => {
       const w = innerWidth, h = innerHeight, mx = w * 0.05, my = h * 0.05;
       return [...document.querySelectorAll("body *")]
-        .filter((el) => !(el instanceof HTMLCanvasElement) && el.checkVisibility())
+        // The scene (a canvas and an engine's full-bleed container) may fill the screen.
+        .filter((el) => !el.matches("canvas, #game") && el.checkVisibility())
         .map((el) => ({ el, r: el.getBoundingClientRect() }))
         .filter(({ r }) => r.width > 0 && (r.left < mx || r.top < my || r.right > w - mx || r.bottom > h - my))
         .map(({ el }) => el.id || el.tagName);
     });
   expect(await outsideSafeArea(frame)).toEqual([]);
   ```
+
+  This sees DOM only. Text drawn on a canvas (scores, names) must stay inside the inset too: draw
+  the HUD at least 5% from each edge, or zoom the camera out on the TV page (Phaser:
+  `this.cameras.main.setZoom(0.9)`), and check a screenshot.
 - **Hidden is not gone.** Playwright's `getByText` and `getByLabel` also count hidden elements: assert
   "no room code on the OGS TV" with `isHidden()` or `getByText(code, { exact: true }).filter({ visible: true })`,
   not `count() === 0`.
@@ -149,9 +154,11 @@ await page.goto(`${BASE}/`);
 await expect(page.getByLabel("name")).toHaveCount(0); // no name form inside OGS
 ```
 
-- **Signing test tokens.** Generate an ES256 key pair with Web Crypto, serve its public JWK at
-  `http://localhost:8831/.well-known/jwks.json` from the test (`node:http`), and start your server
-  with that `jwksUrl` (for a Worker: `wrangler dev --var OGS_JWKS_URL:http://localhost:8831/.well-known/jwks.json`).
+- **Signing test tokens.** Generate an ES256 key pair with Web Crypto, serve its public JWK from the
+  test (`node:http`, listening on port 0 so it gets a free port), and start your server with that
+  `jwksUrl` (for a Worker: `wrangler dev --port <free> --var OGS_JWKS_URL:http://127.0.0.1:<port>/.well-known/jwks.json`).
+  The starter's `e2e/global-setup.ts` does all of this. Never kill a dev server by port: stop only
+  the process you started.
   Sign tokens whose claims match [`GameToken`](messages.md#gametoken) with `aud` = your appId.
 - **Assert the server's view**, not just the page: the player is seated under the token's `name`, a
   token for another `appId` or an expired one is not.

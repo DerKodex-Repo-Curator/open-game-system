@@ -17,7 +17,7 @@ every boundary. No framework, so the same wiring drops into Phaser, Three.js or 
 
 ```bash
 pnpm install
-pnpm dev            # wrangler dev: builds the pages and serves everything on :8787
+pnpm dev            # wrangler dev: builds the pages and serves them (default port 8787)
 ```
 
 Open http://localhost:8787/tv, then the QR code (or `http://<your-ip>:8787/?room=CODE`) on a phone.
