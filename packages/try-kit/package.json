@@ -24,7 +24,7 @@
     "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260927.0",
+    "@cloudflare/workers-types": "^5.20261004.1",
     "@types/node": "^25.5.0",
     "jsdom": "^28.1.0",
     "tsdown": "^0.16.0",
