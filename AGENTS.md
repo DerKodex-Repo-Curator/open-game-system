@@ -19,6 +19,7 @@
   - `packages/ogs-protocol/` — OGS app v3 contract: manifest, identity claims, instances, couch-session reducer, launcher↔game messages
   - `services/api/` — Hono API on Cloudflare Workers (auth, push dispatch, households, catalogue, instances, CouchSession DO)
   - `examples/` — Demo/reference apps (3 apps: expo-bridge-demo, web-game-demo, stream-react-demo)
+  - `templates/ogs-starter/` — starter game for outside developers (TV page + phone controller + room Worker); standalone install
   - `e2e/` — cross-surface e2e (tester.army `e2e`, fake Chromecast, couch flow); standalone install
 
 ## Feedback Commands

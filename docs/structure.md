@@ -39,7 +39,7 @@
 | `apps/mobile` | `@open-game-system/mobile` | Host app (Expo/React Native), WebView + bridge | `app-bridge-native`, `app-bridge-react-native`, `app-bridge-types`, `app-bridge-testing` |
 | `apps/web` | `@open-game-system/web` | opengame.org marketing website (Vite + React + Tailwind) | None |
 | `apps/tv` | `@open-game-system/tv` | OGS TV launcher: the one page the Chromecast stream shows for the whole cast; frames each game's TV page (Vite + React, Vitest + Playwright) | `ogs-protocol` |
-| `apps/docs` | `@open-game-system/docs` | Docs site for game developers and their coding agents (ogs-docs.pages.dev): `content/*.md` + `docs/specification.md` rendered to static HTML with `.md` twins, `llms.txt`, `llms-full.txt`; protocol tables generated from the zod schemas; tests fail when profile-kit's exports drift from the reference | `ogs-protocol` |
+| `apps/docs` | `@open-game-system/docs` | Docs site for game developers and their coding agents (ogs-docs.pages.dev): `content/*.md` + `docs/specification.md` rendered to static HTML with `.md` twins, `llms.txt`, `llms-full.txt`; protocol tables generated from the zod schemas; tests fail when profile-kit's exports drift from the reference; hosts the kits (`/pkg/<kit>.tgz`) and the starter (`/starter.tgz`); `/on-tv` landing with a waitlist (Pages Functions + D1 `ogs-docs-waitlist`, previews `ogs-docs-waitlist-preview`) | `ogs-protocol`, `profile-kit`, `cast-kit-*` (packed) |
 
 ### Examples (`examples/`)
 
@@ -113,6 +113,13 @@ Run all tests: `pnpm test` (delegates to `turbo run test`).
 | `vitest.config.ts` | Per-package (where present) | Test configuration |
 | `wrangler.toml` | `services/api` | Cloudflare Worker config |
 | `app.json` | `apps/mobile` | Expo app configuration |
+
+## Starter template (`templates/ogs-starter/`)
+
+Comet Catch, the minimal OGS game outside developers start from (TV page, phone controller, a Worker
+with a Room Durable Object, seam tests). Standalone install (its own `pnpm-workspace.yaml` and
+lockfile; kits vendored in `vendor/`), not a workspace package. The docs build packs it as
+`/starter.tgz`; it is meant to become the `open-game-system/ogs-starter` template repo.
 
 ## Cross-surface e2e (`e2e/`)
 
