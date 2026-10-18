@@ -178,10 +178,13 @@ describe("the app's link opener", () => {
     };
   }
 
-  it("leaves the app scheme's join links to the router, which holds them itself", () => {
+  // Expo Router did not route these at a cold start (Detox, 2026-10-18): the opener takes every
+  // link; it navigates (not pushes), so a screen the router did open isn't opened twice.
+  it("opens the app scheme's join and game links too", () => {
     const o = opener(true);
     o.links.open("opengame://join/NT9WPH", "link");
-    expect(o.went).toEqual([]);
+    o.links.open("opengame://play/trivia-jam", "link");
+    expect(o.went).toEqual(["push:/join/NT9WPH", "push:/library/trivia-jam"]);
   });
 
   it("with a profile: an https join link opens the join screen; a play link the play screen", () => {
@@ -199,10 +202,9 @@ describe("the app's link opener", () => {
     ]);
   });
 
-  it("an https game link opens the game's page; the app scheme's is the router's", () => {
+  it("an https game link opens the game's page", () => {
     const o = opener(true);
     o.links.open("https://opengame.org/play/trivia-jam", "link");
-    o.links.open("opengame://play/trivia-jam", "link");
     expect(o.went).toEqual(["push:/library/trivia-jam"]);
   });
 

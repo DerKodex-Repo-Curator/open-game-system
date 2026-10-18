@@ -84,9 +84,9 @@ export function createLinkHold() {
 /**
  * The app's links (spec §9 and ogs-join), with what it knows now. Before this phone has a profile
  * (a stranger's first scan of the TV) a link waits in `hold`; the tabs open it with `openHeld`
- * once onboarding made one. Expo Router opens the app scheme's join links itself
- * (app/join/[code].tsx, which holds them until there is a profile); an https join link only
- * reaches here.
+ * once onboarding made one. Every link comes through here: Expo Router doesn't route them at a cold
+ * start, and `push` navigates, so a screen it did open (app/join/[code], app/play/[appId], which
+ * hold the link themselves) isn't opened twice.
  */
 export function createLinkOpener(deps: {
   hold: ReturnType<typeof createLinkHold>;
@@ -105,9 +105,6 @@ export function createLinkOpener(deps: {
       page: (appId) => deps.push(`/library/${appId}`),
     });
   const open = (url: string, from: LinkFrom) => {
-    // The app scheme's join and game links are Expo Router's (app/join/[code], app/play/[appId]).
-    const routed = readJoinLink(url) ?? readGameLink(url);
-    if (from === "link" && url.startsWith("opengame") && routed) return;
     if (deps.hold.offer(url, from, deps.hasProfile())) return;
     go(url, from);
   };

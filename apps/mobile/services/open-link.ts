@@ -8,6 +8,7 @@ export const { open, openHeld } = createLinkOpener({
   hold: linkHold,
   hasProfile: () => appState.getSnapshot().identity !== null,
   startUrls: () => appState.getSnapshot().catalogue.map((g) => g.startUrl),
-  push: (path) => router.push(path),
+  // navigate, not push: the screen a link names opens once even if Expo Router opened it too.
+  push: (path) => router.navigate(path),
   game: setGameUrl,
 });

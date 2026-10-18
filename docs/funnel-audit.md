@@ -52,6 +52,8 @@ Loss figures are estimates (stated assumptions), not measurements. Status as of 
 | 9 | "No TV found" led with Chromecast troubleshooting. | Hosts without Chromecast | est. 5–10% of them | **Fixed** (with #2). |
 | 10 | **Android doesn't claim `opengame.org/join/`** (needs an intent filter: a native build that forces every tester to update). iOS reads the AASA file. | Android guests with the app | Android share | Follow-up. The browser join works on Android. |
 | 11 | **The join page can't link to the app** until #1: it says "The OGS app is in beta: ask <host> for an invite". `VITE_OGS_GET_APP` turns on a real link. | Guests who want the app | small (browser join works) | Waits on #1. |
+| 13 | **The join QR is gone once a game is on.** It shows on Home and Getting ready only; a guest who arrives mid-game has no code to scan (the host's phone doesn't show it either). | Late guests | est. 30–50% of them | Planned (spec: mid-game invite card in the game's `inviteCorner`); not built |
+| 14 | **The front door's "Open in OGS" opens the game's own page** (`opengame.org/open?url=<startUrl>`) in the app, skipping the TV: the host lands in a phone page with nothing on the TV. | Hosts from the front door | most of them | Front-door session: point `OPEN_IN_APP` at `opengame.org/play/<appId>` (sent 2026-10-18); the preview funnel e2e warns until it does |
 | 12 | Onboarding asks about notifications before any value, and for an @id. Measured 5 taps + a name, ~20 s. | Everyone with the app | est. <5% | Leave. |
 
 ## The funnel now (measured, local, fake Chromecast)

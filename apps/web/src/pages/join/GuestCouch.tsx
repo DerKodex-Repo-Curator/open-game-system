@@ -104,13 +104,16 @@ export function GuestCouch({
           className="w-full h-full border-0"
           allow="autoplay; fullscreen; microphone; clipboard-write"
         />
+        {/* Back to the remote: a small tab on the left edge (the app's own way back is a swipe from
+            there), clear of the corners where games put their own buttons. */}
         <button
           type="button"
           data-testid="guest-to-remote"
+          aria-label="Back to the remote"
           onClick={() => setScreen({ kind: "remote" })}
-          className="absolute top-2 left-2 rounded-full bg-black/60 text-white text-sm px-3 py-1"
+          className="absolute left-0 top-1/2 -translate-y-1/2 h-14 w-5 rounded-r-full bg-black/40 text-white/80 text-sm"
         >
-          Remote
+          ‹
         </button>
       </div>
     );
