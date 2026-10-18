@@ -25,8 +25,34 @@ Code: branch `try/show-hn` in `~/src/rocket-crew` (worktree `~/src/rocket-crew-t
 | Real Safari 26 (macOS) as the TV | Renders the lobby, the 3D rocket and the QR. A Captain from iOS Simulator Safari showed up on it |
 | iOS Simulator Safari (iOS 26) as the Fixer | Joined by the room link, got the motion permission prompt, launched, and fixed two problems by tapping. Chrome was the TV and the Captain |
 | Wide events on the preview | `wrangler tail` showed `{"event":"rocket.round","phase":"launched","ref":"hn",…}` |
+| iPad (iOS 26.3 simulator) as the TV | "Use this screen as the TV" works, renders in under 3 s; an iPhone simulator joined it. Fixed on the way: the Captain seat read "CAPT…" in every Safari, the long address wrapped mid-word, and the solo button would have opened a tab over an iPad TV |
 
-**Not covered:** Playwright's WebKit build never finishes loading the TV page (its WebGL context is lost and the main thread stalls), so the e2e TV is Chrome only and Safari-as-TV was checked by hand. Shaking was not tested on a real iPhone (the simulator can't shake). Nothing was tried on a real iPad, phone or Chromecast in this pass. Firefox was not tested.
+**Not covered:** Playwright's WebKit never fires `load` on the TV page, so the e2e TV is Chrome only; the page itself renders in WebKit, and real Safari and an iPad simulator were checked by hand. Shaking was not tested on a real iPhone (the simulator can't shake). Nothing was tried on a real iPad, phone or Chromecast in this pass. Firefox was not tested.
+
+### Load: 200 rooms at once (`pnpm test:load`, against the preview)
+
+Each room is a TV and two phones over real WebSockets, created through `/` the way strangers arrive, flying problem 1. All from one laptop, so its own uplink is part of every number.
+
+| | p50 | p95 | max |
+|---|---|---|---|
+| TV page (claim a code, make the room, render) | ~1.0 s | ~1.7 s | ~2.4 s |
+| A phone's join page | ~450 ms | ~700 ms | ~820 ms |
+| Launch reaching the TV | ~80 ms | ~170 ms | ~440 ms |
+| A press reaching the TV | ~90 ms | ~130–220 ms | ~400–650 ms |
+
+**The load test found a real bug.** `/` picked a random 4-letter code without checking it, and rooms never ended, so a new TV could open inside someone's used room (1–3 of every 200 rooms once a few thousand existed; about 3.5% of visitors at 10k rooms). Fixed: `/` claims a code atomically and only reuses one abandoned for 30 minutes (the old room is wiped). A phone that scans an old or wrong code gets a page saying so, with a "Start a game" button: no rocket with that code (404), that rocket has landed (410), or the rocket is full (409: three seats and five on the bench). After the fix: 1,400 of 1,400 rooms in seven runs. One later run had 83 `fetch failed` errors on the laptop's side after about 3,000 sockets in a few minutes; the site answered normally right after, so that's the single-machine load generator (unverified). Cold path: a single `/` takes 0.6–1 s, mostly creating the room's Durable Object.
+
+## A second try path: Midnight Museum (3–4 players)
+
+**https://midnight-museum-try.jonathanrmumm.workers.dev/?ref=hn** (QR: [show-hn-try-qr-museum.svg](show-hn-try-qr-museum.svg))
+
+A co-op whodunit (2–4 detectives plus an optional little one): push your luck with dice, uncover suspects, name the thief before it reaches the doors. Same browser fallback: the laptop is the TV, phones scan in and type a name. Added for it: the phone start page (it had none: a phone that opened the link became a TV), the room-code claim and the missing/closed/full pages, and `museum.case` wide events with `ref`. Branch `try/show-hn` in `~/src/midnight-museum` (worktree `~/src/midnight-museum-try`), Worker `midnight-museum-try`. Its try-path e2e (a Chrome laptop TV, three WebKit iPhones starting a case and taking a turn; the phone page; the 404 and full pages) passes 4/4 against the preview, and the existing whole-case test still passes. Not load-tested.
+
+Suggested use: mention it in the post's last line or the first comment ("got 3–4 people? try this one"), so the main link stays the two-player game.
+
+## Clip
+
+A 30 s draft of a laptop TV and two phones joining and fixing a problem (demo names, no family names): `~/.claude/usage-burn/rocket-crew-try-30s.mp4`. Recorded against the preview with `ROCKET_CLIP=1 pnpm record` (Chrome with phone emulation, not real phones), cut to the joins plus launch → first fix. The phone panels are grey until each phone opens the link.
 
 ## Title
 

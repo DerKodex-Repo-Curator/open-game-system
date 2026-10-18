@@ -19,3 +19,10 @@ Updated 2026-10-18.
 - Pre-existing on rocket-crew main: `pnpm typecheck` fails in scripts/showcase.mts + scripts/cast-device-check.mts; 3 stale tests in e2e/start.seam.test.ts.
 - The Fixer's frog button has a face (Jon's "no faces on objects" rule); pre-existing art.
 - Jon to decide: custom domain, the open-source answer, and whether to link the catalogue page.
+
+## 2026-10-18, second pass
+- Load: `pnpm test:load` (200 rooms × TV + 2 phones, real WebSockets) against the preview. Found and fixed room-code collisions (new TVs landing in old rooms): atomic claim + 30 min recycle, 404/410/409 pages, bench cap 5. 1,400/1,400 rooms after the fix.
+- iPad (sim) as TV, iPhone (sim) joining it: fixed "CAPT…" in Safari, address wrapping, no solo button on touch TVs.
+- Clip: ~/.claude/usage-burn/rocket-crew-try-30s.mp4 (recorder ROCKET_CLIP=1).
+- Second game: Midnight Museum, branch try/show-hn (pushed), https://midnight-museum-try.jonathanrmumm.workers.dev/?ref=hn, e2e 4/4 on the preview.
+- Jon's real-device checklist: ~/.claude/usage-burn/morning.md, "Waiting on you".
