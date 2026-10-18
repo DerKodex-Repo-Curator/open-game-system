@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - "apps/mobile/**"
+      - "packages/shell/**"
       - ".github/workflows/ci-mobile.yml"
   pull_request:
     branches: [main]
     paths:
       - "apps/mobile/**"
+      - "packages/shell/**"
       - ".github/workflows/ci-mobile.yml"
 
 jobs:
@@ -32,6 +34,12 @@ jobs:
 
       - name: Typecheck mobile
         run: pnpm --filter @open-game-system/mobile typecheck
+
+      - name: Typecheck shell
+        run: pnpm --filter @open-game-system/shell typecheck
+
+      - name: Test shell
+        run: pnpm --filter @open-game-system/shell test
 
       - name: Test mobile
         run: pnpm --filter @open-game-system/mobile test:ci
