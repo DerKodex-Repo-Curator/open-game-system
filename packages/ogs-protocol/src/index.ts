@@ -7,6 +7,7 @@ export * from "./instance";
 export * from "./join";
 export * from "./join-page";
 export * from "./manifest";
+export * from "./native";
 export * from "./push";
 export * from "./rooms";
 export * from "./screens";

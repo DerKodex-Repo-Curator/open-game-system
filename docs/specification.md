@@ -133,6 +133,15 @@ on `false`, and only what was playing before. Pattern: `createAudioPause` in
   that sitting's id, as the launcher does with the TV page's `ogs:instance`), so the phone page and the
   TV page may both report: one start is one sitting. The game's own `instanceId` is used only when
   the phone plays alone.
+- **Haptics:** the page dispatches `IMPACT { style: "light" | "medium" | "heavy" }` or
+  `NOTIFY { kind: "success" | "warning" | "error" }` on the app's `haptics` bridge store
+  (`HapticsBridgeEventSchema` in `packages/ogs-protocol/src/native.ts`); the app plays it with the
+  platform's haptics. Unknown or malformed events are ignored.
+- **Sign-in in a single-game app (OGS shell):** players start as guests (a device profile). The game
+  has no sign-in UI: it dispatches `SIGN_IN` on the `account` bridge store
+  (`AccountBridgeEventSchema`; state `{ login: "none" | "guest" | "apple" | "google", signingIn }`,
+  `AccountBridgeStateSchema`) and the app shows its native sheet; the signed-in player then arrives
+  through the `profile` store.
 
 ## 4. Server: verify the token
 
