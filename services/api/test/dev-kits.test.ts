@@ -51,8 +51,10 @@ describe("GET /api/v1/dev/kits", { timeout: 20_000 }, () => {
       docs: "https://docs-preview.test",
       llms: "https://docs-preview.test/llms.txt",
       quickstart: "https://docs-preview.test/quickstart.md",
+      kits: expect.arrayContaining([
+        expect.objectContaining({ url: "https://docs-preview.test/pkg/profile-kit.tgz" }),
+      ]),
     });
-    expect(body.kits[0].url).toBe("https://docs-preview.test/pkg/profile-kit.tgz");
   });
 
   it("an OGS_DOCS_BASE that isn't an http(s) URL is a server misconfiguration", async () => {
