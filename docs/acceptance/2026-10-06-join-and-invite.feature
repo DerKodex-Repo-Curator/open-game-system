@@ -1,4 +1,6 @@
-# Status: PLANNED, except "Every phone follows the TV" (built 2026-10-06 for app phones and kids' iPads: couch session
+# Status: PLANNED, except "Home shows the QR next to the TV code" and "Getting ready shows the same card"
+# (built 2026-10-17: apps/tv/src/ui/JoinCode.tsx, e2e apps/tv/e2e/join-qr.e2e.ts decodes the QR off the TV;
+# the link is ogs-protocol join.ts), and except "Every phone follows the TV" (built 2026-10-06 for app phones and kids' iPads: couch session
 # reducer packages/ogs-protocol/src/session.ts, app apps/mobile/services/couch-follow.ts; tests in
 # session.rules.test.ts "every phone follows the TV" + "kids' iPads follow the TV" + "which phone's TV page
 # the launcher frames", couch-follow.test.ts, the API integration

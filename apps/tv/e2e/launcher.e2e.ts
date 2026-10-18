@@ -93,7 +93,10 @@ describe("TV launcher (fake session)", () => {
     // The couch is whoever joined this cast, in join order: nobody joins automatically.
     const sitters = await page.locator("[data-testid=couch] figcaption").allTextContents();
     expect(sitters).toEqual(["Jonathan", "Mom", "Juneau"]);
-    expect(await page.getByTestId("join-code").textContent()).toBe("Join from your phoneKQ7M2X");
+    // Copy from the join spec (2026-10-06-join-and-invite.feature): the QR card, e2e/join-qr.e2e.ts.
+    expect(await page.getByTestId("join-code").textContent()).toBe(
+      "Scan to join, or typeKQ7M2Xat opengame.org/join",
+    );
     expect(await page.getByTestId("remote-chip").textContent()).toContain(
       "Jonathan has the remote",
     );
