@@ -102,7 +102,9 @@ export class Room extends DurableObject<Env> {
     if (tag.role !== "player") return;
     const stillHere = this.ctx
       .getWebSockets()
-      .some((other) => other !== ws && tagOf(other).role === "player" && sameSeat(other, tag.seatId));
+      .some(
+        (other) => other !== ws && tagOf(other).role === "player" && sameSeat(other, tag.seatId),
+      );
     if (!stillHere) await this.setSeats(leave(this.seats, tag.seatId));
   }
 

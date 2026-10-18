@@ -1,19 +1,112 @@
-:root { color-scheme: dark; font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; }
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: #070b1f; color: #f4f1ff; overscroll-behavior: none; }
-#app { min-height: 100%; display: flex; flex-direction: column; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
-.status { margin: auto; font-size: 18px; opacity: 0.8; }
-form { margin: auto 0; display: grid; gap: 16px; }
-form h1 { margin: 0 0 8px; font-size: 32px; }
-label { display: grid; gap: 6px; font-size: 15px; }
-input { font: inherit; font-size: 20px; padding: 14px; border-radius: 12px; border: 1px solid #3a4275; background: #0f1534; color: inherit; }
-#code { text-transform: uppercase; letter-spacing: 0.2em; }
-button { font: inherit; font-size: 20px; font-weight: 700; padding: 16px; border-radius: 14px; border: 0; background: #ffb84d; color: #1a1030; }
-#pad { flex: 1; display: flex; flex-direction: column; gap: 12px; }
-#pad header { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }
-#pad header b { margin-left: auto; font-size: 28px; font-variant-numeric: tabular-nums; }
-#me-color { width: 22px; height: 22px; border-radius: 50%; display: inline-block; }
-#stick-area { flex: 1; min-height: 260px; border-radius: 24px; background: radial-gradient(circle at center, #1b2458 0, #0d1233 70%); position: relative; touch-action: none; }
-#stick-knob { position: absolute; left: 50%; top: 50%; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%; background: rgba(255,255,255,0.18); border: 2px solid rgba(255,255,255,0.4); }
-.hint { margin: 0; text-align: center; opacity: 0.7; font-size: 14px; }
-[hidden] { display: none !important; }
+:root {
+  color-scheme: dark;
+  font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #070b1f;
+  color: #f4f1ff;
+  overscroll-behavior: none;
+}
+#app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+.status {
+  margin: auto;
+  font-size: 18px;
+  opacity: 0.8;
+}
+form:not([hidden]) {
+  margin: auto 0;
+  display: grid;
+  gap: 16px;
+}
+form h1 {
+  margin: 0 0 8px;
+  font-size: 32px;
+}
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 15px;
+}
+input {
+  font: inherit;
+  font-size: 20px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #3a4275;
+  background: #0f1534;
+  color: inherit;
+}
+#code {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+button {
+  font: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 16px;
+  border-radius: 14px;
+  border: 0;
+  background: #ffb84d;
+  color: #1a1030;
+}
+#pad:not([hidden]) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+#pad header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+}
+#pad header b {
+  margin-left: auto;
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+}
+#me-color {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-block;
+}
+#stick-area {
+  flex: 1;
+  min-height: 260px;
+  border-radius: 24px;
+  background: radial-gradient(circle at center, #1b2458 0, #0d1233 70%);
+  position: relative;
+  touch-action: none;
+}
+#stick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 84px;
+  height: 84px;
+  margin: -42px 0 0 -42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+.hint {
+  margin: 0;
+  text-align: center;
+  opacity: 0.7;
+  font-size: 14px;
+}

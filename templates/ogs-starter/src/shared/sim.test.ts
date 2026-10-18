@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FIELD, ROUND_MS, STAR_COUNT, newWorld, step, syncShips } from "./sim";
+import { FIELD, newWorld, ROUND_MS, STAR_COUNT, step, syncShips } from "./sim";
 
 const seats = [
   { id: "a", name: "Sam", color: "#ffb84d" },

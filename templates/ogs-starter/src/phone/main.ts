@@ -1,5 +1,9 @@
 import { getCastBridge, isOGSCastAvailable } from "@open-game-system/cast-kit-core";
-import { getOgsProfileSource, type OgsProfile, ogsRoomFromUrl } from "@open-game-system/profile-kit";
+import {
+  getOgsProfileSource,
+  type OgsProfile,
+  ogsRoomFromUrl,
+} from "@open-game-system/profile-kit";
 import { phonePlan } from "../client/ogs-plan";
 import { connectRoom, createRoom } from "../client/socket";
 import type { ClientMessage } from "../shared/protocol";

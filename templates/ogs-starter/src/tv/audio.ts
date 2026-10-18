@@ -24,7 +24,7 @@ export function createAudio() {
     start,
     ctx: () => ctx,
     chime(pitch = 0) {
-      if (!ctx || ctx.state !== "running") return;
+      if (ctx?.state !== "running") return;
       const t = ctx.currentTime;
       const osc = ctx.createOscillator();
       const g = ctx.createGain();

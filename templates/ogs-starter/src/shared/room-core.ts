@@ -1,7 +1,16 @@
 import type { Seat } from "./sim";
 
 export const MAX_SEATS = 8;
-const COLORS = ["#ffb84d", "#6be3ff", "#ff6f91", "#9dff6b", "#c39bff", "#ffe66b", "#ff9a5c", "#5cffc8"];
+const COLORS = [
+  "#ffb84d",
+  "#6be3ff",
+  "#ff6f91",
+  "#9dff6b",
+  "#c39bff",
+  "#ffe66b",
+  "#ff9a5c",
+  "#5cffc8",
+];
 /** No I or O: they read as 1 and 0 across a living room. */
 const LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 

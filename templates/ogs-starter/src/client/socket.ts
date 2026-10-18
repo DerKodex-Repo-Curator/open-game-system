@@ -1,4 +1,9 @@
-import { type ClientMessage, CreatedRoomSchema, type ServerMessage, ServerMessageSchema } from "../shared/protocol";
+import {
+  type ClientMessage,
+  CreatedRoomSchema,
+  type ServerMessage,
+  ServerMessageSchema,
+} from "../shared/protocol";
 
 /** Make a room on the game's Worker. */
 export async function createRoom(): Promise<string> {

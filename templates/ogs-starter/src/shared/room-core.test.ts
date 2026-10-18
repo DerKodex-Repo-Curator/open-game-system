@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ClientMessageSchema } from "./protocol";
-import { MAX_SEATS, leave, newRoomCode, seatFor } from "./room-core";
+import { leave, MAX_SEATS, newRoomCode, seatFor } from "./room-core";
 
 describe("seating a player", () => {
   it("seats an OGS player under their verified OGS name, never the name they typed", () => {

@@ -8,7 +8,7 @@ import qrcode from "qrcode-generator";
 import { APP_ID } from "../client/config";
 import { tvJoinUi } from "../client/ogs-plan";
 import { connectRoom, createRoom } from "../client/socket";
-import { FIELD, type Seat, type Stick, newWorld, step, syncShips, type World } from "../shared/sim";
+import { FIELD, newWorld, type Seat, type Stick, step, syncShips, type World } from "../shared/sim";
 import { createAudio } from "./audio";
 import { createAudioPause } from "./audio-pause";
 
@@ -73,7 +73,9 @@ async function main() {
       const r = step(world, sticks, dt, now);
       const newRound = r.world.round !== world.round;
       world = r.world;
-      r.caught.forEach((c, i) => audio.chime((world.ships[c.id]?.score ?? 0) % 8 + i));
+      r.caught.forEach((c, i) => {
+        audio.chime(((world.ships[c.id]?.score ?? 0) % 8) + i);
+      });
       const scores = Object.fromEntries(Object.values(world.ships).map((s) => [s.id, s.score]));
       const key = JSON.stringify([world.round, world.phase, scores]);
       if (key !== lastSent) {
@@ -170,7 +172,8 @@ function draw(now: number) {
   }
 
   for (const ship of Object.values(world.ships)) {
-    const trail = (trails[ship.id] ??= []);
+    const trail = trails[ship.id] ?? [];
+    trails[ship.id] = trail;
     trail.push({ x: ship.x, y: ship.y });
     if (trail.length > 24) trail.shift();
     trail.forEach((p, i) => {
@@ -198,7 +201,11 @@ function draw(now: number) {
   const left = Math.max(0, Math.ceil((world.endsAt - now) / 1000));
   const winner = world.winner ? world.ships[world.winner]?.name : null;
   $("clock", HTMLElement).textContent =
-    world.phase === "over" ? (winner ? `${winner} wins round ${world.round}` : "Round over") : `${left}s`;
+    world.phase === "over"
+      ? winner
+        ? `${winner} wins round ${world.round}`
+        : "Round over"
+      : `${left}s`;
 }
 
 function renderScores() {

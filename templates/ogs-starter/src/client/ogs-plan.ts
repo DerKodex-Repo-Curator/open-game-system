@@ -31,6 +31,9 @@ export function phonePlan(input: {
   if (profile === undefined) return { kind: "wait" };
   if (profile === null) return { kind: "form", code: ogsRoom ?? urlRoom };
   const room = ogsRoom ? { code: ogsRoom } : inOgs ? { make: true as const } : null;
-  if (!room) return urlRoom ? { kind: "go", room: { code: urlRoom }, join: { token: profile.token } } : { kind: "form", code: null };
+  if (!room)
+    return urlRoom
+      ? { kind: "go", room: { code: urlRoom }, join: { token: profile.token } }
+      : { kind: "form", code: null };
   return { kind: "go", room, join: { token: profile.token } };
 }

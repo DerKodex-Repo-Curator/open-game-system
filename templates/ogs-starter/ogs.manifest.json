@@ -1,0 +1,17 @@
+{
+  "appId": "ogs-starter",
+  "name": "Comet Catch",
+  "tagline": "Steer a comet with your phone, catch the stars on the TV.",
+  "shape": "couch",
+  "tv": "required",
+  "startUrl": "https://ogs-starter.example.workers.dev/",
+  "roles": [{ "id": "player", "label": "Player", "audience": "kid" }],
+  "art": {
+    "icon": "/art/ogs-starter/icon.png",
+    "cover": "/art/ogs-starter/cover.jpg",
+    "logo": "/art/ogs-starter/logo.png",
+    "heroClean": "/art/ogs-starter/hero-clean.jpg",
+    "tile": "/art/ogs-starter/tv.jpg"
+  },
+  "shop": { "ages": "4+", "minutes": [5, 15], "players": "1-8" }
+}

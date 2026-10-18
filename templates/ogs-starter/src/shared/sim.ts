@@ -94,7 +94,8 @@ export function step(
     const next = { ...w, ships, round: w.round + 1, phase: "play" as const, winner: null };
     return { world: { ...next, endsAt: now + ROUND_MS }, caught: [] };
   }
-  if (Object.keys(w.ships).length === 0) return { world: { ...w, endsAt: now + ROUND_MS }, caught: [] };
+  if (Object.keys(w.ships).length === 0)
+    return { world: { ...w, endsAt: now + ROUND_MS }, caught: [] };
   if (now >= w.endsAt) {
     const best = Object.values(w.ships).sort((a, b) => b.score - a.score)[0];
     return { world: { ...w, phase: "over", winner: best?.id ?? null }, caught: [] };
