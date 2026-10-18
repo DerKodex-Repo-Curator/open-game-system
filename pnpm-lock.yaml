@@ -935,6 +935,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@open-game-system/ogs-protocol':
+        specifier: workspace:*
+        version: link:../ogs-protocol
       zod:
         specifier: ^4.3.6
         version: 4.4.3

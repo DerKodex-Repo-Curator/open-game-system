@@ -23,6 +23,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@open-game-system/ogs-protocol": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {
