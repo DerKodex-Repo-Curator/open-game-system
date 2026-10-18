@@ -118,11 +118,12 @@ describe("A stranger household on the preview, from the catalogue to the first r
       await step("host-in-game");
 
       // Captain: Ready, then read the first problem's line aloud (to the orchestrator).
+      // Everything goes through .captain (its page reached via ownerDocument): on Android, Espresso
+      // Web hung on a second element lookup ("body") once the game was up.
       await untilInGame(".captain", 60000);
-      await untilInGame("body");
       // Ready asks iOS for motion (it needs a real touch, not a scripted click): tap where the button
       // is, then answer the motion prompt either way (Rocket Crew falls back to taps without it).
-      const readyAt = `(body) => { const b = [...body.querySelectorAll("button")].find((x) => x.textContent.trim() === "Ready"); if (!b) return ""; const r = b.getBoundingClientRect(); return JSON.stringify({ x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }); }`;
+      const readyAt = `(captain) => { const b = [...captain.ownerDocument.querySelectorAll("button")].find((x) => x.textContent.trim() === "Ready"); if (!b) return ""; const r = b.getBoundingClientRect(); return JSON.stringify({ x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }); }`;
       // The first visit's "Swipe to go home" hint covers the game until it is tapped.
       try {
         await waitFor(element(by.id("swipeHintOverlay")))
@@ -131,7 +132,7 @@ describe("A stranger household on the preview, from the catalogue to the first r
         await element(by.id("swipeHintOverlay")).tap();
       } catch {}
       for (let tries = 0; tries < 4; tries++) {
-        const at = await inGame("body", readyAt);
+        const at = await inGame(".captain", readyAt);
         if (typeof at !== "string" || !at) break;
         const point: unknown = JSON.parse(at);
         if (typeof point !== "object" || point === null || !("x" in point) || !("y" in point))
