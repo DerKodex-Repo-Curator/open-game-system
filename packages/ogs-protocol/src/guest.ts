@@ -76,6 +76,7 @@ export function guestScreen(
   target: FollowTarget,
   games: readonly { appId: string; startUrl: string; tvUrl?: string }[],
 ): GuestScreen {
+  // Stryker disable next-line ConditionalExpression,StringLiteral: equivalent, a launcher target has no appId, so the lookup below finds nothing and says remote too
   if (target.kind === "launcher") return { kind: "remote" };
   const game = games.find((g) => g.appId === target.appId);
   if (!game) return { kind: "remote" };
@@ -112,12 +113,11 @@ export type GuestFrame =
 
 /** A couch session frame, parsed; null for anything a guest doesn't use. */
 export function readGuestFrame(data: string): GuestFrame | null {
+  // Not JSON: json stays undefined and fails the schema.
   let json: unknown;
   try {
     json = JSON.parse(data);
-  } catch {
-    return null;
-  }
+  } catch {}
   const frame = GuestFrameSchema.safeParse(json);
   if (!frame.success) return null;
   if (frame.data.type === "follow") return frame.data;

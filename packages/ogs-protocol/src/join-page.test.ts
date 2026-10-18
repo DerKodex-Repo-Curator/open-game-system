@@ -24,7 +24,7 @@ const reply = (status: number, body: unknown) => async (): Promise<Reply> => ({
 describe("loadJoin", () => {
   it("asks the API for the couch by its code", async () => {
     const asked: string[] = [];
-    await loadJoin("https://api.test/", "nt9-wph", async (url: string) => {
+    await loadJoin("https://api.test///", "nt9-wph", async (url: string) => {
       asked.push(String(url));
       return reply(200, preview)();
     });
@@ -57,7 +57,7 @@ describe("loadJoin", () => {
       throw new TypeError("Failed to fetch");
     };
     expect(await loadJoin("https://api.test", "NT9WPH", down)).toEqual({ kind: "offline" });
-    expect(await loadJoin("https://api.test", "NT9WPH", reply(500, {}))).toEqual({
+    expect(await loadJoin("https://api.test", "NT9WPH", reply(500, preview))).toEqual({
       kind: "offline",
     });
     expect(await loadJoin("https://api.test", "NT9WPH", reply(200, { nope: 1 }))).toEqual({
@@ -72,9 +72,10 @@ describe("links", () => {
   });
 
   it("draws a sticker from the launcher's painted characters", () => {
-    expect(stickerArt("https://ogs-tv.pages.dev/", "bear")).toBe(
+    expect(stickerArt("https://ogs-tv.pages.dev///", "bear")).toBe(
       "https://ogs-tv.pages.dev/art/story-nook/char-bear.webp",
     );
     expect(stickerArt("https://ogs-tv.pages.dev", "../x")).toBeNull();
+    expect(stickerArt("https://ogs-tv.pages.dev", "bear.png")).toBeNull();
   });
 });

@@ -18,7 +18,14 @@ describe("which TV pages are screens", () => {
     });
   });
 
+  it("strips every trailing slash from the API", () => {
+    expect(screenParams("?screen=1&api=http://127.0.0.1:8868///")).toEqual({
+      api: "http://127.0.0.1:8868",
+    });
+  });
+
   it("a launcher link or fake mode is not a screen", () => {
+    expect(screenParams("?token=t")).toBeNull();
     expect(screenParams("?api=https://x.org&token=t")).toBeNull();
     expect(screenParams("?fake=1")).toBeNull();
     expect(screenParams("?api=https://x.org")).toBeNull();
@@ -152,6 +159,60 @@ describe("a screen pairing", () => {
     expect(p.view()).toEqual({ kind: "launcher", token: "lt-1" });
     await p.tick();
     expect(p.view()).toEqual({ kind: "launcher", token: "lt-1" });
+  });
+
+  it("a browser whose kept screen is unreadable makes a new one", async () => {
+    for (const kept of ["{", JSON.stringify({ screenId: "" })]) {
+      const api = fakeApi({});
+      const p = createPairing({
+        api: "https://api.test",
+        fetch: api.fetch,
+        storage: memory({ "ogs.screen": kept }),
+      });
+      await p.tick();
+      expect(api.calls[0]?.method).toBe("POST");
+      expect(p.view()).toEqual({ kind: "code", code: "NT9WPH" });
+    }
+  });
+
+  it("a secret the API refuses (another screen's) starts over: forgets it, then makes a new one", async () => {
+    const api = fakeApi({
+      state: (n) =>
+        n === 0 ? json(403, { error: {} }) : json(200, { code: "KQ7M2X", show: null }),
+    });
+    const storage = memory({
+      "ogs.screen": JSON.stringify({ screenId: "old", secret: "k".repeat(43) }),
+    });
+    const p = createPairing({ api: "https://api.test", fetch: api.fetch, storage });
+    p.view();
+    await p.tick();
+    expect(p.view()).toEqual({ kind: "starting" });
+    expect(storage.data["ogs.screen"]).toBeUndefined();
+    await p.tick();
+    expect(p.view()).toEqual({ kind: "code", code: "KQ7M2X" });
+  });
+
+  it("a state that isn't one says offline", async () => {
+    const p = createPairing({
+      api: "https://api.test",
+      fetch: fakeApi({ state: () => json(200, { nope: 1 }) }).fetch,
+      storage: memory(),
+    });
+    await p.tick();
+    expect(p.view()).toEqual({ kind: "offline" });
+  });
+
+  it("stops telling a listener once it unsubscribes", async () => {
+    const p = createPairing({
+      api: "https://api.test",
+      fetch: fakeApi({}).fetch,
+      storage: memory(),
+    });
+    let told = 0;
+    const off = p.subscribe(() => told++);
+    off();
+    await p.tick();
+    expect(told).toBe(0);
   });
 
   it("ignores an answer that isn't a screen", async () => {

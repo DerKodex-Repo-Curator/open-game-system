@@ -34,13 +34,15 @@ const STORAGE_KEY = "ogs.screen";
 const SavedSchema = z.object({ screenId: z.string().min(1), secret: z.string().min(1) });
 type Saved = z.infer<typeof SavedSchema>;
 
+/** The screen this browser is, if it kept one (anything unreadable is no screen). */
 function load(storage: Storage): Saved | null {
+  let kept: unknown;
   try {
-    const saved = SavedSchema.safeParse(JSON.parse(storage.getItem(STORAGE_KEY) ?? "null"));
-    return saved.success ? saved.data : null;
-  } catch {
-    return null;
-  }
+    // Stryker disable next-line StringLiteral: equivalent, any text that isn't a kept screen reads as none
+    kept = JSON.parse(storage.getItem(STORAGE_KEY) ?? "");
+  } catch {}
+  const saved = SavedSchema.safeParse(kept);
+  return saved.success ? saved.data : null;
 }
 
 const same = (a: PairingView, b: PairingView) => JSON.stringify(a) === JSON.stringify(b);
@@ -63,11 +65,11 @@ export function createPairing(deps: { api: string; fetch: FetchLike; storage: St
     for (const l of listeners) l();
   };
 
-  async function create(): Promise<Saved | null> {
+  /** A new screen (an answer that isn't one throws: the tick says offline). */
+  async function create(): Promise<Saved> {
     const res = await deps.fetch(base, { method: "POST" });
-    const made = ScreenCreatedSchema.safeParse(await res.json());
-    if (!made.success) return null;
-    const saved = { screenId: made.data.screenId, secret: made.data.secret };
+    const made = ScreenCreatedSchema.parse(await res.json());
+    const saved = { screenId: made.screenId, secret: made.secret };
     deps.storage.setItem(STORAGE_KEY, JSON.stringify(saved));
     return saved;
   }
@@ -75,7 +77,6 @@ export function createPairing(deps: { api: string; fetch: FetchLike; storage: St
   async function tick(): Promise<void> {
     try {
       const screen = load(deps.storage) ?? (await create());
-      if (!screen) return set({ kind: "offline" });
       const res = await deps.fetch(`${base}/${screen.screenId}`, {
         headers: { "X-Screen-Secret": screen.secret },
       });
@@ -83,12 +84,11 @@ export function createPairing(deps: { api: string; fetch: FetchLike; storage: St
         deps.storage.removeItem(STORAGE_KEY);
         return set({ kind: "starting" });
       }
-      const state = ScreenStateSchema.safeParse(await res.json());
-      if (!state.success) return set({ kind: "offline" });
+      const state = ScreenStateSchema.parse(await res.json());
       set(
-        state.data.show
-          ? { kind: "launcher", token: state.data.show.token }
-          : { kind: "code", code: state.data.code },
+        state.show
+          ? { kind: "launcher", token: state.show.token }
+          : { kind: "code", code: state.code },
       );
     } catch {
       set({ kind: "offline" });

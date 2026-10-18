@@ -3,10 +3,7 @@ import { z } from "zod";
 /** Where the TV's join QR points (spec ogs-join: opengame.org/join/<code>). */
 export const JOIN_BASE = "https://opengame.org";
 
-/** The letters a TV code is drawn from: no 0/O, 1/I/L, so it reads off a TV across the room. */
-export const TV_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-
-/** A couch session's TV code: six characters from the TV's alphabet. */
+/** A couch session's TV code: six characters, no 0/O, 1/I/L, so it reads off a TV across the room. */
 export const TvCodeSchema = z.string().regex(/^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{6}$/);
 
 /** What someone typed ("nt9-wph ") as a code ("NT9WPH"). */

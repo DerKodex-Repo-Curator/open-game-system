@@ -16,11 +16,13 @@ describe("joinAsGuest", () => {
   it("posts the name and sticker to the couch's code", async () => {
     const sent: { url: string; body: string }[] = [];
     const r = await joinAsGuest(
-      "https://api.test/",
+      "https://api.test///",
       "nt9-wph",
       { name: " Grandma ", sticker: "owl" },
       async (url, init) => {
         sent.push({ url, body: String(init?.body) });
+        expect(init?.method).toBe("POST");
+        expect(init?.headers).toEqual({ "Content-Type": "application/json" });
         return reply(201, joined)();
       },
     );
@@ -41,7 +43,18 @@ describe("joinAsGuest", () => {
       await joinAsGuest("https://a", "NT9WPH", { name: "  ", sticker: "owl" }, reply(201, joined)),
     ).toEqual({ kind: "bad" });
     expect(
-      await joinAsGuest("https://a", "NT9WPH", { name: "G", sticker: "owl" }, reply(500, {})),
+      await joinAsGuest("https://a", "NT9WPH", { name: "G", sticker: "owl" }, reply(500, joined)),
+    ).toEqual({ kind: "offline" });
+    expect(
+      await joinAsGuest("https://a", "NT9WPH", { name: "G", sticker: "../x" }, reply(400, joined)),
+    ).toEqual({ kind: "bad" });
+    expect(
+      await joinAsGuest(
+        "https://a",
+        "NT9WPH",
+        { name: "G", sticker: "owl" },
+        reply(201, { nope: 1 }),
+      ),
     ).toEqual({ kind: "offline" });
     expect(
       await joinAsGuest("https://a", "NT9WPH", { name: "G", sticker: "owl" }, async () => {
@@ -145,6 +158,12 @@ describe("readGuestFrame: what the couch session tells a guest's browser", () =>
       members: [{ name: "Dana", sticker: "bear" }],
       currentAppId: "bake-shop",
     });
+  });
+
+  it("a state with no game on the TV has none", () => {
+    expect(
+      readGuestFrame(JSON.stringify({ type: "state", state: { members: [], current: null } })),
+    ).toEqual({ type: "state", members: [], currentAppId: null });
   });
 
   it("ignores anything else", () => {
