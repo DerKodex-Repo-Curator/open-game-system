@@ -66,6 +66,20 @@ export const PAGES: PageDef[] = [
     source: content("testing.md"),
   },
   {
+    slug: "cli",
+    nav: "The ogs CLI",
+    summary:
+      "ogs, the OGS developer tool: init, dev (no device), manifest check, publish, try, push send, and your game's own app (apps register, push credentials, doctor), with the developer API they call.",
+    source: content("cli.md"),
+  },
+  {
+    slug: "try-kit",
+    nav: "try-kit: no-app try path",
+    summary:
+      "Let a stranger play from one link with no app or account: room codes that recycle, dead-end pages, a blocked-WebSocket banner, the QR, play-on-this-computer, ?ref= events and a load runner.",
+    source: content("try-kit.md"),
+  },
+  {
     slug: "art-and-catalogue",
     nav: "Art kit and catalogue",
     summary:
