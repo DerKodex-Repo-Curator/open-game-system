@@ -1,0 +1,6 @@
+{
+  "//": "TEMPORARY (see jest.config.js).",
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": { "strict": true, "types": ["react-native", "jest"] },
+  "include": ["./**/*.ts", "./**/*.tsx"]
+}
