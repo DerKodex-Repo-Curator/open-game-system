@@ -14,6 +14,7 @@ Grade each package/domain. Update after major changes.
 | notification-kit-core | B | 5/5 pass | 66.67% | All tests passing. `_resetBridge` added for test isolation. Stryker configured. |
 | notification-kit-react | B | 2/2 pass | — | Previously skipped test now passing. Bridge singleton reset fixed the issue. |
 | notification-kit-server | B | 5 pass | 82.35% | Send, bulk, error handling covered. Stryker configured. |
+| create-ogs-app | A- | 140 unit + 16 integration + 3 bin/tarball | 93.84% | CRAP max 7. Generated app verified once with `expo config --type introspect` against the real shell plugin. Stryker configured (skips the bin test). |
 | stream-kit-types | A | passing | — | Pure types + basic validation |
 | stream-kit-web | B | passing | — | Client + RenderStream tested |
 | stream-kit-react | B | passing | — | Hooks and components tested |
@@ -40,6 +41,7 @@ Grade each package/domain. Update after major changes.
 | services/api | 68.79% | 302 | 137 | Auth improved to 79%. |
 | notification-kit-core | 66.67% | 18 | 9 | Survivors are bridge safety patterns (optional chaining). |
 | notification-kit-server | 82.35% | 28 | 6 | Survivors are error message strings. |
+| create-ogs-app | 93.84% | 617 | 48 | Survivors: float edge comparisons and out-of-range loop bounds in png.ts, sort comparators without ties, error/class name strings. |
 
 ## Game push (2026-10-08)
 
