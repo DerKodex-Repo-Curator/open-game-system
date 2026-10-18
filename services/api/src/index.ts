@@ -11,6 +11,7 @@ import devices from "./routes/devices";
 import friends from "./routes/friends";
 import games from "./routes/games";
 import instances from "./routes/instances";
+import familyInvites from "./routes/family-invites";
 import join from "./routes/join";
 import library from "./routes/library";
 import me from "./routes/me";
@@ -58,6 +59,8 @@ app.route("/api/v1/auth", auth);
 app.route("/api/v1/sessions", sessions);
 // The join page's look at a couch by its TV code (no token)
 app.route("/api/v1/join", join);
+// Invite another family: the game link with an invite id, and the funnel events
+app.route("/api/v1/family-invites", familyInvites);
 // Browser screens: a browser on the TV, paired with a code (no Chromecast)
 app.route("/api/v1/screens", screens);
 

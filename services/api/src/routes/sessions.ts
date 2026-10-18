@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { areFriends } from "../lib/friends";
+import { countFirstSession } from "./family-invites";
 import { couchOf, grantFor, playersOf } from "../lib/game-grants";
 import { apiError, invalidBody, parseBody } from "../lib/http";
 import { issueToken, LAUNCHER_TOKEN_TTL_S } from "../lib/identity";
@@ -16,7 +17,11 @@ import {
 } from "../lib/sessions";
 import { anyToken, deviceOnly, type ProfileEnv } from "../middleware/profile-auth";
 
-const CreateSchema = z.object({ tvName: z.string().trim().min(1).max(60) });
+const CreateSchema = z.object({
+  tvName: z.string().trim().min(1).max(60),
+  /** The invite another family this household came through (2026-10-18), if any. */
+  invite: z.string().max(64).optional(),
+});
 const JoinSchema = z.object({
   code: z.string().transform(normaliseCode).pipe(z.string().length(6)),
 });
@@ -35,6 +40,7 @@ sessions.post("/", deviceOnly, async (c) => {
   if (!host) return apiError(c, 404, "profile_not_found", "Profile not found");
   const sessionId = crypto.randomUUID();
   const code = await insertWithFreeCode(db, sessionId, hostId, body.tvName);
+  await countFirstSession(c, body.invite, sessionId);
   const token = await issueToken(
     { sub: hostId, did: `launcher-${crypto.randomUUID()}`, kind: "launcher", sid: sessionId },
     c.env.OGS_JWT_SECRET,

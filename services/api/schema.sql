@@ -239,3 +239,18 @@ CREATE TABLE IF NOT EXISTS guest_profiles (
   session_id TEXT NOT NULL REFERENCES couch_sessions(id),
   created_at INTEGER NOT NULL
 );
+
+-- Invite another family (2026-10-18-invite-another-family.feature): a game link a host sends another
+-- household, and how far that household got. The counts are the funnel's (the wide events
+-- funnel.* carry the same invite id).
+CREATE TABLE IF NOT EXISTS family_invites (
+  id TEXT PRIMARY KEY,
+  from_profile_id TEXT NOT NULL REFERENCES profiles(id),
+  app_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  opened INTEGER NOT NULL DEFAULT 0,
+  testflight_taps INTEGER NOT NULL DEFAULT 0,
+  first_session_id TEXT,
+  first_session_profile_id TEXT,
+  first_session_at INTEGER
+);

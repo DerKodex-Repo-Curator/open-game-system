@@ -5,7 +5,7 @@ export type LinkTarget =
   | { kind: "play"; appId: string; room: string }
   | { kind: "game"; url: string }
   | { kind: "join"; code: string }
-  | { kind: "page"; appId: string };
+  | { kind: "page"; appId: string; inv?: string };
 
 /** The URL's origin, or undefined when it isn't a URL. */
 const originOf = (url: string): string | undefined => {
@@ -26,7 +26,7 @@ export function routeLink(url: string, startUrls: readonly string[]): LinkTarget
   const play = readPlayLink(url);
   if (play) return { kind: "play", appId: play.appId, room: play.room };
   const page = readGameLink(url);
-  if (page) return { kind: "page", appId: page.appId };
+  if (page) return page.inv ? { kind: "page", ...page } : { kind: "page", appId: page.appId };
   const origin = originOf(url);
   if (origin?.startsWith("https://") && startUrls.some((s) => originOf(s) === origin))
     return { kind: "game", url };
@@ -46,11 +46,11 @@ export function openLink(
     play: (appId: string, room: string) => void;
     game: (url: string) => void;
     join: (code: string) => void;
-    page: (appId: string) => void;
+    page: (appId: string, inv?: string) => void;
   },
 ): void {
   const target = routeLink(url, deps.startUrls);
-  if (target?.kind === "page") deps.page(target.appId);
+  if (target?.kind === "page") deps.page(target.appId, target.inv);
   else if (target?.kind === "join") deps.join(target.code);
   else if (target?.kind === "play") deps.play(target.appId, target.room);
   else if (target) deps.game(target.url);
@@ -94,6 +94,8 @@ export function createLinkOpener(deps: {
   startUrls: () => readonly string[];
   push: (path: string) => void;
   game: (url: string) => void;
+  /** Remembers the invite another family a game link carried (invite-attribution.ts). */
+  invite: (inviteId: string) => void;
 }) {
   /** Where each kind of link goes in the app. */
   const go = (url: string, from: LinkFrom) =>
@@ -102,7 +104,10 @@ export function createLinkOpener(deps: {
       play: (appId, room) => deps.push(`/play/${appId}?room=${encodeURIComponent(room)}`),
       game: deps.game,
       join: (code) => deps.push(`/join/${code}`),
-      page: (appId) => deps.push(`/library/${appId}`),
+      page: (appId, inv) => {
+        if (inv) deps.invite(inv);
+        deps.push(`/library/${appId}`);
+      },
     });
   const open = (url: string, from: LinkFrom) => {
     if (deps.hold.offer(url, from, deps.hasProfile())) return;

@@ -19,6 +19,7 @@ import { join, resolve } from "node:path";
 import jsQR from "jsqr";
 import { type Browser, chromium, devices, type FrameLocator, type Page } from "playwright";
 import { PNG } from "pngjs";
+import { z } from "zod";
 
 const FRONT_DOOR =
   process.env.FUNNEL_FRONT_DOOR ?? "https://ogs-front-door.jonathanrmumm.workers.dev";
@@ -217,15 +218,20 @@ async function main() {
     post("launched");
 
     // Round 1: the Captain reads the line; the Fixer presses what it says.
-    const { line } = (await waitStep("captain-line")) as { line: string };
+    const { line } = z.object({ line: z.string() }).parse(await waitStep("captain-line"));
     const problem = parseCaptainLine(line);
     check(
       "the Captain's first problem is one the Fixer can fix",
       problem.expect.length > 0,
       `${line} → ${problem.kind}`,
     );
-    for (const action of problem.expect as { control: string; value?: string }[]) {
-      const spec = CONTROLS[action.control] as { color: string; kind: string };
+    const actions = z
+      .array(z.object({ control: z.string(), value: z.string().optional() }))
+      .parse(problem.expect);
+    for (const action of actions) {
+      const spec = z
+        .object({ color: z.string(), kind: z.string() })
+        .parse(CONTROLS[action.control]);
       if (spec.kind === "lever") {
         const box = await fixer.getByRole("slider", { name: "orange" }).boundingBox();
         if (!box) throw new Error("no lever");

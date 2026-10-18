@@ -89,7 +89,7 @@ describe("opening a link or a tap", () => {
       play: (a, r) => went.push(`play:${a}:${r}`),
       game: (u) => went.push(`game:${u}`),
       join: (c) => went.push(`join:${c}`),
-      page: (a) => went.push(`page:${a}`),
+      page: (a, inv) => went.push(inv ? `page:${a}:${inv}` : `page:${a}`),
     });
     return went;
   };
@@ -167,6 +167,7 @@ describe("the app's link opener", () => {
       startUrls: () => startUrls,
       push: (path) => went.push(`push:${path}`),
       game: (url) => went.push(`game:${url}`),
+      invite: (inv) => went.push(`invite:${inv}`),
     });
     return {
       links,
@@ -199,6 +200,18 @@ describe("the app's link opener", () => {
       "push:/library/night-flight",
       "push:/play/night-flight?room=KQTP",
       "game:https://triviajam.tv/host",
+    ]);
+  });
+
+  it("a game link with an invite remembers the invite, then opens the game's page", () => {
+    const o = opener(true);
+    o.links.open(
+      "https://opengame.org/play/rocket-crew?inv=6f0c2a9e-1b7d-4c3e-9a51-2f1d8c7b0e44",
+      "link",
+    );
+    expect(o.went).toEqual([
+      "invite:6f0c2a9e-1b7d-4c3e-9a51-2f1d8c7b0e44",
+      "push:/library/rocket-crew",
     ]);
   });
 

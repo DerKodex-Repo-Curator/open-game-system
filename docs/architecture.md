@@ -145,11 +145,14 @@ route → 403 `profile_token_required`.
 | GET / PATCH | `/api/v1/me` | phone/tablet | → `Me` / `{ name?, handle?, sticker? }` → `Me`; 409 `handle_taken` |
 | GET / PUT | `/api/v1/me/library` | GET any (launcher = host's), PUT phone/tablet | `{ appIds }` (whole catalogue until changed) |
 | GET / POST | `/api/v1/me/instances` | any (launcher = host's) | `Instance[]` newest first (same-ms tie: latest write) / `InstanceReport & { source: bridge\|visit }` → `Instance` |
-| POST | `/api/v1/sessions` | phone/tablet | `{ tvName }` → 201 `{ sessionId, code, tvName, host, token }` (launcher token) |
+| POST | `/api/v1/sessions` | phone/tablet | `{ tvName, invite? }` → 201 `{ sessionId, code, tvName, host, token }` (launcher token). `invite`: the invite another family this household came through; its first couch logs `funnel.first_session` (once; never the inviter's) |
 | GET | `/api/v1/sessions/:sid` | its launcher, host or a member | → `{ sessionId, code, tvName, host }`; 403 `not_a_member`, 404 `session_not_found` |
 | POST | `/api/v1/sessions/join` | phone/tablet | `{ code }` (TV code; case, spaces, dashes ignored) → session view; 404 `session_not_found` |
 | GET | `/api/v1/join/:code` | none | The join page's look at a couch (opengame.org/join/<code>): `{ code, tvName, host: {name, sticker}, couch: [{name, sticker}] }`, host first then join order; no ids or @ids. 404 `session_not_found` (expired/unknown), 400 `invalid_code` |
 | POST | `/api/v1/join/:code/guest` | none | A guest from the browser: `{ name (1-30), sticker (a sticker id) }` → 201 `{ token, sessionId, code, tvName }`; a profile for this couch only (`guest_profiles`), a member of it, and a phone token (12 h) for the couch WebSocket. 404 `session_not_found`, 400 |
+| POST | `/api/v1/family-invites` | phone/tablet | Invite another family: `{ appId }` (a catalogue game) → 201 `{ inviteId, link }` (`https://opengame.org/play/<appId>?inv=<id>`); logs `funnel.invite_sent` |
+| GET | `/api/v1/family-invites/:id` | none | `{ appId, opened, testflightTaps, firstSession }` (counts only, no one named); 404 `invite_not_found` |
+| POST | `/api/v1/family-invites/:id/events` | none (rate limited per IP) | `{ step: "link_opened" \| "testflight_tap" }` from the invite's page → 204; logs `funnel.<step>` |
 | POST | `/api/v1/screens` | none | A browser on the TV becomes a screen: `{ screenId, code, secret }` (201); the secret is kept only as a SHA-256 hash |
 | GET | `/api/v1/screens/:id` | `X-Screen-Secret` | `{ code, show: { token } \| null }`: the launcher token to show; 401 `missing_secret`, 403 `wrong_secret`, 404 `screen_not_found` (unclaimed > 1 h, claimed and unused > 30 days) |
 | POST | `/api/v1/screens/claim` | phone/tablet | `{ code }` → `{ screenId, name: "Browser TV" }`; the caller owns it; 404 `screen_not_found` |

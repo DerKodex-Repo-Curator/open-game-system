@@ -9,6 +9,7 @@ import { ErrorLine } from "../../components/ogs/ErrorLine";
 import { castPromptError } from "../../components/ogs/library/play-action";
 import { padSize, RemotePad } from "../../components/ogs/RemotePad";
 import { BrowserTv } from "../../components/ogs/remote/BrowserTv";
+import { InviteFamily } from "../../components/ogs/remote/InviteFamily";
 import { JoinTv } from "../../components/ogs/remote/JoinTv";
 import { castTarget, lastStop } from "../../components/ogs/remote/last-stop";
 import { HolderLine, NowOnTv } from "../../components/ogs/remote/NowOnTv";
@@ -291,6 +292,7 @@ function NotCast({ connecting }: { connecting: boolean }) {
             {stopped.name}
           </Text>
           <Text style={styles.lead}>Your games keep their place: one tap casts them back.</Text>
+          <InviteFamily />
         </View>
       ) : (
         <Text style={styles.lead}>Cast once and the TV becomes your game console.</Text>

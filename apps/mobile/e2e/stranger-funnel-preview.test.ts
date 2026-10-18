@@ -1,4 +1,5 @@
 import { by, device, element, waitFor, web } from "detox";
+import { z } from "zod";
 
 // The whole stranger funnel against the preview stack (docs/funnel-audit.md), the host's phone half.
 // The orchestrator, e2e/stranger-funnel-preview.ts, drives the browsers (the front door, the TV, the
@@ -15,7 +16,7 @@ async function step(name: string, body: unknown = {}): Promise<void> {
 async function wait(name: string): Promise<Record<string, unknown>> {
   for (let i = 0; i < 90; i++) {
     const res = await fetch(`${COORD}/wait/${name}`);
-    if (res.status === 200) return (await res.json()) as Record<string, unknown>;
+    if (res.status === 200) return z.record(z.string(), z.unknown()).parse(await res.json());
   }
   throw new Error(`the orchestrator never said ${name}`);
 }

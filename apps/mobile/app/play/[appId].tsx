@@ -1,3 +1,4 @@
+import { readGameLink } from "@open-game-system/ogs-protocol";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text } from "react-native";
@@ -5,7 +6,7 @@ import { Button } from "../../components/ogs/Button";
 import { Screen } from "../../components/ogs/Screen";
 import { colors } from "../../components/ogs/theme";
 import type { JoinOutcome } from "../../services/rooms";
-import { appState, linkHold, roomJoiner, useApp } from "../../services/runtime";
+import { appState, inviteAttribution, linkHold, roomJoiner, useApp } from "../../services/runtime";
 
 /**
  * An invite link opened in OGS (spec §7): opengame.org/play/<appId>?room=<room> or
@@ -14,7 +15,11 @@ import { appState, linkHold, roomJoiner, useApp } from "../../services/runtime";
  */
 export default function PlayLinkScreen() {
   const router = useRouter();
-  const { appId, room } = useLocalSearchParams<{ appId: string; room?: string }>();
+  const { appId, room, inv } = useLocalSearchParams<{
+    appId: string;
+    room?: string;
+    inv?: string;
+  }>();
   const app = useApp();
   const game = [...app.library, ...app.catalogue].find((g) => g.appId === appId);
   const ready = app.identity !== null && game !== undefined;
@@ -27,15 +32,25 @@ export default function PlayLinkScreen() {
     let live = true;
     void appState.init().then(() => {
       if (!live) return;
-      const link = `opengame://play/${appId}${room ? `?room=${encodeURIComponent(room)}` : ""}`;
+      const query = room
+        ? `?room=${encodeURIComponent(room)}`
+        : inv
+          ? `?inv=${encodeURIComponent(inv)}`
+          : "";
+      const link = `opengame://play/${appId}${query}`;
       if (linkHold.offer(link, "link", appState.getSnapshot().identity !== null))
         router.replace("/");
-      else if (!room) router.replace(`/library/${appId}`);
+      else if (!room) {
+        // A game link from another family's invite: their first cast counts toward it.
+        const invite = readGameLink(link)?.inv;
+        if (invite) void inviteAttribution.remember(invite);
+        router.replace(`/library/${appId}`);
+      }
     });
     return () => {
       live = false;
     };
-  }, [appId, room, router]);
+  }, [appId, room, inv, router]);
 
   useEffect(() => {
     if (!ready || !appId || !room || outcome !== null) return;

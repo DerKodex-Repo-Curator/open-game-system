@@ -195,6 +195,30 @@ describe("ogs-api: couch sessions", () => {
   });
 });
 
+// 2026-10-18-invite-another-family.feature
+describe("ogs-api: invite another family", () => {
+  const INV = "6f0c2a9e-1b7d-4c3e-9a51-2f1d8c7b0e44";
+  it("makes an invite to a game", async () => {
+    const made = { inviteId: INV, link: `https://opengame.org/play/rocket-crew?inv=${INV}` };
+    const { client, calls } = api(() => ({ status: 201, body: made }));
+    expect(await client.createFamilyInvite("rocket-crew")).toEqual(made);
+    expect(calls[0]).toMatchObject({
+      url: `${BASE}/api/v1/family-invites`,
+      method: "POST",
+      body: { appId: "rocket-crew" },
+      headers: { authorization: "Bearer tok" },
+    });
+  });
+
+  it("a cast names the invite this household came through", async () => {
+    const created = { sessionId: "s1", code: "KITE42", tvName: "TV", host: profile, token: "lt" };
+    const { client, calls } = api(() => ({ status: 201, body: created }));
+    await client.createSession("TV", INV);
+    await client.createSession("TV");
+    expect(calls.map((c) => c.body)).toEqual([{ tvName: "TV", invite: INV }, { tvName: "TV" }]);
+  });
+});
+
 // 2026-10-17-browser-tv.feature: claim a browser TV by its code, show a launcher there, stop.
 describe("ogs-api: browser TVs", () => {
   it("claims a screen by its code", async () => {

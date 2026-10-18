@@ -467,3 +467,46 @@ describe("app state: library, catalogue, instances", () => {
     off();
   });
 });
+
+// 2026-10-18-invite-another-family.feature: a household that came through an invite casts its first
+// couch with it (the API counts funnel.first_session); the invite is used once.
+describe("app state: the invite a household came through", () => {
+  it("goes with the cast, then is spent", async () => {
+    let kept: string | null = "inv-1";
+    const api = fakeApi();
+    const app = createAppState({
+      api,
+      storage: memory(),
+      device: { kind: "phone", name: "iPhone" },
+      newDeviceId: () => "d1",
+      invite: {
+        current: async () => kept,
+        clear: async () => {
+          kept = null;
+        },
+      },
+    });
+    await app.createProfile(newProfile);
+    await app.startSession("Browser TV");
+    expect(api.createSession).toHaveBeenLastCalledWith("Browser TV", "inv-1");
+    expect(kept).toBeNull();
+    await app.startSession("Browser TV");
+    expect(api.createSession).toHaveBeenLastCalledWith("Browser TV");
+  });
+
+  it("a cast that fails keeps the invite for the next one", async () => {
+    let kept: string | null = "inv-1";
+    const api = fakeApi();
+    api.createSession.mockRejectedValueOnce(new Error("offline"));
+    const app = createAppState({
+      api,
+      storage: memory(),
+      device: { kind: "phone", name: "iPhone" },
+      newDeviceId: () => "d1",
+      invite: { current: async () => kept, clear: async () => void (kept = null) },
+    });
+    await app.createProfile(newProfile);
+    await expect(app.startSession("Browser TV")).rejects.toThrow("offline");
+    expect(kept).toBe("inv-1");
+  });
+});

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { InviteIdSchema } from "./family-invite";
 import { GameRefSchema, PublicProfileSchema } from "./friends";
 import { RoomIdSchema } from "./session";
 
@@ -34,10 +35,15 @@ export function readPlayLink(url: string): { appId: string; room: string } | nul
  * A play link with no room (`opengame.org/play/<appId>`, any origin or the app's scheme): open the
  * game in OGS, not a room. A link with a room is an invite (readPlayLink).
  */
-export function readGameLink(url: string): { appId: string } | null {
+export function readGameLink(url: string): { appId: string; inv?: string } | null {
   if (readPlayLink(url)) return null;
-  const m = /^(?:[a-z]+:\/\/[^/?#]+\/|[a-z]+:\/\/)play\/([a-z0-9-]+)\/?(?:[?#].*)?$/.exec(url);
-  return m?.[1] ? { appId: m[1] } : null;
+  const m = /^(?:[a-z]+:\/\/[^/?#]+\/|[a-z]+:\/\/)play\/([a-z0-9-]+)\/?(?:\?([^#]*))?(?:#.*)?$/.exec(
+    url,
+  );
+  if (!m?.[1]) return null;
+  // An invite another family link names its invite (family-invite.ts).
+  const inv = InviteIdSchema.safeParse(queryParam(m[2] ?? "", "inv"));
+  return inv.success ? { appId: m[1], inv: inv.data } : { appId: m[1] };
 }
 
 /**

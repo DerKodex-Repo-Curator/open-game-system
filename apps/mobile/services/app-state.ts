@@ -98,6 +98,8 @@ function failure<R extends string>(
 const isTaken = (err: unknown) => err instanceof OgsApiError && err.code === "handle_taken";
 
 export function createAppState(opts: {
+  /** The invite another family this phone came through (invite-attribution.ts). */
+  invite?: { current(): Promise<string | null>; clear(): Promise<void> };
   api: Api;
   storage: SecureStorage;
   /** This device as the API registers it (minus its id, minted per profile token). */
@@ -247,7 +249,12 @@ export function createAppState(opts: {
     },
     /** Cast: a new couch session hosted by this profile. Returns the launcher's token. */
     async startSession(tvName: string): Promise<string> {
-      const { token, ...info } = await opts.api.createSession(tvName);
+      // The invite this household came through goes with its cast, once (the API counts it).
+      const invite = await opts.invite?.current();
+      const { token, ...info } = invite
+        ? await opts.api.createSession(tvName, invite)
+        : await opts.api.createSession(tvName);
+      if (invite) await opts.invite?.clear();
       await keepSession({ ...info, launcherToken: token, role: "host" });
       return token;
     },

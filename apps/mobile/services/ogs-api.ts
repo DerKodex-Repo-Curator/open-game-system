@@ -1,4 +1,6 @@
 import {
+  type FamilyInvite,
+  FamilyInviteSchema,
   type Instance,
   type InstanceReport,
   InstanceSchema,
@@ -209,13 +211,26 @@ export function createOgsApi(opts: OgsApiOptions) {
       return parse(MeSchema, data);
     },
     /** Cast: a couch session hosted by this profile, its TV code and the launcher's token. */
-    async createSession(tvName: string): Promise<SessionCreated> {
+    /** Cast: a new couch session; `invite` is the invite another family this household came through. */
+    async createSession(tvName: string, invite?: string): Promise<SessionCreated> {
       const data = await request("/api/v1/sessions", {
         method: "POST",
-        body: { tvName },
+        body: invite ? { tvName, invite } : { tvName },
         authed: true,
       });
       return parse(SessionCreatedSchema, data);
+    },
+    /** Invite another family to a game: the invite and its link (funnel.invite_sent). */
+    async createFamilyInvite(appId: string): Promise<FamilyInvite> {
+      const data = await request("/api/v1/family-invites", {
+        method: "POST",
+        body: { appId },
+        authed: true,
+      });
+      // ogs-protocol's schema (zod 3), so not through parse (this app's zod 4).
+      const made = FamilyInviteSchema.safeParse(data);
+      if (!made.success) throw new OgsApiError("BAD_RESPONSE", made.error.message, 0);
+      return made.data;
     },
     /** Join a cast with the code the TV shows (404 session_not_found for a wrong code). */
     async joinSession(code: string): Promise<SessionInfo> {

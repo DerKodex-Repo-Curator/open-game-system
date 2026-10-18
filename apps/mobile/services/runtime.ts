@@ -50,6 +50,7 @@ import { createGamePresence } from "./game-presence";
 import { createGameProfile, createGameTokenClient } from "./game-profile";
 import { createGameUrls, rejoinUrl, rememberGame } from "./game-rejoin";
 import { createGoogleCastBackend } from "./google-cast-backend";
+import { createInviteAttribution } from "./invite-attribution";
 import { captureJsErrors, type RejectionTracker } from "./js-errors";
 import { launchPlan } from "./launch-plan";
 import type { ReturnPill } from "./leave-game";
@@ -191,9 +192,13 @@ export const gameProfile = createGameProfile({
 /** App storage (wiped with the app), unlike the Keychain behind SecureStore. */
 const INSTALLED_KEY = "@ogs/installed";
 
+/** The invite another family this phone came through (2026-10-18-invite-another-family.feature). */
+export const inviteAttribution = createInviteAttribution(AsyncStorage);
+
 export const appState = createAppState({
   api,
   storage: SecureStore,
+  invite: inviteAttribution,
   device: {
     kind: Device.deviceType === Device.DeviceType.TABLET ? "tablet" : "phone",
     name: Device.deviceName ?? "Phone",
