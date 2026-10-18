@@ -27,14 +27,14 @@ describe("the join QR's path", () => {
   it("has a 4-module quiet zone on every side", () => {
     const { size, d } = qrPath("https://opengame.org/join/NT9WPH");
     expect(d).toMatch(/^M\d/);
-    const runs = [...d.matchAll(/M(\d+) (\d+)h(\d+)/g)].map((m) => [
-      Number(m[1]),
-      Number(m[2]),
-      Number(m[3]),
-    ]);
-    expect(Math.min(...runs.map(([x]) => x))).toBe(4);
-    expect(Math.min(...runs.map(([, y]) => y))).toBe(4);
-    expect(Math.max(...runs.map(([x, , w]) => x + w))).toBe(size - 4);
-    expect(Math.max(...runs.map(([, y]) => y + 1))).toBe(size - 4);
+    const runs = [...d.matchAll(/M(\d+) (\d+)h(\d+)/g)].map((m) => ({
+      x: Number(m[1]),
+      y: Number(m[2]),
+      w: Number(m[3]),
+    }));
+    expect(Math.min(...runs.map((r) => r.x))).toBe(4);
+    expect(Math.min(...runs.map((r) => r.y))).toBe(4);
+    expect(Math.max(...runs.map((r) => r.x + r.w))).toBe(size - 4);
+    expect(Math.max(...runs.map((r) => r.y + 1))).toBe(size - 4);
   });
 });
