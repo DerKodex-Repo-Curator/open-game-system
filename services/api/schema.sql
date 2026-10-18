@@ -299,3 +299,16 @@ CREATE TABLE IF NOT EXISTS app_devices (
   updated_at INTEGER NOT NULL,
   PRIMARY KEY (device_id, app_id)
 );
+
+-- A game's catalogue entry (ogs publish; docs/design-docs/ogs-cli.md): manifest_json is the live
+-- manifest (in GET /api/v1/catalogue), pending_json the submission awaiting review. A live entry
+-- stays live until its update is approved; status is the latest review state.
+CREATE TABLE IF NOT EXISTS catalogue_entries (
+  app_id TEXT PRIMARY KEY,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'live', 'rejected')),
+  manifest_json TEXT,
+  pending_json TEXT,
+  submitted_at INTEGER NOT NULL,
+  reviewed_at INTEGER,
+  note TEXT
+);
