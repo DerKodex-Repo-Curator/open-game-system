@@ -45,7 +45,8 @@ const familyInvites = new Hono<ProfileEnv>();
 /** POST / — the host's phone makes an invite to a game: funnel.invite_sent. */
 familyInvites.post("/", anyToken, deviceOnly, async (c) => {
   const body = await parseBody(c, CreateSchema);
-  if (!body || !findManifest(body.appId)) return invalidBody(c, "appId (a catalogue game) is required");
+  if (!body || !findManifest(body.appId))
+    return invalidBody(c, "appId (a catalogue game) is required");
   const inviteId = crypto.randomUUID();
   const profileId = c.get("claims").sub;
   await c.env.DB.prepare(

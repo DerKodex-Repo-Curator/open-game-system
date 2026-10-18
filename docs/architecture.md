@@ -153,6 +153,8 @@ route → 403 `profile_token_required`.
 | POST | `/api/v1/family-invites` | phone/tablet | Invite another family: `{ appId }` (a catalogue game) → 201 `{ inviteId, link }` (`https://opengame.org/play/<appId>?inv=<id>`); logs `funnel.invite_sent` |
 | GET | `/api/v1/family-invites/:id` | none | `{ appId, opened, testflightTaps, firstSession }` (counts only, no one named); 404 `invite_not_found` |
 | POST | `/api/v1/family-invites/:id/events` | none (rate limited per IP) | `{ step: "link_opened" \| "testflight_tap" }` from the invite's page → 204; logs `funnel.<step>` |
+| GET | `/api/v1/couch/recent-players` | phone/tablet | Who shared a couch with me (hosted or joined) in the last 7 days, newest couch first: `{ players: [{ profileId, name, sticker, reachable }] }`; never me or a browser guest; `reachable`: a phone OGS can notify |
+| POST | `/api/v1/couch/invite` | phone/tablet | `{ profileIds }` (1–20) → `{ invited, skipped }`: pushes my couch's join link (`https://opengame.org/join/<code>`, data `type: couch-invite`) to their phones, only last week's players, once per person per couch (`couch_invites`); 409 `not_casting` without my cast in the last 12 h; logs `couch.invite_sent` |
 | POST | `/api/v1/screens` | none | A browser on the TV becomes a screen: `{ screenId, code, secret }` (201); the secret is kept only as a SHA-256 hash |
 | GET | `/api/v1/screens/:id` | `X-Screen-Secret` | `{ code, show: { token } \| null }`: the launcher token to show; 401 `missing_secret`, 403 `wrong_secret`, 404 `screen_not_found` (unclaimed > 1 h, claimed and unused > 30 days) |
 | POST | `/api/v1/screens/claim` | phone/tablet | `{ code }` → `{ screenId, name: "Browser TV" }`; the caller owns it; 404 `screen_not_found` |

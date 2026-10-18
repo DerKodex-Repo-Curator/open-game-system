@@ -18,6 +18,7 @@ import { castPromptError } from "../../components/ogs/library/play-action";
 import { padSize, RemotePad } from "../../components/ogs/RemotePad";
 import { BrowserTv } from "../../components/ogs/remote/BrowserTv";
 import { InviteFamily } from "../../components/ogs/remote/InviteFamily";
+import { InviteRecent } from "../../components/ogs/remote/InviteRecent";
 import { JoinTv } from "../../components/ogs/remote/JoinTv";
 import { castTarget, lastStop } from "../../components/ogs/remote/last-stop";
 import { HolderLine, NowOnTv } from "../../components/ogs/remote/NowOnTv";
@@ -171,6 +172,7 @@ function Remote({ castDeviceName }: { castDeviceName: string | null }) {
         onChangeTv={openPicker}
         rowEnd={controls.changeTv ? null : end}
       />
+      <InviteRecent />
       <ErrorLine
         text={switchError}
         action="retry"

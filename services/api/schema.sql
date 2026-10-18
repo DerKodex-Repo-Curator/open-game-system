@@ -254,3 +254,12 @@ CREATE TABLE IF NOT EXISTS family_invites (
   first_session_profile_id TEXT,
   first_session_at INTEGER
 );
+
+-- Invite last week's players (docs/acceptance/2026-10-18-second-visit.feature): who a host pushed
+-- the couch's join link to, once per person per couch. sent_at: ms.
+CREATE TABLE IF NOT EXISTS couch_invites (
+  session_id TEXT NOT NULL REFERENCES couch_sessions(id),
+  profile_id TEXT NOT NULL REFERENCES profiles(id),
+  sent_at INTEGER NOT NULL,
+  PRIMARY KEY (session_id, profile_id)
+);
