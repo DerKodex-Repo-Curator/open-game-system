@@ -22,6 +22,8 @@ export const ManifestSchema = z.object({
   startUrl: z.string().url(),
   /** A static TV page. Room-based games omit it: their phone page sends the room's TV URL at runtime (cast-kit useCastViewUrl). */
   tvUrl: z.string().url().optional(),
+  /** The game's no-app try path (its try-kit Worker), set by OGS when `ogs try` registers it. */
+  tryUrl: z.string().url().optional(),
   roles: z.array(RoleSchema).default([]),
   art: z.object({
     tile: z.string().min(1),

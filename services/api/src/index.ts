@@ -9,6 +9,7 @@ import auth from "./routes/auth";
 import catalogue from "./routes/catalogue";
 import clientEvents from "./routes/client-events";
 import couch from "./routes/couch";
+import deliver from "./routes/deliver";
 import devices from "./routes/devices";
 import friends from "./routes/friends";
 import games from "./routes/games";
@@ -45,6 +46,8 @@ app.route("/api/v1/devices", devices);
 // White-label apps: registration, push credentials (game API key), app links (public).
 app.route("/api/v1/apps", apps);
 app.route("/api/v1/apps", appDevices);
+// Developer API, deliver (ogs try, ogs push send): game key; before /games, whose routes need a profile token
+app.route("/api/v1", deliver);
 
 // Profiles (docs/product-specs/ogs-profiles.html): POST /profiles, GET /handles (no token)
 app.route("/api/v1", profiles);
