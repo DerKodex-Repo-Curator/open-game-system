@@ -131,6 +131,23 @@ describe("ogs dev, end to end", () => {
     ]);
   });
 
+  it("shows the TV page a phone names with cast SET_VIEW_URL (room-based games), and starts it", async () => {
+    const phone = await page.evaluate(
+      () =>
+        (window as unknown as { ogsDev: { config: { phones: { url: string }[] } } }).ogsDev.config
+          .phones[0].url,
+    );
+    const roomTv = `${game.origin}/tv?room=KQTP`;
+    await frameAt(phone).evaluate((url) => {
+      window.ReactNativeWebView?.postMessage(
+        JSON.stringify({ type: "EVENT", storeKey: "cast", event: { type: "SET_VIEW_URL", url } }),
+      );
+    }, roomTv);
+    await expect
+      .poll(() => text(frameAt(roomTv), "session"), { timeout: 20_000 })
+      .toContain('"players":["Ada","Sam"]');
+  });
+
   it("stops on Ctrl-C with exit 0", async () => {
     const exited = new Promise<number | null>((r) => cli.once("exit", (code) => r(code)));
     cli.kill("SIGINT");
