@@ -1,0 +1,83 @@
+# Exec plan: `@open-game-system/shell`, `create-ogs-app`, Rocket Crew app
+
+Design (decided): [docs/design-docs/white-label-shell.md](../../design-docs/white-label-shell.md). Branch `claude/shell-app`.
+Never merge OGS `main` from this branch (main deploys production); push the branch.
+
+## Facts that shape the extraction (checked 2026-10-18)
+
+- `.npmrc` `shamefully-hoist=true`; jest mocks a node module by its resolved real path, so a `jest.mock("react-native-google-cast")`
+  in an apps/mobile test still intercepts the same import from `packages/shell/src` **only if both resolve to the same `.pnpm` folder**.
+  The shell declares those modules as peerDependencies plus devDependencies with **exactly** apps/mobile's specifiers. A guard test checks it.
+- jest-expo transforms files outside node_modules with `expo/internal/babel-preset`; the RN test env uses export conditions
+  `['require','react-native']`; Expo's tsconfig base has `customConditions: ["react-native"]`. An `exports` map with `"react-native"` first
+  sends Jest, Metro and tsc to TS source: no build needed to test.
+- Don't bundle the shell into one file (app-bridge-react-native style): import-time side effects (`notifications.ts` calls
+  `setNotificationHandler`) and native imports would leak into every test. Per-file modules: source via the `react-native` condition,
+  per-file `tsc` build to `build/` for publishing.
+- Metro inlines `EXPO_PUBLIC_*` only in app code: `services/config.ts` stays in the app. The shell gets config passed in or reads
+  `Constants.expoConfig.extra.ogsShell` (written by the plugin).
+- `app-links-config.test.ts` reads `apps/mobile/app.json` directly: app.json keeps its associatedDomains and intentFilters; any plugin
+  used by apps/mobile is additive and skips duplicates.
+- Sign-in today is email-only; `ogs-api.ts` already has `Credential = apple|google {idToken}`; no guest profile; haptics only in
+  `components/ogs/remote/press.ts`; `components/GameLoadingOverlay.tsx` is dead code.
+- Adding a native module or config plugin to apps/mobile changes its fingerprint (new native build, not OTA). JS-only workspace deps don't.
+- `.github/workflows/ci-mobile.yml` triggers on `apps/mobile/**` only: add `packages/shell/**`.
+
+## Extraction approach
+
+`git mv` the implementation to `packages/shell/src/<name>.ts`; leave `apps/mobile/services/<name>.ts` as a one-line shim
+`export * from "@open-game-system/shell/modules/<name>";` (no service has a default export). One module instance either way.
+
+Moves (generic shell): cast-session-device, cast-backend, cast-once, cast-trace, client-log, js-errors, game-url-store, hardware-back,
+push-registration, push-foreground, game-loading; then (RISK, google-cast mocks) cast-store, cast-view, cast-sync, google-cast-backend,
+fake-cast, screen-cast; then (RISK) notifications, consent-sheet; then split ogs-api (generic: OgsApiError, createApiRequest,
+ProfileSchema, LoginSchema, Credential, OgsApiOptions → `src/api-request.ts`) and identity (schema + storage → shell; STICKERS stay),
+then game-profile, push-api, ogs-bridge, game-notifications.
+
+Stay in apps/mobile: link-routing + deep-links (`link-routing.test` mocks `../deep-links` by relative path), config.ts, cast-flow,
+cast-switch, cast-stop, game-cast-route (launcher/couch), sign-in-flow (email), ota/app-release/update-check, user-message,
+AppErrorBoundary, UpdateRequired, everything OGS-app-specific (tabs, catalogue, friends, couch, onboarding, library…).
+
+## Package shape
+
+- `packages/shell/package.json`: peers (react-native-google-cast, expo-notifications, expo-device, expo-constants, expo-linking,
+  async-storage, react-native, react-native-webview, expo-secure-store, expo-haptics, expo, react; expo-apple-authentication optional);
+  exports `"./package.json"`, `"./app.plugin.js"`, `"."` and `"./modules/*"` as `{ "react-native": "./src/…ts", "types": "./src/…ts",
+  "default": "./build/…js" }`, `"./plugin"` (pure core). Scripts: build (tsc runtime → build/, tsc plugin → plugin/build), typecheck, test.
+- Plugin tests: Vitest (pure). RN tests: jest-expo (like packages/app-bridge-react-native).
+- `plugin/src/shell-config.ts` (zod ShellConfigSchema: appId, gameUrl https, name, icon, splash, branding hidden|powered-by default hidden,
+  linkDomains default [], cast {receiver:"ogs"}); `plugin/src/native-config.ts` pure `nativeConfigFor(config)`:
+  ios.associatedDomains (applinks:<domains> + applinks:opengame.org), ios.usesAppleSignIn, infoPlist NSLocalNetworkUsageDescription
+  (with the app name) + NSBonjourServices `_googlecast._tcp`; android autoVerify VIEW intent filters (link domains `/`, opengame.org
+  `/play/<appId>`); plugins react-native-google-cast {receiverAppId "807AD5E9", iosStartDiscoveryAfterFirstTapOnCastButton:false},
+  expo-notifications, expo-apple-authentication, expo-splash-screen; extra.ogsShell {appId, gameUrl, branding, linkDomains}.
+  Never sets bundleIdentifier, package, appleTeamId, owner. `withOgsShell` merges without duplicates, idempotent; sub-plugins
+  withShellLinks/Cast/Push/SignIn exported.
+- Runtime: `createShellRuntime(config, deps)`, `<OgsShell config? />` (ShellWebView = BridgedWebView with cast/profile/notifications/
+  ogs/haptics stores, loading, OfflineScreen, SignInSheet, push prompt), hooks. No expo-router dependency.
+
+## New in the shell (single-game needs)
+
+Straight into gameUrl; guest device profile (`ensureGuestProfile`, contract with the API session); native sign-in
+(`native-sign-in.ts` + `SignInSheet.tsx`, expo-apple-authentication; Google behind an interface) against
+`POST …/auth/native {provider, identityToken, deviceProfileId?}` with a fake fetch; `shell-links.ts` (opengame.org/play/<appId>/<rest>
+→ gameUrl origin + rest; link domains as is; push URLs on the game origin as is); `webview-status.ts` + `OfflineScreen.tsx` (keep
+testIDs gameErrorScreen/gameRetryButton); a haptics bridge store (new ogs-protocol schema + docs); cast `chrome: "none"` optional
+field (existing payloads unchanged); "Powered by OGS" mark when branding is powered-by.
+
+## Steps (each green and committed)
+
+0. Acceptance feature `docs/acceptance/2026-10-18-white-label-shell.feature` + index; scaffold package; apps/mobile depends on it;
+   new guard test `apps/mobile/services/__tests__/shell-resolution.test.ts` (real paths of mocked modules equal from shell src and
+   app); CI paths; docs/structure.md, CLAUDE.md source layout; ADR `docs/adrs/2026-10-18-shell-package.md` + index; check the
+   apps/mobile fingerprint is unchanged.
+1. Plugin pure core (Vitest red → green). 2. withOgsShell + app.plugin.js. 3. Move pure modules. 4. (RISK) cast modules.
+5. (RISK) push. 6. (RISK) split ogs-api/identity, move bridge stores. 7. shell-links. 8. webview-status + OfflineScreen + ShellWebView.
+9. guest profile. 10. native sign-in. 11. haptics store. 12. cast chrome none. 13. createShellRuntime + OgsShell.
+14. `examples/shell-single-game` fixture + `expo config --type introspect` check.
+15. (optional, RISK) apps/mobile game.tsx uses ShellWebView/OfflineScreen (Detox).
+16. (defer) apps/mobile adopts sub-plugins (new native build).
+Then create-ogs-app (template + `pnpm create ogs-app` + REVIEW_NOTES.md + apps/docs "Ship your game as its own app"),
+then Rocket Crew `~/src/rocket-crew/app/`.
+
+Rule for every step: never edit an existing test; a step that would break one is reverted and the module stays in the app.
