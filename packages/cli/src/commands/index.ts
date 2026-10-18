@@ -1,5 +1,6 @@
 import type { Io } from "../io";
 import { register } from "./apps";
+import { dev } from "./dev";
 import { doctor } from "./doctor";
 import { login } from "./login";
 import { credentials } from "./push";
@@ -33,4 +34,11 @@ export const COMMANDS: Command[] = [
     run: credentials,
   },
   { words: ["doctor"], usage: ["ogs doctor [--domain <your link domain>]"], run: doctor },
+  {
+    words: ["dev"],
+    usage: [
+      "ogs dev [--manifest <file>] [--start-url <url>] [--tv-url <url>] [--port 4747] [--phones 2] [--lan <ip>]",
+    ],
+    run: dev,
+  },
 ];
