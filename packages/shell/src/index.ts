@@ -4,12 +4,20 @@
 // Add new modules in alphabetical order (biome sorts exports). Modules with import-time side effects
 // (notifications: setNotificationHandler) are NOT re-exported here; import them by module path.
 
+export * from "./cast-backend";
 export * from "./cast-once";
+export * from "./cast-session-device";
+export * from "./cast-store";
+export * from "./cast-sync";
 export * from "./cast-trace";
+export * from "./cast-view";
 export * from "./client-log";
+export * from "./fake-cast";
 export * from "./game-loading";
 export * from "./game-url-store";
+export * from "./google-cast-backend";
 export * from "./hardware-back";
 export * from "./js-errors";
 export * from "./push-foreground";
 export * from "./push-registration";
+export * from "./screen-cast";
