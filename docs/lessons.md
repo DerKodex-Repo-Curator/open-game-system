@@ -263,3 +263,9 @@ Persistent project knowledge. Review at the start of each task.
 - **In headless Chromium, read a worker's notifications inside the worker.** The page's `(await navigator.serviceWorker.ready).getNotifications()` intermittently came back empty while the worker's own `registration.getNotifications()` listed them; `context.serviceWorkers()[0].evaluate(...)` is reliable.
 - **No phone had ever registered for pushes (found 2026-10-09).** `services/notifications.ts` posted the Expo token to a hard-coded `https://api.opengame.org`, which has no DNS record, and under its own random `ogs_device_id`, while the API finds a profile's phones through `profile_devices` (the profile's device id). Registration now uses `config.apiBase` and the profile's device id, once the profile exists (`services/push-registration.ts`). Check `SELECT … FROM devices` in production before trusting any push path.
 
+
+## Android (2026-10-18)
+
+- **On Android, react-native-webview's `postMessage` fires the page's `message` event on `document`, not `window`** (`RNCWebViewManagerImpl.kt`: `document.dispatchEvent(event)`, no bubbling). iOS fires it on `window`, where app-bridge-web listens. So in the Android app no game ever got a bridge store: Rocket Crew asked "Who's playing here?" and the TV said it couldn't open. `BridgedWebView` now hands the bridge a target that injects `window.dispatchEvent(new MessageEvent("message", …))` on both platforms (`windowMessage`), so already-deployed games work with no rebuild. Found by the stranger funnel e2e on an emulator; nothing iOS-only catches it.
+- **Android onboarding has no notifications page** when Android already allows notifications; Detox walks tap Maybe later only when it shows.
+- **`assembleAndroidTest` across every module fails dexing expo-eas-client**: build only `:app:assembleRelease :app:assembleAndroidTest`.

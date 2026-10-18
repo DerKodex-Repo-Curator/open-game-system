@@ -4,7 +4,7 @@ import { forwardRef, useImperativeHandle } from "react";
 const View = require("react-native").View;
 
 // Define the mock methods we need
-const mockWebViewRefMethods = {
+export const mockWebViewRefMethods = {
   reload: jest.fn(),
   postMessage: jest.fn(),
   injectJavaScript: jest.fn(),
