@@ -131,11 +131,45 @@ Lead with the thing people can try right now. Put the platform in the body. HN's
 
 **"Does it work on Firefox / Android?"** It works on Chrome and WebKit (tested). Firefox and real Android phones are **untested**. The Chromecast cast button only shows in desktop Chrome.
 
+## Dress rehearsal (bug bash, Oct 18)
+
+Six HN-visitor charters across all three previews:
+- **Explored by an agent** (`e2e explore` on the ChatGPT plan, 9 runs): a skeptical engineer at a laptop with no phone; someone with only a phone; someone opening a friend's room link on mobile Safari.
+- **Probed with Playwright tests:** a corporate network that blocks WebSockets; a stranger who types someone else's room code; someone who leaves halfway.
+
+Every finding below was confirmed by a test that failed against the preview. Report: [show-hn-bugbash.md](show-hn-bugbash.md).
+
+| Finding | Rocket Crew | Trivia Jam | Midnight Museum |
+|---|---|---|---|
+| Laptop with no phone has no way to play | **fixed**: "No phone handy? Open the Captain's screen on this computer" | **fixed**: "No phone handy? Play on this computer" | confirmed, handed to museum-hillclimb |
+| A network that blocks WebSockets: the page sits silent | **fixed**: a "Can't reach the game…" banner (`/ws-probe`) | **fixed**: same | confirmed, handed over |
+| A stranger who types the room's code can't be removed | **fixed**: Remove on the TV seats (can't sit again) | **fixed**: Remove on the TV lobby (they may rejoin: an existing test pins that) | confirmed, handed over |
+| Someone leaves halfway: nobody is told, and the clock runs on | **fixed**: "Sam dropped out…" on the TV and the Captain; the clock waits | not a bug: the question resolves on its timer | confirmed, handed over |
+| A narrow phone browser that reports a mouse gets the TV page | **fixed** | n/a (detects by user agent) | confirmed, handed over |
+
+**Rejected (artifacts of the test harness):**
+- "Ready can't be activated": the button pulses forever, which trips the agent's wait for a stable element.
+- "No rocket with that code": my script never opened that room's TV.
+- "Waiting for the host": a room whose TV was never running.
+
+**Questions for Jon:**
+- A phone with no big screen can't play any of the three. The landings say so, offer to send the link to a laptop, and offer a code box.
+- Should Trivia Jam's Remove be permanent?
+
 ## Before posting (checklist for Jon)
 
-1. **Pick the URL.** The workers.dev address is long and shows on the phone start page. Consider a custom domain (e.g. `rocketcrew.<your domain>`) on the `rocket-crew-try` Worker. The `?ref=hn` link keeps working either way.
-2. **Play one full mission on the real devices:** a laptop as the TV, your iPhone as the Captain and a second phone as the Fixer, plus one solo run. Shaking (the "everybody shake it off" problems) was not tested on a real phone. Over HTTPS, iOS asks for motion permission when you tap Ready.
-3. Fill in the open-source answer above.
-4. Decide whether the post links the catalogue page (front-door) too. Bet 3's metric counts catalogue visits, and the post above links only the game and the docs.
-5. Watch the logs while it's up: `pnpm wrangler tail --env try` in `~/src/rocket-crew-try`, or the Workers Logs query above.
-6. Cost: a Worker and Durable Objects on the existing paid plan. Nothing is always-on, and the laptop cast uses no cloud GPU. The cloud GPU only runs when someone casts from the OGS app.
+1. **Pick the URLs.** The workers.dev addresses are long and show on the phone pages and the TV tickets. Consider custom domains on the three `-try` Workers. The `?ref=hn` links keep working either way.
+2. **Real devices, about 30 minutes in all** (steps and QR codes in `~/.claude/usage-burn/morning.md`):
+   - Rocket Crew: a full mission on a laptop TV with two phones, one solo run, one real shake, and a Chromecast cast.
+   - Trivia Jam: 8 questions with 2–3 phones.
+   - Midnight Museum: optional, and it has open findings.
+3. **Rehearsal checks on the day:**
+   - Open each link on your phone (you should get the landing).
+   - Join one room by typing its code.
+   - Close a phone mid-mission in Rocket Crew: the TV should say who dropped out.
+   - Join a room from a second laptop browser with a made-up name and remove it from the TV.
+4. Fill in the open-source answer above.
+5. Decide whether the post links the catalogue page (front-door) too. Bet 3's metric counts catalogue visits. ogs-front-door has the three try links for "Try it now" buttons.
+6. Watch the logs while it's up: `pnpm wrangler tail --env try` in `~/src/rocket-crew-try` (and the Trivia Jam Worker `trivia-jam-try`), or the Workers Logs query above.
+7. Load: Rocket Crew held 1,400/1,400 rooms (200 at once) and Trivia Jam 250/250 games (50 at once). Midnight Museum hasn't been load-tested.
+8. Cost: Workers, Durable Objects and one KV namespace on the existing paid plan. Nothing is always-on, and the laptop cast uses no cloud GPU.
