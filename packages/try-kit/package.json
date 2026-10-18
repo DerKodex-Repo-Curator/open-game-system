@@ -1,6 +1,6 @@
 {
   "name": "@open-game-system/try-kit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A no-app try path for room-based web games: room codes that recycle, clear dead-end pages, presence, a WebSocket-blocked message, the play-on-this-computer fallback, ?ref= wide events and a load-test runner",
   "license": "MIT",
   "type": "module",

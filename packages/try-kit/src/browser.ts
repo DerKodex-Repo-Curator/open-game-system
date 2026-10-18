@@ -2,7 +2,6 @@
  * try-kit in the browser: the network banner, the QR code of a join link, and the window that lets a
  * visitor play a seat on the TV's own computer. Plain DOM, no framework.
  */
-import qrcode from "qrcode-generator";
 import { probeWebSocket, type SocketLike } from "./probe";
 
 export { isControllerDevice, NARROW_QUERY, offerThisComputer } from "./device";
@@ -35,13 +34,7 @@ export async function mountNetworkBanner(opts: {
   return verdict;
 }
 
-/** A QR code of `text` (a join link) as an image data URL. */
-export function qrDataUrl(text: string, cellSize = 8): string {
-  const qr = qrcode(0, "M");
-  qr.addData(text);
-  qr.make();
-  return qr.createDataURL(cellSize, 2);
-}
+export { qrDataUrl } from "./qr";
 
 /**
  * Opens a seat's screen in a window on this computer ("No phone handy? Play on this computer"). Each

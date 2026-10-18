@@ -2,6 +2,7 @@
  * try-kit for Workers and Durable Objects: the room's life (claim, recycle, opened, presence), the
  * front page's code claim, a WebSocket echo for the network check, and the dead-end pages.
  */
+import { qrDataUrl } from "./qr";
 import { newRoomCode, ROOM_CODE } from "./codes";
 import { parseRef } from "./events";
 import { IDLE_MS, type JoinGate, roomFree, type RoomLife } from "./room-life";
@@ -175,4 +176,19 @@ export function deadEndPage(input: {
 export function goPath(url: URL, joinPrefix = "/join/"): string {
   const code = (url.searchParams.get("code") ?? "").toUpperCase().replace(/[^A-Z]/g, "");
   return ROOM_CODE.test(code) ? `${joinPrefix}${code}` : "/";
+}
+
+/**
+ * The room's ticket (code + QR + link) as HTML for the TV page, so it shows at first paint on a slow
+ * network instead of after the game's script loads. Put it inside the element your app mounts into:
+ * the app replaces it when it renders. Style it with `--try-ticket-ink`, `--try-ticket-bg`, `--try-font`.
+ */
+export function ticketHtml(input: { code: string; joinUrl: string; line?: string }): string {
+  if (!ROOM_CODE.test(input.code) || !/^https?:\/\//.test(input.joinUrl)) return "";
+  const url = escapeHtml(input.joinUrl);
+  const shown = escapeHtml(input.joinUrl.replace(/^https?:\/\//, ""));
+  return `<div data-try-ticket style="position:fixed;inset:0;display:grid;place-content:center;gap:1.2rem;text-align:center;font-family:var(--try-font,system-ui,sans-serif);color:var(--try-ticket-ink,#fff);background:var(--try-ticket-bg,#111)">
+<img alt="QR code for ${url}" src="${qrDataUrl(input.joinUrl)}" width="240" height="240" style="justify-self:center;width:min(32vh,240px);height:auto;image-rendering:pixelated;background:#fff;border-radius:12px">
+<div style="font-size:clamp(2.5rem,9vh,6rem);font-weight:800;letter-spacing:.12em">${input.code}</div>
+<div style="font-size:1.2rem;opacity:.85">${escapeHtml(input.line ?? "Scan with your phone, or open")} <b>${shown}</b></div></div>`;
 }

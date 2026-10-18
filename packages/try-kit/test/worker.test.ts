@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { claimRoomCode, deadEndPage, goPath, tvStartPath, wsProbe } from "../src/worker";
+import { claimRoomCode, deadEndPage, goPath, ticketHtml, tvStartPath, wsProbe } from "../src/worker";
 
 describe("claimRoomCode: a code nobody is using, for a new TV", () => {
   it("takes the first code the room accepts", async () => {
@@ -115,5 +115,21 @@ describe("goPath: the dead-end page's code box", () => {
   });
   it("the join route's prefix is the game's", () => {
     expect(goPath(new URL("https://x.dev/go?code=abcd"), "/j/")).toBe("/j/ABCD");
+  });
+});
+
+describe("ticketHtml: the room code and QR in the TV page's HTML, before any script loads", () => {
+  it("shows the code and a QR image whose alt names the join link (what tests and screen readers read)", () => {
+    const html = ticketHtml({ code: "ABCD", joinUrl: "https://g.dev/join/ABCD" });
+    expect(html).toContain('data-try-ticket');
+    expect(html).toContain(">ABCD<");
+    expect(html).toMatch(/<img [^>]*alt="QR code for https:\/\/g\.dev\/join\/ABCD"[^>]*src="data:image\/gif;base64,/);
+    expect(html).toContain("g.dev/join");
+  });
+  it("only ever prints a room code and an http(s) link", () => {
+    expect(ticketHtml({ code: "<b>", joinUrl: "javascript:alert(1)" })).toBe("");
+  });
+  it("a game can word it", () => {
+    expect(ticketHtml({ code: "ABCD", joinUrl: "https://g.dev/join/ABCD", line: "Scan to board the rocket" })).toContain("Scan to board the rocket");
   });
 });
