@@ -68,6 +68,7 @@ Stryker with `--mutate` on the new files; CRAP from `scripts/crap.mjs` after cov
 | apps/tv `screen/pairing.ts`, `ui/qr.ts` | 100% | 7 (`screenParams`) |
 | services/api `routes/join.ts`, `routes/screens.ts`, `lib/screens.ts` | 100% | 5 |
 | apps/mobile `services/screen-cast.ts`, `services/link-routing.ts` | 99–100% (see progress.md) | 7 (`routeLink`, `openLink`) |
+| Invite another family: ogs-protocol `family-invite.ts`; API `routes/family-invites.ts`; app `invite-attribution.ts`, `invite-family.ts`, `link-routing.ts` | 100% (the API's mostly by timeout) | 7 (`POST /family-invites/:id/events`; its 429 branch is untested) |
 
 Equivalent mutants are marked in place (`Stryker disable next-line … : equivalent, …`). Not unit
 tested: the React views (`ScreenApp.tsx`, `BrowserTv.tsx`, `pages/Join.tsx`, `pages/join/*`); the

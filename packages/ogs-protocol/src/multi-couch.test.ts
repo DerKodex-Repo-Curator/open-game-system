@@ -7,10 +7,12 @@ import { ManifestSchema } from "./manifest";
 import {
   FriendRoomSchema,
   GameInviteRequestSchema,
+  GameInviteResultSchema,
   playLink,
   readGameLink,
   readOpenLink,
   readPlayLink,
+  roomStartUrl,
   whoIsPlaying,
 } from "./rooms";
 import {
@@ -336,6 +338,7 @@ describe("a game link (a play link without a room)", () => {
     ["https://opengame.org/play/night-flight?room=", "night-flight"],
     ["opengame://play/trivia-jam", "trivia-jam"],
     ["http://localhost:5173/play/rocket-crew#x", "rocket-crew"],
+    ["http://localhost:5173/play/rocket-crew#xy", "rocket-crew"],
   ])("reads %s", (url, appId) => {
     expect(readGameLink(url)).toEqual({ appId });
   });
@@ -371,9 +374,49 @@ describe("an open link (opengame.org/open?url=<game page>)", () => {
     "https://opengame.org/open?url=",
     `https://opengame.org/open?url=${encodeURIComponent("http://bake.example/")}`,
     `https://opengame.org/open?url=${encodeURIComponent("javascript:alert(1)")}`,
+    `https://opengame.org/open?url=${encodeURIComponent("https://bake.example/a b")}`,
+    `https://opengame.org/open?url=${encodeURIComponent("xhttps://bake.example/")}`,
+    `see https://opengame.org/open?url=${encodeURIComponent("https://bake.example/")}`,
     "https://opengame.org/open?url=%E0%A4%A",
     "https://opengame.org/play/bake-shop",
   ])("ignores %s", (url) => {
     expect(readOpenLink(url)).toBeNull();
+  });
+});
+
+describe("an open link's page, any https shape", () => {
+  it.each([
+    "https://bake.example",
+    "https://bake.example/x",
+    "https://bake.example/x?y=1#z",
+  ])("reads %s", (page) => {
+    expect(readOpenLink(`https://opengame.org/open?url=${encodeURIComponent(page)}`)?.page).toBe(
+      page,
+    );
+  });
+});
+
+// roomStartUrl moved here from the app (2026-10-18); the app's rooms tests cover it too.
+describe("a joining couch's start page", () => {
+  it("adds ogsRoom to the start URL, after a query, before a hash", () => {
+    expect(roomStartUrl("https://g.example/", "KQTP")).toBe("https://g.example/?ogsRoom=KQTP");
+    expect(roomStartUrl("https://g.example/?a=1", "KQ TP")).toBe(
+      "https://g.example/?a=1&ogsRoom=KQ%20TP",
+    );
+    expect(roomStartUrl("https://g.example/#lobby", "KQTP")).toBe(
+      "https://g.example/?ogsRoom=KQTP#lobby",
+    );
+  });
+});
+
+describe("an invite's result", () => {
+  it("names the link and, per friend, whether a push went", () => {
+    const ok = {
+      link: "https://opengame.org/play/x?room=R",
+      invited: [{ profileId: "p1", pushed: true }],
+    };
+    expect(GameInviteResultSchema.parse(ok)).toEqual(ok);
+    expect(GameInviteResultSchema.safeParse({ ...ok, invited: [{}] }).success).toBe(false);
+    expect(GameInviteResultSchema.safeParse({ invited: [] }).success).toBe(false);
   });
 });

@@ -3,6 +3,7 @@ import {
   FamilyInviteSchema,
   FunnelStepSchema,
   familyInviteLink,
+  InviteIdSchema,
   InviteStatsSchema,
   reportInviteStep,
 } from "./family-invite";
@@ -15,7 +16,7 @@ const INV = "6f0c2a9e-1b7d-4c3e-9a51-2f1d8c7b0e44";
 
 describe("an invite another family link", () => {
   it("is the game link with the invite: opengame.org/play/<appId>?inv=<id>", () => {
-    expect(familyInviteLink("https://opengame.org/", "rocket-crew", INV)).toBe(
+    expect(familyInviteLink("https://opengame.org///", "rocket-crew", INV)).toBe(
       `https://opengame.org/play/rocket-crew?inv=${INV}`,
     );
   });
@@ -29,6 +30,12 @@ describe("an invite another family link", () => {
       appId: "rocket-crew",
       inv: INV,
     });
+  });
+
+  it("an invite id is exactly a UUID", () => {
+    expect(InviteIdSchema.safeParse(INV).success).toBe(true);
+    for (const bad of [`x${INV}`, `${INV}x`, INV.toUpperCase()])
+      expect(InviteIdSchema.safeParse(bad).success).toBe(false);
   });
 
   it("an inv that isn't an invite id is left out", () => {

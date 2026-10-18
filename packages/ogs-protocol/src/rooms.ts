@@ -42,6 +42,7 @@ export function readGameLink(url: string): { appId: string; inv?: string } | nul
   );
   if (!m?.[1]) return null;
   // An invite another family link names its invite (family-invite.ts).
+  // Stryker disable next-line StringLiteral: equivalent, a query with no inv= reads as "" either way
   const inv = InviteIdSchema.safeParse(queryParam(m[2] ?? "", "inv"));
   return inv.success ? { appId: m[1], inv: inv.data } : { appId: m[1] };
 }
@@ -54,6 +55,7 @@ export function readGameLink(url: string): { appId: string; inv?: string } | nul
 export function readOpenLink(url: string): { page: string; host: string; app: string } | null {
   const m = /^[a-z]+:\/\/[^/?#]+\/open\/?\?([^#]*)/.exec(url);
   if (!m) return null;
+  // Stryker disable next-line StringLiteral: equivalent, a query with no url= reads as "" either way
   const page = queryParam(m[1] ?? "", "url");
   const host = /^https:\/\/([^/?#\s@]+)(?:[/?#]\S*)?$/.exec(page)?.[1];
   return host ? { page, host, app: `opengame://open?url=${encodeURIComponent(page)}` } : null;
