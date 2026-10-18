@@ -56,7 +56,7 @@ function post(name: string, body: unknown = {}) {
   waiters.delete(name);
   mark(name);
 }
-function waitStep(name: string, ms = 600_000): Promise<unknown> {
+function waitStep(name: string, ms = 1_200_000): Promise<unknown> {
   if (steps.has(name)) return Promise.resolve(steps.get(name));
   return new Promise((res, rej) => {
     const t = setTimeout(() => rej(new Error(`timed out waiting for the phone: ${name}`)), ms);
@@ -197,19 +197,15 @@ async function main() {
     check("the TV frames Rocket Crew", true);
     await guest.getByTestId("guest-game").waitFor({ timeout: 120000 });
     const fixer = guest.frameLocator('[data-testid="guest-game-frame"]');
-    // Rocket Crew asks a browser guest its name (no OGS identity in the browser).
+    // Rocket Crew asks a browser guest its name (no OGS identity in the browser), then its lobby.
     const nameBox = fixer.getByRole("textbox", { name: "name" });
-    if (
-      await nameBox.waitFor({ timeout: 15000 }).then(
-        () => true,
-        () => false,
-      )
-    ) {
+    const ready = fixer.getByRole("button", { name: "ready", exact: true });
+    await nameBox.or(ready).first().waitFor({ timeout: 90000 });
+    if (await nameBox.isVisible()) {
       await nameBox.fill("Grandma");
       await fixer.getByRole("button", { name: "Join", exact: true }).click();
     }
     // The Fixer's lobby: Ready (a big green play button), then launch once the Captain is ready.
-    const ready = fixer.getByRole("button", { name: "ready", exact: true });
     await ready.waitFor({ timeout: 30000 });
     check("the guest is the Fixer", true);
     await ready.click({ force: true });

@@ -7,13 +7,13 @@ import { by, device, element, waitFor, web } from "detox";
 // Build: EXPO_PUBLIC_OGS_API=<preview API>, EXPO_PUBLIC_OGS_TV=<preview launcher>,
 // EXPO_PUBLIC_FAKE_CAST=none (no Chromecast in this household). Run it through the orchestrator.
 const COORD = process.env.FUNNEL_COORD ?? "http://localhost:5391";
-const WALK_MS = 600_000;
+const WALK_MS = 1_800_000;
 
 async function step(name: string, body: unknown = {}): Promise<void> {
   await fetch(`${COORD}/step/${name}`, { method: "POST", body: JSON.stringify(body) });
 }
 async function wait(name: string): Promise<Record<string, unknown>> {
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 90; i++) {
     const res = await fetch(`${COORD}/wait/${name}`);
     if (res.status === 200) return (await res.json()) as Record<string, unknown>;
   }

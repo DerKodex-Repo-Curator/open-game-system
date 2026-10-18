@@ -29,6 +29,14 @@ Audit and ranking: [docs/funnel-audit.md](../../../funnel-audit.md).
   the app (after onboarding on a fresh install); invite links on the play screen are held through
   onboarding too; the site offers Open in the OGS app. Third Detox walk green.
 
+- 2026-10-18 Preview stack (not production): API `https://opengame-api-pr-funnel.jonathanrmumm.workers.dev`
+  (own D1, fresh secrets), launcher `https://funnel.ogs-tv.pages.dev`, site
+  `https://funnel.opengame-org.pages.dev`, Rocket Crew copy `https://rocket-crew-funnel.jonathanrmumm.workers.dev`.
+  Sent to ogs-front-door. TestFlight click-path: shared notes `morning.md`.
+- 2026-10-18 The preview funnel e2e found: app-scheme links lost at a cold start (fixed, 39f1db3f), the
+  guest's Remote button over a game's corner (moved), no join QR mid-game (#13), the front door's
+  Open in OGS skipping the TV (#14).
+
 ## Decisions
 
 - The launcher e2e's old copy assertion ("Join from your phone") follows the owner-approved join
