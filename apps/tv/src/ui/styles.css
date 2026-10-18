@@ -1096,3 +1096,31 @@ figure {
 .surprise-page[data-phase="leaving"] {
   opacity: 0;
 }
+
+/* ---------- a browser on the TV, pairing (2026-10-17-browser-tv.feature) ---------- */
+.pairing-card .pairing-step {
+  font-size: 36px;
+  color: var(--cream-dim);
+  margin: 24px 0 12px;
+}
+.pairing-card .pairing-step b {
+  color: var(--cream);
+}
+.pairing-code {
+  font-family: var(--display);
+  font-size: 160px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--amber);
+  line-height: 1.1;
+  margin: 0 0 40px;
+}
+.pairing-full {
+  font: 700 28px var(--sans);
+  color: var(--cream);
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  padding: 18px 40px;
+  cursor: pointer;
+}

@@ -510,8 +510,17 @@ describe("TV launcher before the session", () => {
     expect(Math.max(...anim)).toBeLessThanOrEqual(200);
   });
 
-  it("explains itself when opened without a launcher link", async () => {
-    page = await open(browser, "?");
+  // Changed 2026-10-17 (2026-10-17-browser-tv.feature): a page with no launcher link at all is now
+  // a browser TV that pairs with a code; a broken launcher link (an api, no token) still explains.
+  it("explains itself when opened with a broken launcher link", async () => {
+    page = await open(browser, "?api=https://api.opengame.org");
     await page.getByText("This TV page needs its link from the OGS app").waitFor();
+  });
+
+  it("with no launcher link at all, is a browser TV asking for a phone", async () => {
+    // ?screen=1 at an API nothing answers: a bare "?" would pair with the production API.
+    page = await open(browser, "?screen=1&api=http://127.0.0.1:9");
+    await page.getByTestId("screen-pairing").waitFor();
+    await page.getByTestId("screen-offline").waitFor();
   });
 });

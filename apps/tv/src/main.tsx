@@ -1,14 +1,25 @@
 import { createRoot } from "react-dom/client";
 import { boot } from "./boot";
 import { parseParams } from "./params";
+import { screenParams } from "./screen/pairing";
 import { App } from "./ui/App";
 import { BadUrl } from "./ui/BadUrl";
+import { ScreenApp } from "./ui/ScreenApp";
 import "./ui/styles.css";
 
 const root = document.getElementById("root");
-const parsed = parseParams(window.location.search);
+const search = window.location.search;
+// No launcher link: this browser is a screen that pairs with a phone (2026-10-17-browser-tv.feature).
+const screen = screenParams(search);
+const parsed = parseParams(search);
 if (root) {
   createRoot(root).render(
-    parsed.ok ? <App boot={boot(parsed.params, window.location.search)} /> : <BadUrl />,
+    screen ? (
+      <ScreenApp api={screen.api} search={search} />
+    ) : parsed.ok ? (
+      <App boot={boot(parsed.params, search)} />
+    ) : (
+      <BadUrl />
+    ),
   );
 }
