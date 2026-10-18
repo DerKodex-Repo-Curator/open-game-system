@@ -10,7 +10,17 @@ database_name = "ogs-docs-waitlist"
 database_id = "58d6c744-acaf-4936-9ada-617c03fb242f"
 migrations_dir = "migrations"
 
+# Download counts for bet 4 (functions/starter.tgz.ts, functions/pkg/[file].ts) go to the bets
+# scoreboard's dataset (open-game-system apps/scoreboard).
+[[analytics_engine_datasets]]
+binding = "DOWNLOADS"
+dataset = "ogs_try_events"
+
 [env.preview]
+[[env.preview.analytics_engine_datasets]]
+binding = "DOWNLOADS"
+dataset = "ogs_try_events"
+
 [[env.preview.d1_databases]]
 binding = "WAITLIST"
 database_name = "ogs-docs-waitlist-preview"
