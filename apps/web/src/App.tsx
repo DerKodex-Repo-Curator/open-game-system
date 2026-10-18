@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Collective from "./pages/Collective";
 import Index from "./pages/Index";
+import Join from "./pages/Join";
 import NotFound from "./pages/NotFound";
 import Play from "./pages/Play";
 
@@ -20,6 +21,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/collective" element={<Collective />} />
           <Route path="/play/:appId" element={<Play />} />
+          <Route path="/join" element={<Join />} />
+          <Route path="/join/:code" element={<Join />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

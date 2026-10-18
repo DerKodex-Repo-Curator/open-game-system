@@ -53,6 +53,7 @@ import { createGoogleCastBackend } from "./google-cast-backend";
 import { captureJsErrors, type RejectionTracker } from "./js-errors";
 import { launchPlan } from "./launch-plan";
 import type { ReturnPill } from "./leave-game";
+import { createLinkHold } from "./link-routing";
 import { pushPermissionGranted, setForegroundGate } from "./notifications";
 import { createOgsApi } from "./ogs-api";
 import { createPushApi } from "./push-api";
@@ -67,6 +68,9 @@ import { sittingToOpen } from "./sittings";
  */
 
 export const config = appConfig;
+
+/** A link that opened the app before this phone had a profile waits here for onboarding. */
+export const linkHold = createLinkHold();
 
 const fetchImpl = (url: string, init?: RequestInit) => fetch(url, init);
 

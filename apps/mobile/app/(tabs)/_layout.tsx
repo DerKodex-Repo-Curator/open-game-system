@@ -3,13 +3,17 @@ import { useEffect } from "react";
 import { CastPromptHost } from "../../components/ogs/library/CastPrompt";
 import { TabBar } from "../../components/ogs/TabBar";
 import { consumePendingGameUrl, subscribeToGameUrl } from "../../services/game-url-store";
+import { openHeld } from "../../services/open-link";
+import { linkHold } from "../../services/runtime";
 
 /** Owner decision (Oct 2026): five tabs, always all five, in this order. Games push on top. */
 export default function TabsLayout() {
   const router = useRouter();
 
-  // Deep links and push taps open their game over the tabs (event subscription).
+  // Deep links and push taps open their game over the tabs (event subscription). A link that opened
+  // the app before it had a profile (a stranger's first scan of the TV) goes where it said now.
   useEffect(() => {
+    linkHold.release(openHeld);
     const pending = consumePendingGameUrl();
     if (pending) router.push({ pathname: "/game", params: { url: pending } });
     return subscribeToGameUrl((url) => router.push({ pathname: "/game", params: { url } }));

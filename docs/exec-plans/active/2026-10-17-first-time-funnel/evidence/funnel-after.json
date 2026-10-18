@@ -1,0 +1,38 @@
+[
+  {
+    "step": "host: first launch to the welcome",
+    "ms": 22469,
+    "taps": 0,
+    "typed": 0
+  },
+  {
+    "step": "host: onboarding (make a profile)",
+    "ms": 23736,
+    "taps": 5,
+    "typed": 1
+  },
+  {
+    "step": "host: pick a game, Play",
+    "ms": 4790,
+    "taps": 2,
+    "typed": 0
+  },
+  {
+    "step": "host: Cast → the game on the TV",
+    "ms": 4746,
+    "taps": 1,
+    "typed": 0
+  },
+  {
+    "step": "guest: scan → the app opens (installed)",
+    "ms": 28884,
+    "taps": 0,
+    "typed": 0
+  },
+  {
+    "step": "guest: onboarding → on the couch",
+    "ms": 26318,
+    "taps": 5,
+    "typed": 1
+  }
+]

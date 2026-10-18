@@ -1,9 +1,10 @@
-import { readPlayLink } from "@open-game-system/ogs-protocol";
+import { readJoinLink, readPlayLink } from "@open-game-system/ogs-protocol";
 import { extractGameUrl } from "./deep-links";
 
 export type LinkTarget =
   | { kind: "play"; appId: string; room: string }
-  | { kind: "game"; url: string };
+  | { kind: "game"; url: string }
+  | { kind: "join"; code: string };
 
 /** The URL's origin, or undefined when it isn't a URL. */
 const originOf = (url: string): string | undefined => {
@@ -13,11 +14,14 @@ const originOf = (url: string): string | undefined => {
 };
 
 /**
- * Where a link or a notification tap goes (spec §9, "Taps and links"): an invite or transfer link
+ * Where a link or a notification tap goes (spec §9, "Taps and links"): the TV's join QR joins that
+ * couch (spec ogs-join); an invite or transfer link
  * starts the game in its room; any page on a catalogue game's origin opens in that game's WebView,
  * exactly there; otherwise the older rules (opengame.org/open?url=…). Null: not a game link.
  */
 export function routeLink(url: string, startUrls: readonly string[]): LinkTarget | null {
+  const join = readJoinLink(url);
+  if (join) return { kind: "join", code: join.code };
   const play = readPlayLink(url);
   if (play) return { kind: "play", appId: play.appId, room: play.room };
   const origin = originOf(url);
@@ -38,10 +42,36 @@ export function openLink(
     startUrls: readonly string[];
     play: (appId: string, room: string) => void;
     game: (url: string) => void;
+    join: (code: string) => void;
   },
 ): void {
   const target = routeLink(url, deps.startUrls);
-  if (target?.kind === "play") deps.play(target.appId, target.room);
+  if (target?.kind === "join") deps.join(target.code);
+  else if (target?.kind === "play") deps.play(target.appId, target.room);
   else if (target) deps.game(target.url);
   else if (from === "push") deps.game(url);
+}
+
+export type LinkFrom = "link" | "push";
+
+/**
+ * A link that opens the app before this phone has a profile (a stranger scanning the TV, or an
+ * invite): onboarding comes first, then the link goes where it said. Holds the latest one.
+ */
+export function createLinkHold() {
+  let held: { url: string; from: LinkFrom } | null = null;
+  return {
+    /** Holds the link when there is no profile yet (true); with one, leaves it to open now. */
+    offer(url: string, from: LinkFrom, hasProfile: boolean): boolean {
+      if (hasProfile) return false;
+      held = { url, from };
+      return true;
+    },
+    /** Opens the held link, once. */
+    release(open: (url: string, from: LinkFrom) => void): void {
+      const link = held;
+      held = null;
+      if (link) open(link.url, link.from);
+    },
+  };
 }

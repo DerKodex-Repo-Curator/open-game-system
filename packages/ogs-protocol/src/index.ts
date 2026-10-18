@@ -3,6 +3,7 @@ export * from "./friends";
 export * from "./game-token";
 export * from "./instance";
 export * from "./join";
+export * from "./join-page";
 export * from "./manifest";
 export * from "./push";
 export * from "./rooms";

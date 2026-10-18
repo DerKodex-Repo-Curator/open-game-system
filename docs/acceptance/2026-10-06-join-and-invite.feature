@@ -1,6 +1,8 @@
 # Status: PLANNED, except "Home shows the QR next to the TV code" and "Getting ready shows the same card"
 # (built 2026-10-17: apps/tv/src/ui/JoinCode.tsx, e2e apps/tv/e2e/join-qr.e2e.ts decodes the QR off the TV;
-# the link is ogs-protocol join.ts), and except "Every phone follows the TV" (built 2026-10-06 for app phones and kids' iPads: couch session
+# the link is ogs-protocol join.ts); "Scanning with the app installed opens the app" and "An expired or unknown
+# code" (built 2026-10-17: opengame.org/join/<code> apps/web/src/pages/Join.tsx + GET /api/v1/join/:code; the app
+# holds a join link through onboarding, apps/mobile/e2e/first-time-funnel.test.ts), and except "Every phone follows the TV" (built 2026-10-06 for app phones and kids' iPads: couch session
 # reducer packages/ogs-protocol/src/session.ts, app apps/mobile/services/couch-follow.ts; tests in
 # session.rules.test.ts "every phone follows the TV" + "kids' iPads follow the TV" + "which phone's TV page
 # the launcher frames", couch-follow.test.ts, the API integration
@@ -34,6 +36,14 @@ Feature: Joining and inviting is the launcher's job
     Given Sam has the OGS app
     When Sam scans the QR with the phone camera
     Then the OGS app opens and Sam is on the couch as himself
+
+  # Added 2026-10-17 (first-time funnel): the guest who scans is usually new to OGS.
+  Scenario: A first scan on a phone that just installed the app
+    Given Sam has just installed the OGS app and has no profile
+    When Sam scans the QR and the link opens the app
+    Then onboarding comes first
+    And once Sam's profile is made, Sam is on the couch without scanning again
+    And Sam's phone shows the remote
 
   Scenario: An expired or unknown code
     When a phone opens "https://opengame.org/join/ZZZZZZ"

@@ -1,4 +1,4 @@
-import { openLink, routeLink } from "../link-routing";
+import { createLinkHold, openLink, routeLink } from "../link-routing";
 
 jest.mock("../deep-links", () => ({
   extractGameUrl: (url: string) =>
@@ -61,6 +61,17 @@ describe("where a link or a notification tap goes", () => {
   });
 });
 
+describe("a join link (the TV's QR, opengame.org/join/<code>)", () => {
+  it("joins that TV's couch with its code", () => {
+    for (const url of ["https://opengame.org/join/NT9WPH", "opengame://join/nt9wph"])
+      expect(routeLink(url, startUrls)).toEqual({ kind: "join", code: "NT9WPH" });
+  });
+
+  it("is nothing when the code can't be a TV code", () => {
+    expect(routeLink("https://opengame.org/join/NT9", startUrls)).toBeNull();
+  });
+});
+
 describe("opening a link or a tap", () => {
   const run = (url: string, from: "link" | "push", urls = startUrls) => {
     const went: string[] = [];
@@ -68,9 +79,14 @@ describe("opening a link or a tap", () => {
       startUrls: urls,
       play: (a, r) => went.push(`play:${a}:${r}`),
       game: (u) => went.push(`game:${u}`),
+      join: (c) => went.push(`join:${c}`),
     });
     return went;
   };
+
+  it("a join link joins the couch", () => {
+    expect(run("https://opengame.org/join/NT9WPH", "link")).toEqual(["join:NT9WPH"]);
+  });
 
   it("a play link starts the game in its room", () => {
     expect(run("https://opengame.org/play/night-flight?room=KQTP", "link")).toEqual([
@@ -89,5 +105,37 @@ describe("opening a link or a tap", () => {
     expect(run("https://codebreakers.jonathanrmumm.workers.dev/room/A", "push", [])).toEqual([
       "game:https://codebreakers.jonathanrmumm.workers.dev/room/A",
     ]);
+  });
+});
+
+// A stranger's first tap: the link (an invite, the TV's QR) opens the app before it has a profile.
+// Onboarding comes first; the link must still go where it said once the profile is made.
+describe("a link that arrives before this phone has a profile", () => {
+  it("waits for the profile, then opens once", () => {
+    const hold = createLinkHold();
+    const went: string[] = [];
+    const open = (url: string, from: string) => went.push(`${url}|${from}`);
+    expect(hold.offer("https://opengame.org/join/NT9WPH", "link", false)).toBe(true);
+    expect(went).toEqual([]);
+    hold.release(open);
+    hold.release(open);
+    expect(went).toEqual(["https://opengame.org/join/NT9WPH|link"]);
+  });
+
+  it("keeps only the latest link", () => {
+    const hold = createLinkHold();
+    hold.offer("https://opengame.org/join/AAAAAA", "link", false);
+    hold.offer("https://opengame.org/join/NT9WPH", "push", false);
+    const went: string[] = [];
+    hold.release((u, f) => went.push(`${u}|${f}`));
+    expect(went).toEqual(["https://opengame.org/join/NT9WPH|push"]);
+  });
+
+  it("with a profile, a link is not held: it opens now", () => {
+    const hold = createLinkHold();
+    expect(hold.offer("https://opengame.org/join/NT9WPH", "link", true)).toBe(false);
+    const went: string[] = [];
+    hold.release((u, f) => went.push(`${u}|${f}`));
+    expect(went).toEqual([]);
   });
 });

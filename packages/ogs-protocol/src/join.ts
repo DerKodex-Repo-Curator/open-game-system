@@ -24,3 +24,18 @@ export function readJoinLink(url: string): { code: string } | null {
   const code = TvCodeSchema.safeParse(normaliseTvCode(m[1]));
   return code.success ? { code: code.data } : null;
 }
+
+/** Someone on a couch, as the join page shows them: a name and a sticker, never an id. */
+export const JoinSitterSchema = z.object({ name: z.string(), sticker: z.string() });
+
+/**
+ * GET /api/v1/join/:code — what the join page (opengame.org/join/<code>) shows before anyone has an
+ * OGS profile: the TV, its host and who is on the couch (host first, then in join order).
+ */
+export const JoinPreviewSchema = z.object({
+  code: TvCodeSchema,
+  tvName: z.string(),
+  host: JoinSitterSchema,
+  couch: z.array(JoinSitterSchema),
+});
+export type JoinPreview = z.infer<typeof JoinPreviewSchema>;

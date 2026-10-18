@@ -6,26 +6,17 @@ import { useEffect } from "react";
 import { AppErrorBoundary } from "../components/ogs/AppErrorBoundary";
 import { colors } from "../components/ogs/theme";
 import { UpdateRequired } from "../components/ogs/UpdateRequired";
-import { setGameUrl } from "../services/game-url-store";
-import { openLink } from "../services/link-routing";
 import {
   addPushTokenListener,
   getGameUrlFromNotification,
   initializePushNotifications,
 } from "../services/notifications";
 import { isOnboardingComplete } from "../services/onboarding";
+import { open } from "../services/open-link";
 import { startPushRegistration } from "../services/push-registration";
 import { appState, config, jsErrors } from "../services/runtime";
 import { incrementSessionCount } from "../services/session-counter";
 import { openUpdate, useUpdateGate } from "../services/update-check";
-
-/** A link or a notification tap (spec §9), with what the app knows now. */
-const open = (url: string, from: "link" | "push") =>
-  openLink(url, from, {
-    startUrls: appState.getSnapshot().catalogue.map((g) => g.startUrl),
-    play: (appId, room) => router.push(`/play/${appId}?room=${encodeURIComponent(room)}`),
-    game: setGameUrl,
-  });
 
 export default function RootLayout() {
   const updateGate = useUpdateGate();
@@ -98,6 +89,7 @@ export default function RootLayout() {
         <Stack.Screen name="edit-profile" options={{ presentation: "modal" }} />
         <Stack.Screen name="invite-friends" options={{ presentation: "modal" }} />
         <Stack.Screen name="play/[appId]" />
+        <Stack.Screen name="join/[code]" />
         <Stack.Screen name="dev-tools" />
         <Stack.Screen name="[...unmatched]" />
       </Stack>

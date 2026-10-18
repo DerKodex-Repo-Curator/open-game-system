@@ -19,11 +19,13 @@ describe("app link config", () => {
     );
   });
 
-  it("iOS: opengame.org hands the app /play/* and /open", () => {
+  // /join/*: the TV's join QR (2026-10-06-join-and-invite.feature, "Scanning with the app installed
+  // opens the app"). iOS reads it from the site; Android's /join/ filter waits for a native build.
+  it("iOS: opengame.org hands the app /play/*, /join/* and /open", () => {
     expect(aasa.applinks.details).toEqual([
       {
         appID: `${app.ios.appleTeamId}.${app.ios.bundleIdentifier}`,
-        paths: ["/open", "/open/*", "/play/*"],
+        paths: ["/open", "/open/*", "/play/*", "/join/*"],
       },
     ]);
   });
