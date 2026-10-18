@@ -2,7 +2,7 @@ import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "no
 import { resolve } from "node:path";
 import { renderHtml, rewriteLinks } from "./markdown";
 import { PAGES, type PageDef } from "./pages";
-import { DIST_DIR, DOCS_ROOT, SITE_URL } from "./paths";
+import { DIST_DIR, DOCS_ROOT, PRODUCTION_URL, SITE_URL } from "./paths";
 import { packKits, packStarter } from "./kits";
 import { fillSchemaBlocks } from "./schemas";
 import { notFoundHtml, pageHtml } from "./template";
@@ -19,7 +19,10 @@ export interface BuiltPage {
 const SOURCE_ONLY = /^\*\*Rendered\*\* .*$\n?/m;
 
 export function pageMarkdown(page: PageDef, mode: "html" | "md"): string {
-  const raw = readFileSync(page.source, "utf8").replace(SOURCE_ONLY, "");
+  // Pages name the production site; a preview build (DOCS_SITE_URL) points them at itself.
+  const raw = readFileSync(page.source, "utf8")
+    .replace(SOURCE_ONLY, "")
+    .replaceAll(PRODUCTION_URL, SITE_URL);
   return rewriteLinks(fillSchemaBlocks(raw), page.source, mode);
 }
 
