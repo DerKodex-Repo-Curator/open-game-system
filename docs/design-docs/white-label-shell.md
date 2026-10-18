@@ -55,6 +55,17 @@ listing.
 - **Cast receiver:** a `chrome: "none"` mode that loads the game's manifest `tvUrl` full screen (no launcher frame) when the sender is a white-label app.
 - **CLI (`@open-game-system/cli`, bin `ogs`):** `login`, `push credentials`, `apps register` (bundle id/package ↔ appId), `doctor` (checks AASA, assetlinks, cast receiver, push).
 
+### Contract details (shell-platform, 2026-10-18; ADR 2026-10-18-multi-tenant-push)
+
+Paths are under `/api/v1` like every API route. Owner auth = the game's API key (`Authorization: Bearer ogsk_…`).
+
+- `PUT /api/v1/apps/:appId/native/ios` `{ bundleId, teamId }` · `PUT /api/v1/apps/:appId/native/android` `{ package, sha256CertFingerprints: string[], googleClientIds: string[] }` → 201 (new) / 200 (updated). Game API key. `GET /api/v1/apps/:appId/native` lists them.
+- `PUT /api/v1/apps/:appId/push-credentials` `{ ios: { p8, keyId, teamId } }` or `{ android: { serviceAccount } }` → 204. Game API key. `GET` says what's configured (no secrets).
+- **Device registration (the shell):** `PUT /api/v1/apps/:appId/devices/:deviceId` with the profile's device token (`sub` = profile, `did` = deviceId) and `{ platform: "ios" | "android", token, apnsEnvironment?: "sandbox" | "production" }` (native APNs device token / FCM registration token, not an Expo token; `apnsEnvironment` required on iOS) → 204. The bundle id / package comes from the app's registration.
+- **Native sign-in:** `POST /api/v1/auth/native` `{ provider: "apple" | "google", identityToken, nonce?, deviceProfileId?, device? }`. With a guest: send the guest's device token as `Authorization: Bearer` and its id as `deviceProfileId`. Answer: the profile (`getMe` view) plus `token` (a device token), as `/api/v1/auth/apple` does today. Apple audience = a registered bundle id; Google audience = a registered `googleClientIds` entry.
+- **Links:** `GET /api/v1/apps/app-links` (public) → `{ ios: [{ appId, appleAppId: "TEAM.bundle" }], android: [{ appId, package, sha256CertFingerprints }] }`; opengame.org serves AASA / assetlinks generated from it, registered apps first for `/play/<appId>` and `/play/<appId>/*`.
+- **Cast:** the sender casts the launcher URL with `chrome=none&app=<appId>` added (same `api` and launcher `token` as today, through `LOAD_VIEW`); the launcher shows the manifest `tvUrl` full screen and the phone's `game.view` changes it.
+
 ## Build order
 
 1. API + receiver + CLI (independent of any game).
