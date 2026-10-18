@@ -75,7 +75,7 @@ export async function tryPath(io: Io, args: string[]): Promise<number> {
     },
   });
   const { appId, key } = session(io, values.app);
-  const cwd = io.cwd ?? process.cwd();
+  const cwd = io.cwd?.() ?? process.cwd();
   const url = values["check-only"]
     ? (values.url ??
       TryPathSchema.parse(await call(io, "GET", `/api/v1/apps/${appId}/try`, key)).url)

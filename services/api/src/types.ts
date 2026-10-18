@@ -40,6 +40,8 @@ export interface Env {
   PUSH_VAPID_SUBJECT?: string;
   /** Expo push access token (secret), when the Expo project requires one for sending. */
   EXPO_ACCESS_TOKEN?: string;
+  /** The game-developer docs site: GET /dev/kits points at its pages and <base>/pkg/*.tgz (default https://ogs-docs.pages.dev). */
+  OGS_DOCS_BASE?: string;
   /** The deployed version (wrangler `version_metadata`); its id is every wide event's `version`. */
   CF_VERSION_METADATA?: WorkerVersionMetadata;
 }

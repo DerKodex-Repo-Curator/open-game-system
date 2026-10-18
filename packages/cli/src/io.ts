@@ -1,6 +1,13 @@
-import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { z } from "zod";
 
 /**
@@ -13,14 +20,49 @@ export type Io = {
   stderr: (line: string) => void;
   readFile: (path: string) => string;
   fetch: typeof fetch;
-  /** The directory commands work in (the game's repo); default process.cwd(). */
-  cwd?: string;
   /**
    * Runs a shell command in `cwd`, its output shown to the user as it runs; resolves with its exit
    * code and everything it printed (`ogs try` reads the deployed URL from it). Absent: no processes.
    */
   exec?: (command: string, opts: { cwd: string }) => Promise<{ code: number; output: string }>;
+  /** Writes a file, making its folder (ogs init). Default: node:fs. */
+  writeFile?: (path: string, data: string | Uint8Array) => void;
+  /** Default: node:fs existsSync. */
+  exists?: (path: string) => boolean;
+  /** A folder's entry names, [] when it isn't one. Default: node:fs. */
+  listDir?: (path: string) => string[];
+  /** The folder commands work in (the game's repo for ogs init). Default: process.cwd(). */
+  cwd?: () => string;
+  /** Whether a person is at the terminal; only then does a command ask (with `prompt`). */
+  isTTY?: boolean;
+  /** Asks one question on the terminal and resolves with the answer. */
+  prompt?: (question: string) => Promise<string>;
 };
+
+/** The file system as `io` gives it, with node:fs for whatever it leaves out. */
+export function files(io: Io) {
+  return {
+    cwd: io.cwd?.() ?? process.cwd(),
+    read: io.readFile,
+    write:
+      io.writeFile ??
+      ((path: string, data: string | Uint8Array) => {
+        mkdirSync(dirname(path), { recursive: true });
+        writeFileSync(path, data);
+      }),
+    exists: io.exists ?? existsSync,
+    list:
+      io.listDir ??
+      ((path: string) => {
+        try {
+          return readdirSync(path);
+        } catch {
+          return [];
+        }
+      }),
+  };
+}
+export type Files = ReturnType<typeof files>;
 
 const DEFAULT_API = "https://opengame-api.jonathanrmumm.workers.dev";
 export const DEFAULT_SITE = "https://opengame.org";

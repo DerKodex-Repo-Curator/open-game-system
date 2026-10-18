@@ -31,6 +31,7 @@
   "devDependencies": {
     "@open-game-system/app-bridge-web": "workspace:*",
     "@open-game-system/profile-kit": "workspace:*",
+    "@open-game-system/ogs-protocol": "workspace:*",
     "@types/node": "^24",
     "esbuild": "^0.27.3",
     "jsdom": "^28.1.0",

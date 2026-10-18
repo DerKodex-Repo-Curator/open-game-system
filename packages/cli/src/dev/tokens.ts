@@ -47,7 +47,7 @@ export async function createDevSigner(): Promise<DevSigner> {
       const sig = await webcrypto.subtle.sign(
         { name: "ECDSA", hash: "SHA-256" },
         pair.privateKey,
-        new TextEncoder().encode(input),
+        Uint8Array.from(new TextEncoder().encode(input)),
       );
       return `${input}.${b64url(new Uint8Array(sig))}`;
     },

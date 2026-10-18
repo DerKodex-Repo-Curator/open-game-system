@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { createInterface } from "node:readline/promises";
 import { run } from "./cli";
 
 /** A shell command, its output passed through to the terminal and kept (ogs try reads the URL from it). */
@@ -26,11 +27,20 @@ const exec = (command: string, opts: { cwd: string }) =>
 
 const code = await run(process.argv.slice(2), {
   env: process.env,
-  cwd: process.cwd(),
   stdout: (line) => process.stdout.write(`${line}\n`),
   stderr: (line) => process.stderr.write(`${line}\n`),
   readFile: (path) => readFileSync(path, "utf8"),
   fetch,
   exec,
+  cwd: () => process.cwd(),
+  isTTY: Boolean(process.stdin.isTTY && process.stdout.isTTY),
+  prompt: async (question) => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    try {
+      return await rl.question(question);
+    } finally {
+      rl.close();
+    }
+  },
 });
 process.exit(code);

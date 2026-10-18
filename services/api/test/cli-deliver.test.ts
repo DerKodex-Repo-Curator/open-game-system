@@ -88,7 +88,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 const io = (): Io => ({
   env: { OGS_API: API, OGS_CONFIG_DIR: home },
-  cwd: repo,
+  cwd: () => repo,
   stdout: (s) => out.push(s),
   stderr: (s) => err.push(s),
   readFile: (p) => readFileSync(p, "utf8"),

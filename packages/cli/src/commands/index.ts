@@ -2,6 +2,7 @@ import type { Io } from "../io";
 import { register } from "./apps";
 import { dev } from "./dev";
 import { doctor } from "./doctor";
+import { INIT_USAGE, init } from "./init";
 import { login } from "./login";
 import { credentials } from "./push";
 import { PUSH_SEND_USAGE, send } from "./push-send";
@@ -49,4 +50,5 @@ export const COMMANDS: Command[] = [
     ],
     run: dev,
   },
+  { words: ["init"], usage: INIT_USAGE, run: init },
 ];

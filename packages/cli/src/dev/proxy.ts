@@ -50,7 +50,7 @@ export function createPhoneProxy(opts: { upstream: URL; script: () => Promise<st
     const self = `http://${req.headers.host ?? "localhost"}`;
     const target = new URL(req.url ?? "/", upstream);
     const up = clientFor(upstream).request(
-      target,
+      target.href,
       { method: req.method, headers: upstreamHeaders(req, upstream, self) },
       (upRes) => {
         const headers: Record<string, string | string[]> = {};
@@ -89,7 +89,7 @@ export function createPhoneProxy(opts: { upstream: URL; script: () => Promise<st
 
   server.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     const self = `http://${req.headers.host ?? "localhost"}`;
-    const up = clientFor(upstream).request(new URL(req.url ?? "/", upstream), {
+    const up = clientFor(upstream).request(new URL(req.url ?? "/", upstream).href, {
       method: req.method,
       headers: upstreamHeaders(req, upstream, self),
     });

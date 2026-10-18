@@ -10,6 +10,7 @@ import catalogue from "./routes/catalogue";
 import clientEvents from "./routes/client-events";
 import couch from "./routes/couch";
 import deliver from "./routes/deliver";
+import dev from "./routes/dev";
 import devices from "./routes/devices";
 import friends from "./routes/friends";
 import games from "./routes/games";
@@ -92,6 +93,9 @@ app.route("/api/v1/client-events", clientEvents);
 
 // Beta releases: the app reads the latest build per platform; CI records it (RELEASE_TOKEN)
 app.route("/api/v1/app-release", appRelease);
+
+// The developer tool (ogs init): where the docs and the kits are (public)
+app.route("/api/v1/dev", dev);
 
 // Stream routes (no API key required - called by web games directly)
 app.route("/api/v1/stream", stream);
