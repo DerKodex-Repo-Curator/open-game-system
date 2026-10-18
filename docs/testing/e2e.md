@@ -234,7 +234,7 @@ DETOX_CONFIGURATION=android.emu.release \
   pnpm exec tsx e2e/stranger-funnel-preview.ts   # from the repo root
 ```
 
-Android differences the tests allow for: onboarding has no notifications page when Android already
+The stranger funnel on the preview passes on the emulator (140 s, 2026-10-18). Android differences the tests allow for: onboarding has no notifications page when Android already
 allows them (the tests tap Maybe later only when it shows); the hardware back button leaves a game
 the OGS way (`services/hardware-back.ts`). Test-file changes need no rebuild; app changes need the
 gradle step, native ones the prebuild too.
