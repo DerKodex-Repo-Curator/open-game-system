@@ -8,9 +8,11 @@
     "build": "tsx src/cli.ts",
     "preview": "tsx src/cli.ts && wrangler pages dev dist --port 5196",
     "typecheck": "tsc --noEmit",
-    "lint": "biome lint src test",
+    "lint": "biome lint src test functions",
     "test": "vitest run",
-    "deploy": "tsx src/cli.ts && CLOUDFLARE_ACCOUNT_ID=ccf4d9a0a3b76ffae0b6ee048de66f07 wrangler pages deploy dist --project-name ogs-docs --branch main"
+    "deploy": "tsx src/cli.ts && CLOUDFLARE_ACCOUNT_ID=ccf4d9a0a3b76ffae0b6ee048de66f07 wrangler pages deploy dist --project-name ogs-docs --branch main",
+    "waitlist:migrate": "wrangler d1 migrations apply ogs-docs-waitlist --remote && wrangler d1 migrations apply ogs-docs-waitlist-preview --remote --env preview",
+    "waitlist:stats": "wrangler d1 execute ogs-docs-waitlist --remote --command \"SELECT COALESCE(v.src,'(none)') AS source, v.views, COALESCE(w.signups,0) AS signups FROM (SELECT COALESCE(utm_source,'(none)') AS src, COUNT(*) AS views FROM visits GROUP BY 1) v LEFT JOIN (SELECT COALESCE(utm_source,'(none)') AS src, COUNT(*) AS signups FROM waitlist GROUP BY 1) w ON w.src = v.src ORDER BY signups DESC, views DESC\""
   },
   "dependencies": {
     "@open-game-system/ogs-protocol": "workspace:*",

@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { renderHtml, rewriteLinks } from "./markdown";
 import { PAGES, type PageDef } from "./pages";
@@ -92,6 +92,14 @@ const HEADERS = `/*.md
   Cache-Control: public, max-age=300
 `;
 
+/** The /on-tv landing page (bet 4) and its media, with this site's URL filled in. */
+function buildLanding(outDir: string): void {
+  const dir = resolve(DOCS_ROOT, "landing");
+  const html = readFileSync(resolve(dir, "on-tv.html"), "utf8").replaceAll("{{SITE_URL}}", SITE_URL);
+  writeFileSync(resolve(outDir, "on-tv.html"), html);
+  cpSync(resolve(dir, "media"), resolve(outDir, "media"), { recursive: true });
+}
+
 /**
  * Renders every page to `outDir` (HTML + Markdown twin), plus llms.txt, llms-full.txt, CSS, the
  * kits (/pkg/<kit>.tgz) and the starter template (/starter.tgz).
@@ -114,6 +122,7 @@ export function buildSite(outDir: string = DIST_DIR): BuiltPage[] {
   writeFileSync(resolve(outDir, "404.html"), notFoundHtml());
   writeFileSync(resolve(outDir, "_headers"), HEADERS);
   copyFileSync(resolve(DOCS_ROOT, "src/style.css"), resolve(outDir, "style.css"));
+  buildLanding(outDir);
   packKits(outDir);
   packStarter(outDir);
   return built;

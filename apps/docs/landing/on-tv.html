@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your web game on a real TV · OGS</title>
+<meta name="description" content="OGS puts your web game on the living-room TV and turns phones into controllers. One prompt to your coding agent does the integration.">
+<meta property="og:title" content="Your web game on a real TV. Phones are the controllers.">
+<meta property="og:description" content="OGS frames your game's TV page on the living-room TV and turns every phone on the couch into a controller. One prompt to your coding agent does the integration.">
+<meta property="og:image" content="{{SITE_URL}}/media/couch-demo.jpg">
+<meta property="og:url" content="{{SITE_URL}}/on-tv">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .land { max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
+  .hero { padding: 56px 0 28px; display: grid; gap: 18px; }
+  .kicker { margin: 0; font: 600 13px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  .hero h1 { margin: 0; font-size: clamp(36px, 6vw, 64px); line-height: 1.04; letter-spacing: -.02em; max-width: 15ch; }
+  .hero h1 span { background: var(--mark); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { margin: 0; font-size: clamp(18px, 2.2vw, 21px); color: var(--ink-2); max-width: 60ch; }
+  .ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+  .btn { display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px; border-radius: 999px; font-weight: 700; text-decoration: none; border: 1px solid var(--line); color: var(--ink); background: var(--paper); }
+  .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .video { margin: 28px 0 0; }
+  .video video { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); background: #000; }
+  .video figcaption { margin-top: 10px; font-size: 14px; color: var(--ink-2); }
+  section { margin-top: 64px; }
+  section h2 { font-size: clamp(24px, 3vw, 32px); line-height: 1.15; margin: 0 0 16px; letter-spacing: -.01em; }
+  .prompt { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; }
+  .prompt code { flex: 1 1 420px; display: block; padding: 16px 18px; border-radius: 12px; background: var(--code-bg); font: 15px/1.5 var(--mono); border: 1px solid var(--line); overflow-wrap: anywhere; }
+  .prompt button { min-height: 48px; padding: 0 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: 600 15px var(--sans); cursor: pointer; }
+  .note { font-size: 15px; color: var(--ink-2); margin: 10px 0 0; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .card p { margin: 0; color: var(--ink-2); font-size: 16px; }
+  ol.steps { margin: 0; padding-left: 22px; display: grid; gap: 10px; }
+  .status { background: var(--accent-soft); border-radius: 14px; padding: 18px 20px; }
+  .status p { margin: 0; }
+  form.join { display: grid; gap: 14px; max-width: 560px; background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+  form.join label { display: grid; gap: 6px; font-weight: 600; font-size: 15px; }
+  form.join input, form.join select, form.join textarea { font: 400 17px var(--sans); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  form.join textarea { min-height: 84px; resize: vertical; }
+  form.join button { min-height: 52px; border-radius: 999px; border: 0; background: var(--ink); color: var(--bg); font: 700 17px var(--sans); cursor: pointer; }
+  form.join .small { font-size: 13px; color: var(--ink-2); margin: 0; font-weight: 400; }
+  form.join [hidden] { display: none; }
+  .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+  .msg { margin: 0; padding: 12px 14px; border-radius: 10px; font-weight: 600; }
+  .msg.ok { background: #dcfce7; color: #14532d; }
+  .msg.err { background: #fee2e2; color: #7f1d1d; }
+  footer.land-foot { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 18px; }
+  @media (max-width: 520px) { .land { padding: 0 16px 48px; } .hero { padding-top: 32px; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/"><span class="mark" aria-hidden="true"></span>OGS for game developers</a>
+  <a class="md-link" href="/quickstart">Docs</a>
+</header>
+<main class="land">
+  <div class="hero">
+    <p class="kicker">For web games built with coding agents</p>
+    <h1>Your web game on a real TV. <span>Phones are the controllers.</span></h1>
+    <p class="lede">OGS puts your game's TV page on the living-room TV and turns every phone and iPad on the couch into a controller. Players arrive with a name and avatar. One prompt to your coding agent does the integration.</p>
+    <div class="ctas">
+      <a class="btn primary" href="#join">Join the waitlist</a>
+      <a class="btn" href="/starter">Get the starter template</a>
+    </div>
+    <figure class="video">
+      <video src="/media/couch-demo.mp4" poster="/media/couch-demo.jpg" controls muted playsinline loop preload="metadata" width="1280" height="366"></video>
+      <figcaption>Bake Shop, an OGS game: the TV page, a grown-up's phone and a kid's iPad, recorded in sync by the game's recorder. 30 s.</figcaption>
+    </figure>
+  </div>
+
+  <section aria-labelledby="prompt-h">
+    <h2 id="prompt-h">One line for your agent</h2>
+    <div class="prompt">
+      <code id="prompt">Make this game OGS-compatible: follow {{SITE_URL}}/llms.txt</code>
+      <button type="button" id="copy">Copy</button>
+    </div>
+    <p class="note">Paste it into Claude Code, Codex or Cursor in your game's repository. The docs tell the agent which steps your game needs, where the kits are, and which tests prove each step.</p>
+  </section>
+
+  <section aria-labelledby="get-h">
+    <h2 id="get-h">What your game gets</h2>
+    <div class="grid">
+      <div class="card"><h3>The TV, without a cast SDK</h3><p>OGS casts once and frames your TV page. No cast button, no receiver app, no room codes on screen.</p></div>
+      <div class="card"><h3>Phones as controllers</h3><p>Your phone page plays in the OGS app on every phone and iPad. The whole couch follows the TV into your game.</p></div>
+      <div class="card"><h3>Players with names</h3><p>No sign-up or name form. A signed token gives your server each player's OGS name and avatar.</p></div>
+      <div class="card"><h3>Made for agents</h3><p>llms.txt, every page as Markdown, seam tests for the TV and the phone, and a starter that passes them.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="how-h">
+    <h2 id="how-h">How it works</h2>
+    <ol class="steps">
+      <li><strong>Start from the starter</strong> (a small game that already works with OGS) or paste the prompt into your existing game.</li>
+      <li><strong>Your agent adds the OGS pieces test-first:</strong> a TV page that goes quiet when parked, a phone page that knows who's playing, a server that checks the token.</li>
+      <li><strong>It still works in a plain browser.</strong> Ship it anywhere you like; inside OGS it gets the TV and the couch.</li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="status-h">
+    <h2 id="status-h">Where OGS is today</h2>
+    <div class="status">
+      <p>OGS is in a private beta: the iPhone and iPad app is on TestFlight, and it casts to Chromecast or any TV browser. Games join the catalogue by pull request. The waitlist is how we pick the next games and the developers who get the app first.</p>
+    </div>
+  </section>
+
+  <section id="join" aria-labelledby="join-h">
+    <h2 id="join-h">Join the waitlist</h2>
+    <form class="join" method="post" action="/api/waitlist">
+      <p class="msg ok" id="ok" hidden>You're on the list. We'll be in touch about getting your game on the TV.</p>
+      <p class="msg err" id="err" hidden>That email address doesn't look right. Try again?</p>
+      <label>Email <input type="email" name="email" autocomplete="email" required></label>
+      <label>What are you building? <textarea name="building" maxlength="500" placeholder="A party game, a quiz, a racing game..."></textarea></label>
+      <label>Engine
+        <select name="engine">
+          <option value="">Choose one</option>
+          <option value="phaser">Phaser</option>
+          <option value="three">Three.js</option>
+          <option value="pixi">PixiJS</option>
+          <option value="canvas">Plain canvas or DOM</option>
+          <option value="react">React</option>
+          <option value="godot-web">Godot (web export)</option>
+          <option value="other">Something else</option>
+        </select>
+      </label>
+      <div class="hp" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+      <input type="hidden" name="utm_source"><input type="hidden" name="utm_medium"><input type="hidden" name="utm_campaign"><input type="hidden" name="ref">
+      <button type="submit">Join the waitlist</button>
+      <p class="small">We'll only email you about OGS for developers, and we don't share your address.</p>
+    </form>
+  </section>
+
+  <footer class="land-foot">
+    <a href="/">Docs</a><a href="/quickstart">Quickstart for agents</a><a href="/starter">Starter template</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/open-game-system/open-game-system">GitHub</a>
+  </footer>
+</main>
+<script>
+(function () {
+  var KEYS = ["utm_source", "utm_medium", "utm_campaign"];
+  var q = new URLSearchParams(location.search);
+  var src = {};
+  try { src = JSON.parse(sessionStorage.getItem("ogs-utm") || "{}"); } catch (e) {}
+  if (KEYS.some(function (k) { return q.get(k); })) {
+    src = {};
+    KEYS.forEach(function (k) { if (q.get(k)) src[k] = q.get(k).slice(0, 100); });
+    src.ref = document.referrer.slice(0, 500);
+    try { sessionStorage.setItem("ogs-utm", JSON.stringify(src)); } catch (e) {}
+  }
+  if (!src.ref) src.ref = document.referrer.slice(0, 500);
+  var form = document.querySelector("form.join");
+  KEYS.concat("ref").forEach(function (k) { if (src[k]) form.elements[k].value = src[k]; });
+  var visit = JSON.stringify(Object.assign({ path: location.pathname }, src));
+  if (!q.get("joined") && navigator.sendBeacon) navigator.sendBeacon("/api/visit", new Blob([visit], { type: "application/json" }));
+  if (q.get("joined")) document.getElementById("ok").hidden = false;
+  if (q.get("error")) document.getElementById("err").hidden = false;
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var body = {};
+    new FormData(form).forEach(function (v, k) { body[k] = String(v); });
+    var button = form.querySelector("button");
+    button.disabled = true;
+    fetch("/api/waitlist", { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify(body) })
+      .then(function (r) {
+        document.getElementById("ok").hidden = !r.ok;
+        document.getElementById("err").hidden = r.ok;
+        if (r.ok) form.querySelectorAll("label, button").forEach(function (el) { el.hidden = true; });
+      })
+      .catch(function () { document.getElementById("err").hidden = false; })
+      .finally(function () { button.disabled = false; });
+  });
+  document.getElementById("copy").addEventListener("click", function () {
+    var b = this;
+    navigator.clipboard.writeText(document.getElementById("prompt").textContent).then(function () {
+      b.textContent = "Copied";
+      setTimeout(function () { b.textContent = "Copy"; }, 1500);
+    });
+  });
+})();
+</script>
+</body>
+</html>

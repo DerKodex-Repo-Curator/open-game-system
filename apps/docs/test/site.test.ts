@@ -146,3 +146,29 @@ describe("links", () => {
     expect(read("_headers")).toContain("text/markdown");
   });
 });
+
+describe("the /on-tv landing page", () => {
+  const html = read("on-tv.html");
+
+  it("plays the 30 s couch video from the site", () => {
+    expect(html).toContain('src="/media/couch-demo.mp4"');
+    expect(existsSync(resolve(out, "media/couch-demo.mp4"))).toBe(true);
+    expect(existsSync(resolve(out, "media/couch-demo.jpg"))).toBe(true);
+  });
+
+  it("gives the one-line prompt pointing at this site's llms.txt", () => {
+    expect(html).toContain(`Make this game OGS-compatible: follow ${SITE_URL}/llms.txt`);
+    expect(html).not.toContain("{{");
+  });
+
+  it("posts the waitlist form to the Worker even without JavaScript, carrying the UTM tags", () => {
+    expect(html).toMatch(/<form class="join" method="post" action="\/api\/waitlist">/);
+    for (const name of ["email", "building", "engine", "utm_source", "utm_medium", "utm_campaign", "ref", "website"])
+      expect(html).toContain(`name="${name}"`);
+  });
+
+  it("links only to pages that exist", () => {
+    for (const h of hrefs(html).filter((h) => h.startsWith("/") && !h.startsWith("//")))
+      expect(servedFile(h.split("#")[0] ?? h), h).not.toBeNull();
+  });
+});

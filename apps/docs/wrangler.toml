@@ -1,0 +1,18 @@
+# Cloudflare Pages project `ogs-docs`: the static docs (dist/) plus Pages Functions (functions/) for
+# the /on-tv waitlist. Previews write to their own database.
+name = "ogs-docs"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "WAITLIST"
+database_name = "ogs-docs-waitlist"
+database_id = "58d6c744-acaf-4936-9ada-617c03fb242f"
+migrations_dir = "migrations"
+
+[env.preview]
+[[env.preview.d1_databases]]
+binding = "WAITLIST"
+database_name = "ogs-docs-waitlist-preview"
+database_id = "7818bdcd-99fa-420b-aedf-759fef401946"
+migrations_dir = "migrations"
