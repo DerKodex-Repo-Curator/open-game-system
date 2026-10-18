@@ -1,5 +1,6 @@
 import { relative, resolve } from "node:path";
 import { generateApp, TargetNotEmptyError } from "./generate";
+import { InputEndedError } from "./line-prompt";
 import { HELP, nextSteps } from "./next-steps";
 import { collectAnswers, parseArgs } from "./options";
 
@@ -45,5 +46,19 @@ export async function main(argv: string[], io: CliIO): Promise<number> {
       return 1;
     }
     throw error;
+  }
+}
+
+/** main() for the bin: a crash becomes an exit code and a message, never a stack trace. */
+export async function runCli(argv: string[], io: CliIO): Promise<number> {
+  try {
+    return await main(argv, io);
+  } catch (error) {
+    if (error instanceof InputEndedError) {
+      io.error(`\n${error.message}`);
+      return 2;
+    }
+    io.error(error instanceof Error ? (error.stack ?? error.message) : String(error));
+    return 1;
   }
 }

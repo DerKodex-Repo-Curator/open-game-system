@@ -101,34 +101,46 @@ const splitList = (values: string[]) =>
     .map((v) => v.trim())
     .filter((v) => v.length > 0);
 
+/** Flags that hold one string, and the answer each one fills. */
+const STRING_FLAGS = [
+  ["app-id", "appId"],
+  ["name", "name"],
+  ["game-url", "gameUrl"],
+  ["bundle-id", "bundleId"],
+  ["package", "androidPackage"],
+  ["team-id", "teamId"],
+  ["branding", "branding"],
+  ["shell-version", "shellVersion"],
+] as const;
+
+const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
 export function parseArgs(argv: string[]): ParseResult {
   let parsed: ReturnType<typeof parseCli>;
   try {
     parsed = parseCli(argv);
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+    return { ok: false, error: errorText(error) };
   }
   const { values, positionals } = parsed;
   if (positionals.length > 1) {
-    return {
-      ok: false,
-      error: `give one directory, not ${positionals.length}: ${positionals.join(" ")}`,
-    };
+    const all = positionals.join(" ");
+    return { ok: false, error: `give one directory, not ${positionals.length}: ${all}` };
   }
+  return { ok: true, args: argsFrom(values, positionals[0]) };
+}
+
+function argsFrom(values: ReturnType<typeof parseCli>["values"], dir: string | undefined): Args {
   const args: Args = { yes: values.yes === true, help: values.help === true };
-  const [dir] = positionals;
   if (dir !== undefined) args.dir = dir;
-  if (values["app-id"] !== undefined) args.appId = values["app-id"];
-  if (values.name !== undefined) args.name = values.name;
-  if (values["game-url"] !== undefined) args.gameUrl = values["game-url"];
-  if (values["bundle-id"] !== undefined) args.bundleId = values["bundle-id"];
-  if (values.package !== undefined) args.androidPackage = values.package;
-  if (values["team-id"] !== undefined) args.teamId = values["team-id"];
-  if (values["link-domain"] !== undefined) args.linkDomains = splitList(values["link-domain"]);
+  for (const [flag, key] of STRING_FLAGS) {
+    const value = values[flag];
+    if (value !== undefined) args[key] = value;
+  }
+  const domains = values["link-domain"];
+  if (domains !== undefined) args.linkDomains = splitList(domains);
   if (values["no-link-domain"] === true) args.linkDomains = [];
-  if (values.branding !== undefined) args.branding = values.branding;
-  if (values["shell-version"] !== undefined) args.shellVersion = values["shell-version"];
-  return { ok: true, args };
+  return args;
 }
 
 function parseCli(argv: string[]) {
@@ -275,6 +287,38 @@ function check(key: Field["key"], value: unknown) {
 
 const firstIssue = (error: z.ZodError) => error.issues[0]?.message ?? "is not valid";
 
+type Resolved =
+  | { kind: "value"; value: unknown }
+  | { kind: "ask"; fallback: string | undefined }
+  | { kind: "problem"; message: string; missing: boolean }
+  | { kind: "skip" };
+
+/** One answer from its flag, or its default under --yes; otherwise it has to be asked. */
+function resolveField(field: Field, args: Args, so: Partial<Record<AnswerKey, unknown>>): Resolved {
+  const given = args[field.key];
+  const fallback = field.fallback(answered(so));
+  if (given === undefined) {
+    return args.yes ? resolveDefault(field, fallback, so) : { kind: "ask", fallback };
+  }
+  const parsed = check(field.key, toValue(field.key, given));
+  if (parsed.success) return { kind: "value", value: parsed.data };
+  if (!args.yes) return { kind: "ask", fallback };
+  return { kind: "problem", message: `${field.flag} ${firstIssue(parsed.error)}`, missing: false };
+}
+
+/** Under --yes: the default, or a missing answer (unless it only lacks an earlier missing one). */
+function resolveDefault(
+  field: Field,
+  fallback: string | undefined,
+  so: Partial<Record<AnswerKey, unknown>>,
+): Resolved {
+  if (fallback !== undefined) {
+    return { kind: "value", value: check(field.key, toValue(field.key, fallback)).data };
+  }
+  const blocked = field.dependsOn !== undefined && so[field.dependsOn] === undefined;
+  return blocked ? { kind: "skip" } : { kind: "problem", message: field.flag, missing: true };
+}
+
 /**
  * Fills every answer from the flags; asks for the rest (or, with --yes, takes the defaults and
  * fails on what has none). Each answer is validated as it comes in.
@@ -282,39 +326,25 @@ const firstIssue = (error: z.ZodError) => error.issues[0]?.message ?? "is not va
 export async function collectAnswers(args: Args, io: PromptIO): Promise<CollectResult> {
   const so: Partial<Record<AnswerKey, unknown>> = {};
   const missing: string[] = [];
-  const invalid: string[] = [];
-
+  const problems: string[] = [];
   for (const field of FIELDS) {
-    const given = args[field.key];
-    const fallback = field.fallback(answered(so));
-    if (given !== undefined) {
-      const parsed = check(field.key, toValue(field.key, given));
-      if (parsed.success) {
-        so[field.key] = parsed.data;
-        continue;
-      }
-      if (args.yes) {
-        invalid.push(`${field.flag} ${firstIssue(parsed.error)}`);
-        continue;
-      }
-    } else if (args.yes) {
-      const blocked = field.dependsOn !== undefined && so[field.dependsOn] === undefined;
-      if (fallback === undefined && !blocked) missing.push(field.flag);
-      else if (fallback !== undefined)
-        so[field.key] = check(field.key, toValue(field.key, fallback)).data;
-      continue;
-    }
-    so[field.key] = await askUntilValid(field, fallback, io);
+    const r = resolveField(field, args, so);
+    if (r.kind === "problem") (r.missing ? missing : problems).push(r.message);
+    if (r.kind === "value") so[field.key] = r.value;
+    if (r.kind === "ask") so[field.key] = await askUntilValid(field, r.fallback, io);
   }
+  return finish(so, missing, problems, args.shellVersion);
+}
 
-  if (missing.length > 0 || invalid.length > 0) {
-    const lines = [
-      ...(missing.length > 0 ? [`--yes needs ${missing.join(", ")}`] : []),
-      ...invalid,
-    ];
-    return { ok: false, error: lines.join("\n") };
-  }
-  const answers = AnswersSchema.safeParse({ ...so, shellVersion: args.shellVersion });
+function finish(
+  so: Partial<Record<AnswerKey, unknown>>,
+  missing: string[],
+  problems: string[],
+  shellVersion: string | undefined,
+): CollectResult {
+  if (missing.length > 0) problems.unshift(`--yes needs ${missing.join(", ")}`);
+  if (problems.length > 0) return { ok: false, error: problems.join("\n") };
+  const answers = AnswersSchema.safeParse({ ...so, shellVersion });
   if (!answers.success) return { ok: false, error: firstIssue(answers.error) };
   return { ok: true, answers: answers.data };
 }
