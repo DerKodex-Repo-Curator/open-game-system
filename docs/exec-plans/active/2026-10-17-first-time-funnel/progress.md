@@ -71,6 +71,22 @@ Audit and ranking: [docs/funnel-audit.md](../../../funnel-audit.md).
 - `getDevices()` must return the same array until something changes: the cast prompt reads it with
   useSyncExternalStore (a new array per read was an infinite render loop, caught by Detox).
 
+## Android (2026-10-18)
+
+- Android SDK + AVD `ogs_pixel_35` (API 35, arm64); Detox `android.emu.release`; how-to in
+  docs/testing/e2e.md. The preview stranger funnel runs on the emulator.
+- **Found by it: no game in the Android app ever saw the OGS profile.** react-native-webview's
+  Android `postMessage` fires on `document`; app-bridge-web listens on `window`. `BridgedWebView`
+  now injects a `window` MessageEvent on both platforms (test-first, 3 new tests red → green).
+- Android onboarding skips the notifications page; the Detox walks tap Maybe later only if shown.
+- Back button leaves a game the OGS way; no iOS-only Local Network hint on Android (c0cdadf7).
+- **Kept the funnel branch JavaScript-only**: any Expo config change (even Android-only intent
+  filters, or eas.json) changes the iOS fingerprint too, which means a new native build and a
+  forced update for every tester. Main's fingerprints equal builds 7 (iOS) and 8 (Android); this
+  branch's do too. The `/join/` App Link and the `play` EAS profile moved to the stacked branch
+  `claude/android-native-0e55ec`. The Detox plugin is added by `app.config.js` only with
+  `DETOX_ANDROID=1`.
+
 ## Next
 
 See the ranked list in docs/funnel-audit.md. Next up: #8 Android /join/ (native build), guest game-token flag, guest cleanup, deploy (owner).

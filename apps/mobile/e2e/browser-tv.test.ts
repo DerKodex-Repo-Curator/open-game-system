@@ -47,8 +47,14 @@ const visible = (id: string, ms = 10000) =>
 async function onboard(name: string) {
   await visible("onboardingMakeProfile", 30000);
   await element(by.id("onboardingMakeProfile")).tap();
-  await visible("onboardingMaybeLaterButton");
-  await element(by.id("onboardingMaybeLaterButton")).tap();
+  // Onboarding's notifications page only shows while notifications are undecided (Android may
+  // have them on already: the page is skipped).
+  try {
+    await waitFor(element(by.id("onboardingMaybeLaterButton")))
+      .toBeVisible()
+      .withTimeout(5000);
+    await element(by.id("onboardingMaybeLaterButton")).tap();
+  } catch {}
   await visible("profileNameInput");
   await element(by.id("profileNameInput")).typeText(name);
   await element(by.id("profileNameInput")).tapReturnKey();

@@ -201,3 +201,44 @@ cd e2e && OGS_API=http://localhost:8868 OGS_TV=http://localhost:5300 GAME=http:/
 
 Tests that need a sitting's id read it from the API with the launcher token of the TV cast last
 (`castSittings` in `apps/mobile/e2e/helpers.ts`): Detox on iOS matches ids and text by name only.
+
+## The Detox suites on Android (emulator)
+
+The same Detox tests run on an Android emulator: configuration `android.emu.release` in
+`apps/mobile/.detoxrc.js`. The native Detox wiring (the Detox maven repo, the androidTest runner,
+cleartext to `10.0.2.2`/`localhost`) comes from `apps/mobile/plugins/with-detox-android.js`, which
+`apps/mobile/app.config.js` adds only when `DETOX_ANDROID=1` at prebuild; store and EAS builds and
+the native fingerprint never see it.
+
+One-time setup (no sudo):
+
+```bash
+brew install --cask android-commandlinetools   # and a JDK 17 (e.g. zulu@17)
+export ANDROID_HOME=$HOME/Library/Android/sdk
+sdkmanager --sdk_root=$ANDROID_HOME "cmdline-tools;latest" "platform-tools" "emulator" \
+  "platforms;android-35" "build-tools;35.0.0" "system-images;android-35;google_apis;arm64-v8a"
+$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager create avd -n ogs_pixel_35 \
+  -k "system-images;android-35;google_apis;arm64-v8a" -d pixel_7
+```
+
+Build the APKs (the app and its test APK; only the `:app` tasks: `assembleAndroidTest` across every
+module fails dexing expo-eas-client), then run a suite:
+
+```bash
+cd apps/mobile && DETOX_ANDROID=1 CI=1 pnpm exec expo prebuild -p android --clean --no-install
+cd android && EXPO_PUBLIC_OGS_API=<api> EXPO_PUBLIC_OGS_TV=<launcher> EXPO_PUBLIC_FAKE_CAST=none \
+  ./gradlew :app:assembleRelease :app:assembleAndroidTest -DtestBuildType=release
+DETOX_CONFIGURATION=android.emu.release \
+  DETOX_ANDROID_APK=$PWD/app/build/outputs/apk/release/app-release.apk \
+  DETOX_ANDROID_TEST_APK=$PWD/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk \
+  pnpm exec tsx e2e/stranger-funnel-preview.ts   # from the repo root
+```
+
+Android differences the tests allow for: onboarding has no notifications page when Android already
+allows them (the tests tap Maybe later only when it shows); the hardware back button leaves a game
+the OGS way (`services/hardware-back.ts`). Test-file changes need no rebuild; app changes need the
+gradle step, native ones the prebuild too.
+
+For a phone: `eas build -p android --profile preview` (an internal APK, installable from the EAS
+link). The `play` profile (the app bundle for Google Play internal testing) is on branch
+`claude/android-native-0e55ec` with the `/join/` App Link.

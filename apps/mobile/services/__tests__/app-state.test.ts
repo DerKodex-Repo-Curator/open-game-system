@@ -503,7 +503,12 @@ describe("app state: the invite a household came through", () => {
       storage: memory(),
       device: { kind: "phone", name: "iPhone" },
       newDeviceId: () => "d1",
-      invite: { current: async () => kept, clear: async () => void (kept = null) },
+      invite: {
+        current: async () => kept,
+        clear: async () => {
+          kept = null;
+        },
+      },
     });
     await app.createProfile(newProfile);
     await expect(app.startSession("Browser TV")).rejects.toThrow("offline");

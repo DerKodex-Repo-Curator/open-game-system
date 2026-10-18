@@ -8,7 +8,8 @@
 // Crew is the preview copy `rocket-crew-funnel` (it trusts the preview API's keys).
 //
 //   pnpm exec tsx e2e/stranger-funnel-preview.ts            (from the repo root)
-//   env: DETOX_IOS_BINARY (a build against the preview: EXPO_PUBLIC_OGS_API, EXPO_PUBLIC_OGS_TV,
+//   env: DETOX_CONFIGURATION (ios.sim.release, or android.emu.release with DETOX_ANDROID_APK and
+//        DETOX_ANDROID_TEST_APK), DETOX_IOS_BINARY (a build against the preview: EXPO_PUBLIC_OGS_API, EXPO_PUBLIC_OGS_TV,
 //        EXPO_PUBLIC_FAKE_CAST=none), DETOX_SIM_NAME, ROCKET_CREW_DIR (a rocket-crew checkout, for its
 //        problem parser), FUNNEL_EVIDENCE.
 import { spawn } from "node:child_process";
@@ -93,7 +94,7 @@ function runPhone() {
       "detox",
       "test",
       "--configuration",
-      "ios.sim.release",
+      process.env.DETOX_CONFIGURATION ?? "ios.sim.release",
       "e2e/stranger-funnel-preview.test.ts",
     ],
     {

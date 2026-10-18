@@ -29,13 +29,12 @@ module.exports = {
     "android.release": {
       type: "android.apk",
       binaryPath:
-        process.env.DETOX_ANDROID_APK ??
-        "android/app/build/outputs/apk/release/app-release.apk",
+        process.env.DETOX_ANDROID_APK ?? "android/app/build/outputs/apk/release/app-release.apk",
       testBinaryPath:
         process.env.DETOX_ANDROID_TEST_APK ??
         "android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk",
       build:
-        "cd android && ./gradlew assembleRelease assembleAndroidTest -DtestBuildType=release && cd ..",
+        "cd android && ./gradlew :app:assembleRelease :app:assembleAndroidTest -DtestBuildType=release && cd ..",
     },
     "ios.debug": {
       type: "ios.app",

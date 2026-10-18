@@ -100,7 +100,7 @@ async function main() {
       "detox",
       "test",
       "--configuration",
-      "ios.sim.release",
+      process.env.DETOX_CONFIGURATION ?? "ios.sim.release",
       "e2e/invite-family-preview.test.ts",
     ],
     {

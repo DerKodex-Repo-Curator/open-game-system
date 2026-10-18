@@ -1,5 +1,5 @@
-// Detox on Android (e2e on an emulator), only when the prebuild runs with DETOX_ANDROID=1: any other
-// prebuild (EAS, CI releases) gets the config unchanged. The published @config-plugins/detox
+// Detox on Android (e2e on an emulator), only when the prebuild runs with DETOX_ANDROID=1: app.config.js
+// adds this plugin only then, so EAS builds, CI releases and the native fingerprint never see it. The published @config-plugins/detox
 // supports Expo up to 53; this does the same few things for this app:
 // - the Detox AAR's local Maven repo and the test runner (android/build.gradle, app/build.gradle);
 // - androidTest/.../DetoxTest.java (the instrumentation Detox drives);

@@ -20,7 +20,7 @@ describe("app link config", () => {
   });
 
   // /join/*: the TV's join QR (2026-10-06-join-and-invite.feature, "Scanning with the app installed
-  // opens the app"). iOS reads it from the site; Android claims /join/ in app.json's intent filters.
+  // opens the app"). iOS reads it from the site; Android's /join/ filter waits for a native build.
   it("iOS: opengame.org hands the app /play/*, /join/* and /open", () => {
     expect(aasa.applinks.details).toEqual([
       {
@@ -30,12 +30,11 @@ describe("app link config", () => {
     ]);
   });
 
-  // /join/: the TV's QR (2026-10-06-join-and-invite.feature), on Android as on iOS.
-  it("Android: the app verifies opengame.org /open, /play/ and /join/", () => {
+  it("Android: the app verifies opengame.org /open and /play/", () => {
     const hosts = app.android.intentFilters.flatMap((f) =>
       f.data.map((d) => `${d.host}${d.pathPrefix}`),
     );
-    expect(hosts).toEqual(["opengame.org/open", "opengame.org/play/", "opengame.org/join/"]);
+    expect(hosts).toEqual(["opengame.org/open", "opengame.org/play/"]);
     expect(app.android.intentFilters.every((f) => f.autoVerify)).toBe(true);
   });
 

@@ -74,8 +74,14 @@ async function couchOf(code: string): Promise<string[]> {
 async function onboard(name: string, sticker: string) {
   await visible("onboardingMakeProfile", 20000);
   await tap("onboardingMakeProfile");
-  await visible("onboardingMaybeLaterButton");
-  await tap("onboardingMaybeLaterButton");
+  // Onboarding's notifications page only shows while notifications are undecided (Android may
+  // have them on already: the page is skipped).
+  try {
+    await waitFor(element(by.id("onboardingMaybeLaterButton")))
+      .toBeVisible()
+      .withTimeout(5000);
+    await tap("onboardingMaybeLaterButton");
+  } catch {}
   await visible("profileNameInput");
   await type("profileNameInput", name);
   await element(by.id("profileNameInput")).tapReturnKey();
