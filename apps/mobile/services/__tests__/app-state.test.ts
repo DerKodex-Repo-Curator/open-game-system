@@ -515,3 +515,72 @@ describe("app state: the invite a household came through", () => {
     expect(kept).toBe("inv-1");
   });
 });
+
+// The second visit (2026-10-18-second-visit.feature): the next day the app opens on no couch. A
+// couch lives 12 h (the launcher token); one kept longer ago by this phone's clock is over, so the
+// TV tab offers Cast instead of reattaching to yesterday's couch.
+describe("app state: yesterday's couch", () => {
+  const HOUR = 60 * 60 * 1000;
+  async function keptAt(at: number) {
+    const storage = memory();
+    const first = createAppState({
+      api: fakeApi(),
+      storage,
+      device: { kind: "phone", name: "iPhone" },
+      newDeviceId: () => "d1",
+      now: () => at,
+    });
+    await first.createProfile(newProfile);
+    await first.startSession("Living room TV");
+    return storage;
+  }
+  const reopen = (storage: ReturnType<typeof memory>, now: number) =>
+    createAppState({
+      api: fakeApi(),
+      storage,
+      device: { kind: "phone", name: "iPhone" },
+      newDeviceId: () => "d2",
+      now: () => now,
+    });
+
+  it("a couch kept more than 12 h ago is over: no session, and it's forgotten", async () => {
+    const t = 1_800_000_000_000;
+    const storage = await keptAt(t);
+    const app = reopen(storage, t + 13 * HOUR);
+    await app.init();
+    expect(app.getSnapshot().session).toBeNull();
+    expect(storage.data.has("ogs.session")).toBe(false);
+  });
+
+  it("a couch kept within 12 h is still on", async () => {
+    const t = 1_800_000_000_000;
+    const app = reopen(await keptAt(t), t + 11 * HOUR);
+    await app.init();
+    expect(app.getSnapshot().session?.sessionId).toBe("s1");
+  });
+
+  it("the snapshot never carries the stamp", async () => {
+    const t = 1_800_000_000_000;
+    const app = reopen(await keptAt(t), t + HOUR);
+    await app.init();
+    expect(app.getSnapshot().session).not.toHaveProperty("keptAt");
+  });
+
+  it("a session stored before this stamp existed is kept as it was", async () => {
+    const storage = memory();
+    const app0 = createAppState({
+      api: fakeApi(),
+      storage,
+      device: { kind: "phone", name: "iPhone" },
+      newDeviceId: () => "d1",
+    });
+    await app0.createProfile(newProfile);
+    await app0.startSession("Living room TV");
+    const raw = JSON.parse(storage.data.get("ogs.session") ?? "{}");
+    delete raw.keptAt;
+    storage.data.set("ogs.session", JSON.stringify(raw));
+    const app = reopen(storage, Date.now() + 48 * HOUR);
+    await app.init();
+    expect(app.getSnapshot().session?.sessionId).toBe("s1");
+  });
+});

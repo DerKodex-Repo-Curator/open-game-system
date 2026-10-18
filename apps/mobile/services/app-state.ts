@@ -83,6 +83,10 @@ export type HandleResult =
   | Failure<never>;
 
 const SESSION_KEY = "ogs.session";
+/** A couch lives as long as its launcher token: 12 h (the API's SESSION_TTL_MS). */
+const COUCH_LIFETIME_MS = 12 * 60 * 60 * 1000;
+/** A kept session; keptAt (ms, this phone's clock) is missing on sessions kept by older builds. */
+const StoredSessionSchema = CouchSessionInfoSchema.extend({ keptAt: z.number().optional() });
 
 /** An API error with one of the codes the caller handles, else a plain error to show. */
 function failure<R extends string>(
@@ -110,6 +114,8 @@ export function createAppState(opts: {
    * wipes). The Keychain is not wiped on iOS, so a deleted app's profile must be forgotten here.
    */
   install?: { isFirstLaunch(): Promise<boolean>; markLaunched(): Promise<void> };
+  /** This phone's clock (Date.now): how old a kept couch is. */
+  now?: () => number;
 }) {
   let appIds: string[] = [];
   const libraryOf = (catalogue: Manifest[]) =>
@@ -143,18 +149,29 @@ export function createAppState(opts: {
     if (id) await keepIdentity({ ...id, profile: me.profile }, me.logins);
   }
 
+  const now = opts.now ?? (() => Date.now());
+
   async function keepSession(session: CouchSessionInfo | null) {
-    if (session) await opts.storage.setItemAsync(SESSION_KEY, JSON.stringify(session));
+    // Stamped with when this phone kept it (stored only): the next day it's over (readSession).
+    if (session)
+      await opts.storage.setItemAsync(SESSION_KEY, JSON.stringify({ ...session, keptAt: now() }));
     else await opts.storage.deleteItemAsync(SESSION_KEY);
     set({ session });
   }
 
+  /** The couch this phone was on, unless it was kept more than a couch's lifetime (12 h) ago. */
   async function readSession(): Promise<CouchSessionInfo | null> {
     const raw = await opts.storage.getItemAsync(SESSION_KEY);
     if (!raw) return null;
     try {
-      const parsed = CouchSessionInfoSchema.safeParse(JSON.parse(raw));
-      return parsed.success ? parsed.data : null;
+      const parsed = StoredSessionSchema.safeParse(JSON.parse(raw));
+      if (!parsed.success) return null;
+      const { keptAt, ...session } = parsed.data;
+      if (keptAt !== undefined && now() - keptAt > COUCH_LIFETIME_MS) {
+        await opts.storage.deleteItemAsync(SESSION_KEY);
+        return null;
+      }
+      return session;
     } catch {
       return null;
     }
