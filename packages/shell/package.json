@@ -32,7 +32,7 @@
     "!src/**/__tests__"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsc -p plugin/tsconfig.json",
+    "build": "tsc -p tsconfig.build.json && tsc -p plugin/tsconfig.build.json",
     "clean": "rm -rf build plugin/build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p plugin/tsconfig.json",
     "lint": "biome check .",
