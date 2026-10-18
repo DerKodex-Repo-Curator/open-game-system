@@ -73,6 +73,13 @@ export const PAGES: PageDef[] = [
     source: content("cli.md"),
   },
   {
+    slug: "cli-deliver",
+    nav: "ogs try and ogs push send",
+    summary:
+      "Deploy and register a game's try path (ogs try, PUT /apps/:appId/try) and send a test push or push link to your own handle (ogs push send, the notifications API and the handle check).",
+    source: content("cli-deliver.md"),
+  },
+  {
     slug: "try-kit",
     nav: "try-kit: no-app try path",
     summary:

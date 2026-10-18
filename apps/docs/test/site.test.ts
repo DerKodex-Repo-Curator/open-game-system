@@ -32,7 +32,7 @@ function servedFile(path: string): string | null {
 describe("the docs site build", () => {
   it("renders every page", () => {
     expect(built.map((b) => b.page.slug)).toEqual(PAGES.map((p) => p.slug));
-    expect(built.length).toBe(11); // 11 since 2026-10-18: the ogs CLI and try-kit (9 since 2026-10-08: Notifications)
+    expect(built.length).toBe(12); // 12 since 2026-10-18: ogs try and push send (11: the ogs CLI and try-kit) (9 since 2026-10-08: Notifications)
     for (const b of built) expect(b.title.length).toBeGreaterThan(0);
   });
 
