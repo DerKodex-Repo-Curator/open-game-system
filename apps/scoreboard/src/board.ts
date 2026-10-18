@@ -1,8 +1,11 @@
 import { BETS, type Inputs } from "./bets";
 import type { D1Like } from "./sources/d1";
 import { readFunnel } from "./sources/funnel";
-import { frontDoorSince, type Snapshot } from "./sources/frontdoor";
-import { readTryGames, type SqlLike } from "./sources/logs";
+import { clipsSince, frontDoorSince, type Snapshot } from "./sources/frontdoor";
+import { readTryGames, TRY_GAMES, type SqlLike } from "./sources/logs";
+import { readCounters, type Counters } from "./sources/counters";
+import { TAILED } from "./tail";
+import type { Manual } from "./manual";
 import { readWaitlist } from "./sources/waitlist";
 
 /** Where the numbers come from. The Worker wires the real bindings; tests pass synthetic ones. */
@@ -14,6 +17,10 @@ export type Sources = {
   /** Workers Logs (the Analytics SQL binding). */
   sql: SqlLike;
   hn: () => Promise<Inputs["hn"]>;
+  /** What Jon typed in (App Store Connect, the clip apps). */
+  manual: Manual;
+  /** True once the docs site counts its downloads (branch claude/docs-download-count deployed). */
+  downloadsLive: boolean;
 };
 
 /** Each bet window's inputs, keyed by the window's start (ISO). */
@@ -51,12 +58,34 @@ export async function gather(sources: Sources, snapshots: Snapshot[], now: Date,
   const hn = await attempt("hn", sources.hn, { points: null });
   const entries = await Promise.all(
     starts.map(async (from): Promise<[string, Inputs]> => {
-      const [funnel, waitlist, tryGames] = await Promise.all([
+      const none: Counters = { get: () => ({}) };
+      const [funnel, waitlist, logged, counters] = await Promise.all([
         attempt("api", () => readFunnel(sources.api, from, now.getTime()), { sessions: 0, sessionsWithInvite: 0, invitesSent: 0, linksOpened: 0, testflightTaps: 0, firstSessions: 0 }),
         attempt("waitlist", () => readWaitlist(sources.waitlist, from), { signups: 0, bySource: {} }),
-        attempt("logs", () => readTryGames(sources.sql, new Date(from), (e) => report("logs", e)), []),
+        // Tailed Workers are counted exactly (below): only the others need the sampled logs.
+        attempt("logs", () => readTryGames(sources.sql, new Date(from), (e) => report("logs", e), TAILED), []),
+        attempt("counters", () => readCounters(sources.sql, new Date(from)), none),
       ]);
-      return [new Date(from).toISOString(), { funnel, waitlist, tryGames, hn, frontDoor: frontDoorSince(snapshots, new Date(from)) }];
+      // Tailed try Workers are counted exactly (Analytics Engine); the rest keep the Workers Logs estimate.
+      const tryGames = TRY_GAMES.flatMap((g) => {
+        if (!TAILED.has(g.script)) return logged.filter((l) => l.script === g.script);
+        const rounds = g.ref === false ? null : counters.get(g.script, "round");
+        return [{ game: g.game, script: g.script, launches: counters.get(g.script, "launch"), rounds, sampled: false }];
+      });
+      return [
+        new Date(from).toISOString(),
+        {
+          funnel,
+          waitlist,
+          tryGames,
+          hn,
+          frontDoor: frontDoorSince(snapshots, new Date(from)),
+          clips: clipsSince(snapshots, new Date(from)),
+          getApp: counters.get("get-app", "get_app"),
+          downloads: sources.downloadsLive ? counters.get("docs", "download") : null,
+          manual: sources.manual,
+        },
+      ];
     }),
   );
   return Object.fromEntries(entries);

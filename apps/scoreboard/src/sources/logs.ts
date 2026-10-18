@@ -47,10 +47,10 @@ async function byRef(sql: SqlLike, query: string, params: Record<string, string>
  * Bet 3's try-path numbers from Workers Logs (what the try Workers already log). Workers Logs keeps a
  * sample (sampleInterval 10 on this account) and COUNT is weighted by it, so these are estimates.
  */
-export async function readTryGames(sql: SqlLike, from: Date, onError: (e: unknown) => void = () => {}): Promise<TryGame[]> {
+export async function readTryGames(sql: SqlLike, from: Date, onError: (e: unknown) => void = () => {}, skip: ReadonlySet<string> = new Set()): Promise<TryGame[]> {
   const start = from.toISOString();
   return Promise.all(
-    TRY_GAMES.map(async (g) => {
+    TRY_GAMES.filter((g) => !skip.has(g.script)).map(async (g) => {
       const launches = await byRef(sql, LAUNCHES, { start, script: g.script }, onError);
       const params: Record<string, string> = { start, script: g.script, event: g.round.event, ...(g.round.phase ? { phase: g.round.phase } : {}) };
       const counted = g.ref === false ? null : await byRef(sql, rounds(g.round.phase !== undefined), params, onError);

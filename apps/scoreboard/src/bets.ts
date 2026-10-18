@@ -3,6 +3,8 @@
  * bet reads its numbers from `Inputs` (what the sources reported) and says where it stands.
  */
 
+import type { Manual } from "./manual";
+
 /** Visits and taps for one source (utm_source / ref) on the front door. */
 export type SourceCounts = { view: number; getapp: number; try: number };
 
@@ -35,10 +37,18 @@ export type Inputs = {
   waitlist: { signups: number; bySource: Record<string, number> };
   /** The Show HN post's points, or null before there is a post to read. */
   hn: { points: number | null };
+  /** Front-door landings per clip (utm_campaign = the clip id) and platform. */
+  clips: Record<string, Record<string, number>>;
+  /** /get-app taps by source (counted server-side before the TestFlight redirect). */
+  getApp: Record<string, number>;
+  /** Docs downloads by path (/starter.tgz, /pkg/*.tgz), or null while the docs don't count them. */
+  downloads: Record<string, number> | null;
+  /** What Jon typed in from App Store Connect and the clip apps. */
+  manual: Manual;
 };
 
 /** Where a number comes from: counted exactly, estimated from a sample, or not measurable yet. */
-export type Source = "exact" | "estimate" | "missing";
+export type Source = "exact" | "estimate" | "manual" | "missing";
 
 export type Check = {
   id: string;
@@ -82,6 +92,10 @@ const views = (i: Inputs, sources: string[]) => sources.reduce((n, s) => n + (i.
 const sumRef = (counts: (g: TryGame) => Record<string, number> | null, i: Inputs, ref: string) =>
   i.tryGames.reduce((n, g) => n + (counts(g)?.[ref] ?? 0), 0);
 const anySampled = (i: Inputs) => i.tryGames.some((g) => g.sampled);
+const sampledNames = (i: Inputs) => i.tryGames.filter((g) => g.sampled).map((g) => g.game);
+const sumValues = (r: Record<string, number>) => Object.values(r).reduce((n, x) => n + x, 0);
+const bestViews = (i: Inputs) => (Object.keys(i.manual.clipViews).length ? Math.max(...Object.values(i.manual.clipViews)) : null);
+const bestClip = (i: Inputs) => Object.entries(i.manual.clipViews).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
 const FRONT_DOOR = "front door tally (ogs-front-door's Tally DO, read over RPC)";
 
 export const BETS: Bet[] = [
@@ -111,6 +125,14 @@ export const BETS: Bet[] = [
         note: "funnel.first_session (family_invites.first_session_at). Joining TestFlight itself is not visible: this counts the ones who also played.",
       },
       {
+        id: "invite-joins",
+        label: "Invited households that joined TestFlight",
+        value: i.manual.joins.invite,
+        target: "≥ 3",
+        source: i.manual.joins.invite === null ? "missing" : "manual",
+        note: i.manual.joins.invite === null ? "Type it in below from App Store Connect (testers who joined through the invite link)." : `typed in ${i.manual.updatedAt ?? ""}`,
+      },
+      {
         id: "funnel-steps",
         label: "Invites sent → links opened → TestFlight taps → first sessions",
         value: i.funnel.invitesSent,
@@ -120,9 +142,10 @@ export const BETS: Bet[] = [
       },
     ],
     decide: (v) => ({
-      pass: and(at(v("invite-rate"), (r) => r >= 0.3), at(v("invited-households"), (n) => n >= 3)),
+      // Joined TestFlight (typed in) or, at least, played a first session: either shows the household got in.
+      pass: and(at(v("invite-rate"), (r) => r >= 0.3), at(Math.max(v("invite-joins") ?? 0, v("invited-households") ?? 0), (n) => n >= 3)),
       // "No invitee installs" only means something once sessions were hosted (the rate is known).
-      fail: or(at(v("invite-rate"), (r) => r < 0.1), v("invite-rate") === null ? null : at(v("invited-households"), (n) => n === 0)),
+      fail: or(at(v("invite-rate"), (r) => r < 0.1), v("invite-rate") === null ? null : at(Math.max(v("invite-joins") ?? 0, v("invited-households") ?? 0), (n) => n === 0)),
     }),
   },
   {
@@ -136,10 +159,21 @@ export const BETS: Bet[] = [
       {
         id: "clip-views",
         label: "Best clip's views",
-        value: null,
+        value: bestViews(i),
         target: "≥ 5,000 (fail: all < 1,000)",
-        source: "missing",
-        note: "TikTok, Reels and Shorts views are only in each app's analytics: read them by hand on Mon 10-26 (no API is wired).",
+        source: bestViews(i) === null ? "missing" : "manual",
+        note:
+          bestViews(i) === null
+            ? "TikTok, Reels and Shorts views are only in each app's analytics: type them in below (no API is wired)."
+            : `${bestClip(i)} (typed in ${i.manual.updatedAt ?? ""})`,
+      },
+      {
+        id: "clip-landings",
+        label: "Best clip's landings on the front door",
+        value: Math.max(0, ...Object.values(i.clips).map(sumValues)),
+        target: "",
+        source: "exact",
+        note: `${Object.keys(i.clips).length} clips with landings (utm_campaign = clip id). Links in a bio or caption carry it; most short-form posts can't, so landings undercount.`,
       },
       {
         id: "shortform-visits",
@@ -185,7 +219,7 @@ export const BETS: Bet[] = [
         value: sumRef((g) => g.rounds, i, "hn"),
         target: "≥ 100",
         source: anySampled(i) ? "estimate" : "exact",
-        note: `${i.tryGames.map((g) => `${g.game} ${g.rounds === null ? "n/a" : (g.rounds.hn ?? 0)}`).join(", ") || "no games read yet"} (Workers Logs, 1-in-10 sample${i.tryGames.some((g) => g.rounds === null) ? "; Trivia Jam's round event has no ref" : ""})`,
+        note: `${i.tryGames.map((g) => `${g.game} ${g.rounds === null ? "n/a" : (g.rounds.hn ?? 0)}`).join(", ") || "no games read yet"} (${anySampled(i) ? `estimates for ${sampledNames(i).join(", ")}: Workers Logs, 1-in-10 sample; the rest counted exactly` : "counted exactly"}${i.tryGames.some((g) => g.rounds === null) ? "; Trivia Jam's round event has no ref" : ""})`,
       },
       {
         id: "hn-launches",
@@ -218,6 +252,17 @@ export const BETS: Bet[] = [
         note: `ogs-docs waitlist D1${Object.keys(i.waitlist.bySource).length ? `: ${Object.entries(i.waitlist.bySource).map(([s, n]) => `${s} ${n}`).join(", ")}` : ""}`,
       },
       {
+        id: "downloads",
+        label: "Starter template downloads (starter.tgz)",
+        value: i.downloads === null ? null : (i.downloads["/starter.tgz"] ?? 0),
+        target: "",
+        source: i.downloads === null ? "missing" : "exact",
+        note:
+          i.downloads === null
+            ? "The docs site doesn't count downloads yet: branch claude/docs-download-count (a Pages middleware) needs Jon's deploy."
+            : Object.entries(i.downloads).map(([p, n]) => `${p} ${n}`).join(", ") || "none yet",
+      },
+      {
         id: "outside-devs",
         label: "Outside developers with a game casting",
         value: null,
@@ -242,18 +287,21 @@ export const BETS: Bet[] = [
       {
         id: "coop-joins",
         label: "Co-op households that joined TestFlight",
-        value: null,
+        value: i.manual.joins.coop,
         target: "≥ 8 (fail < 3)",
-        source: "missing",
-        note: "TestFlight joins per public link are in App Store Connect only (no ASC API key wired).",
+        source: i.manual.joins.coop === null ? "missing" : "manual",
+        note:
+          i.manual.joins.coop === null
+            ? "Type it in below from App Store Connect (no ASC API key wired)."
+            : `typed in ${i.manual.updatedAt ?? ""}`,
       },
       {
         id: "coop-taps",
         label: "TestFlight taps from the co-op handout (utm coop)",
-        value: i.frontDoor.bySource.coop?.getapp ?? 0,
+        value: (i.frontDoor.bySource.coop?.getapp ?? 0) + (i.getApp.coop ?? 0),
         target: "proxy",
         source: "exact",
-        note: `${i.frontDoor.bySource.coop?.view ?? 0} visits (${FRONT_DOOR})`,
+        note: `${i.frontDoor.bySource.coop?.getapp ?? 0} front-door taps + ${i.getApp.coop ?? 0} /get-app taps; ${i.frontDoor.bySource.coop?.view ?? 0} visits (${FRONT_DOOR})`,
       },
     ],
     decide: (v) => ({

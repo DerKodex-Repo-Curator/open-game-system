@@ -1,5 +1,10 @@
 import { BETS, judge, type Check, type Status } from "./bets";
 import type { Windows } from "./board";
+import { EMPTY_MANUAL, type Manual } from "./manual";
+
+/** The 15 short-form clips (apps/front-door/clips/manifest.json; utm_campaign = the id). */
+export const CLIPS = ["trivia-jam", "rocket-crew", "bake-shop", "midnight-museum", "codebreakers"].flatMap((g) => [1, 2, 3].map((n) => `${g}-${n}`));
+const PLATFORMS = ["tiktok", "reels", "shorts"];
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const fmt = (c: Check) => {
@@ -20,7 +25,15 @@ const CAVEATS = [
 ];
 
 /** The scoreboard page: each bet, its checks against its lines, then what can't be measured yet. */
-export function render(windows: Windows, now: Date, updatedAt: string, health: Record<string, string> = {}): string {
+export function render(windows: Windows, now: Date, updatedAt: string, health: Record<string, string> = {}, manual: Manual = EMPTY_MANUAL): string {
+  const clipWindow = windows[BETS.find((b) => b.n === 2)?.from.toISOString() ?? ""];
+  const clipRows = Object.entries(clipWindow?.clips ?? {})
+    .map(([clip, by]) => [clip, by, Object.values(by).reduce((n, x) => n + x, 0)] as const)
+    .sort((a, b) => b[2] - a[2])
+    .map(([clip, by, total]) => `<tr><td>${esc(clip)}</td><td class="num">${total}</td><td class="note">${esc(Object.entries(by).map(([p, n]) => `${p} ${n}`).join(", "))}</td></tr>`)
+    .join("");
+  const field = (name: string, value: number | null | undefined, label: string) =>
+    `<label>${esc(label)} <input name="${esc(name)}" value="${value ?? ""}" inputmode="numeric" pattern="[0-9]*" size="6"></label>`;
   const cards = BETS.map((bet) => {
     const inputs = windows[bet.from.toISOString()];
     if (!inputs) return `<section class="bet"><h2>${bet.n}. ${esc(bet.title)}</h2><p class="muted">No data gathered yet.</p></section>`;
@@ -52,13 +65,19 @@ main{max-width:980px;margin:0 auto;padding:24px 16px 48px}h1{font-size:24px;marg
 .status.pass{color:var(--pass)}.status.fail{color:var(--fail)}.status.running{color:var(--run)}.status.between,.status.missing{color:var(--warn)}
 .lines{color:var(--muted);margin:8px 0 12px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:7px 8px;border-top:1px solid var(--line);vertical-align:top}
 th{font-size:12px;color:var(--muted);font-weight:600}.num{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}.note{color:var(--muted);font-size:13px}
-tr.missing .num{color:var(--warn)}ul{padding-left:20px}li{margin:6px 0}
+tr.missing .num{color:var(--warn)}fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 12px;padding:8px 12px}label{display:inline-block;margin:4px 12px 4px 0}input{font:inherit;width:6em;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}.manual table td{padding:4px}button{font:inherit;padding:6px 14px}ul{padding-left:20px}li{margin:6px 0}
 @media (max-width:640px){th:nth-child(4),td.note{display:none}}
 </style></head><body><main>
 <h1>Distribution bets scoreboard</h1>
 <p class="muted">Week of Mon 10-19 (docs/research/next-week-bets.md). Updated ${esc(updatedAt)}. Every 15 minutes from what OGS already records: opengame-api's tables, the front door's tally, the docs waitlist, Workers Logs and the Hacker News API.</p>
 <form method="post" action="/refresh"><button>Refresh now</button></form>
 ${cards}
+<section class="bet"><h2>Clips: landings per clip</h2><p class="muted">Front-door visits with utm_campaign = the clip's id, since Mon 10-19. Only links that carry the tag count (a bio link per platform, or a per-post link where the app allows one).</p>
+<table><thead><tr><th>Clip</th><th>Landings</th><th>By platform</th></tr></thead><tbody>${clipRows || `<tr><td class="note" colspan="3">No clip landings yet.</td></tr>`}</tbody></table></section>
+<section class="bet"><h2>Numbers to type in</h2><p class="muted">From App Store Connect (TestFlight → testers by public link) and each app's analytics. Last saved ${esc(manual.updatedAt ?? "never")}.</p>
+<form method="post" action="/manual" class="manual"><fieldset><legend>TestFlight joins</legend>${field("joins_total", manual.joins.total, "All")}${field("joins_invite", manual.joins.invite, "Through an invite (bet 1)")}${field("joins_coop", manual.joins.coop, "Co-op (bet 5)")}</fieldset>
+<fieldset><legend>Clip views (bet 2)</legend><table><thead><tr><th>Clip</th>${PLATFORMS.map((p) => `<th>${p}</th>`).join("")}</tr></thead><tbody>${CLIPS.map((c) => `<tr><td>${esc(c)}</td>${PLATFORMS.map((p) => `<td>${field(`views:${c}:${p}`, manual.clipViews[`${c}:${p}`], "")}</td>`).join("")}</tr>`).join("")}</tbody></table></fieldset>
+<button>Save</button></form></section>
 <section class="bet"><h2>Sources</h2><table><tbody>${Object.entries(health).map(([name, state]) => `<tr><td>${esc(name)}</td><td class="note">${esc(state)}</td></tr>`).join("") || `<tr><td class="note">Not read yet.</td></tr>`}</tbody></table></section>
 <section class="bet"><h2>Can't measure yet</h2><ul>${missing.join("")}${CAVEATS.map((c) => `<li>${esc(c)}</li>`).join("")}</ul></section>
 </main></body></html>`;

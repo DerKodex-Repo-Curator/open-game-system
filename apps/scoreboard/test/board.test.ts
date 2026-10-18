@@ -4,11 +4,12 @@
  */
 import { describe, expect, it } from "vitest";
 import { addSnapshot, gather, MAX_SNAPSHOTS, type Sources } from "../src/board";
-import { render } from "../src/render";
+import { CLIPS, render } from "../src/render";
 import { BETS } from "../src/bets";
 import type { Snapshot } from "../src/sources/frontdoor";
 import type { SqlLike } from "../src/sources/logs";
 import { sqliteD1 } from "./sqlite-d1";
+import { EMPTY_MANUAL } from "../src/manual";
 
 const H = 3600_000;
 const MON = Date.parse("2026-10-19T07:00:00Z");
@@ -25,8 +26,13 @@ function synthetic(): Sources {
   for (let i = 0; i < 7; i++) docs.exec("INSERT INTO waitlist VALUES (?, 'hn', ?)", `dev${i}@example.com`, new Date(MON + i * H).toISOString());
   const sql: SqlLike = {
     async query(req) {
+      // Analytics Engine (exact, the tailed try Workers, /get-app, docs downloads).
+      if (req.query.includes("analyticsEngine")) {
+        return { data: [{ script: "rocket-crew-try", kind: "round", ref: "hn", n: 40 }, { script: "get-app", kind: "get_app", ref: "coop", n: 3 }] };
+      }
+      // Workers Logs (sampled): Bake Shop is not tailed, so its counts stay estimates.
       const launch = req.query.includes("$workers.event.path");
-      if (req.params?.script !== "rocket-crew-try") return { data: [] };
+      if (req.params?.script !== "bake-shop-try") return { data: [] };
       return { data: launch ? [{ ref: "hn", n: 400 }, { ref: "load", n: 9000 }] : [{ ref: "hn", n: 130 }] };
     },
   };
@@ -35,6 +41,8 @@ function synthetic(): Sources {
     waitlist: docs.db,
     sql,
     hn: async () => ({ points: 64 }),
+    manual: EMPTY_MANUAL,
+    downloadsLive: false,
   };
 }
 
@@ -54,6 +62,10 @@ describe("gather: each bet's numbers for its own window", () => {
     expect(mon?.funnel).toMatchObject({ sessions: 10, sessionsWithInvite: 4, firstSessions: 4 });
     expect(mon?.waitlist.signups).toBe(7);
     expect(wed?.hn.points).toBe(64);
+    expect(wed?.tryGames.find((g) => g.script === "rocket-crew-try")).toMatchObject({ rounds: { hn: 40 }, sampled: false });
+    expect(wed?.tryGames.find((g) => g.script === "bake-shop-try")).toMatchObject({ rounds: { hn: 130 }, sampled: true });
+    expect(mon?.getApp).toEqual({ coop: 3 });
+    expect(mon?.downloads).toBeNull();
   });
 });
 
@@ -84,11 +96,27 @@ describe("render: the scoreboard page", () => {
     const html = render(windows, now, now.toISOString());
     for (const b of BETS) expect(html).toContain(b.title);
     expect(html).toContain("Pass"); // bet 3: 64 points, 1,400 hn visits, 130 rounds
-    expect(html).toContain("≈ 130"); // an estimate is marked
+    expect(html).toContain("≈ 170"); // 40 exact (Rocket Crew, tailed) + ≈ 130 (Bake Shop, sampled): marked as an estimate
     expect(html).toContain("40%"); // bet 1: 4 of 10 sessions invited
     expect(html).toMatch(/Can.t measure yet/);
     expect(html).toContain("TikTok, Reels and Shorts views");
     expect(html).toContain("App Store Connect");
+  });
+  it("has the manual form: TestFlight joins and views for each of the 15 clips on each platform", () => {
+    const html = render({}, new Date("2026-10-20T00:00:00Z"), "now", {}, { ...EMPTY_MANUAL, joins: { total: 5, invite: null, coop: 2 }, clipViews: { "trivia-jam-1:tiktok": 900 } });
+    expect(html).toContain('action="/manual"');
+    expect(html).toContain('name="joins_coop" value="2"');
+    expect(html).toContain('name="views:trivia-jam-1:tiktok" value="900"');
+    expect(html).toContain('name="views:codebreakers-3:shorts"');
+    expect(CLIPS).toHaveLength(15);
+  });
+  it("lists each clip's landings by platform", async () => {
+    const now = new Date("2026-10-22T00:00:00Z");
+    const windows = await gather(synthetic(), [
+      { at: "2026-10-18T00:00:00Z", bySource: {}, byCampaign: {} },
+      { at: "2026-10-21T00:00:00Z", bySource: {}, byCampaign: { "tiktok rocket-crew-2": { view: 17, getapp: 0, try: 0 } } },
+    ], now);
+    expect(render(windows, now, "now")).toMatch(/rocket-crew-2<\/td><td class="num">17<\/td>/);
   });
   it("escapes what it prints", () => {
     const html = render({}, new Date("2026-10-20T00:00:00Z"), "<script>");

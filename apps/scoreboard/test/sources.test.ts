@@ -3,7 +3,7 @@ import { readFunnel } from "../src/sources/funnel";
 import { readWaitlist } from "../src/sources/waitlist";
 import { readTryGames, TRY_GAMES, type SqlLike } from "../src/sources/logs";
 import { readHn } from "../src/sources/hn";
-import { frontDoorSince, TallySummarySchema, type Snapshot } from "../src/sources/frontdoor";
+import { clipsSince, frontDoorSince, snapshotOf, TallySummarySchema, type Snapshot } from "../src/sources/frontdoor";
 import { sqliteD1 } from "./sqlite-d1";
 
 const H = 3600_000;
@@ -83,6 +83,14 @@ describe("try games (Workers Logs through the Analytics SQL binding)", () => {
     expect(launchQuery?.params.start).toBe("2026-10-19T07:00:00.000Z");
   });
 
+  it("skips the Workers it is told to (the tailed ones are counted exactly elsewhere), saving queries", async () => {
+    const sql = fakeSql({});
+    const games = await readTryGames(sql, new Date(FROM), () => {}, new Set(["rocket-crew-try", "trivia-jam-try"]));
+    expect(games.map((g) => g.script)).not.toContain("rocket-crew-try");
+    expect(sql.asked.some((a) => a.params.script === "rocket-crew-try")).toBe(false);
+    expect(games).toHaveLength(TRY_GAMES.length - 2);
+  });
+
   it("a game whose round event has no ref reports rounds as unknown, not zero", async () => {
     const games = await readTryGames(fakeSql({}), new Date(FROM));
     expect(games.find((g) => g.script === "trivia-jam-try")?.rounds).toBeNull();
@@ -122,5 +130,23 @@ describe("front door: counts in the window from snapshots of the tally's running
   it("parses the tally's summary at the boundary (its sources rows)", () => {
     const parsed = TallySummarySchema.parse({ views: 3, games: [], campaigns: [], sources: [{ source: "hn", view: 3, getapp: 1, try: 2, play: 0, impression: 0, clip: 0, qr: 0, share: 0, open: 0 }] });
     expect(parsed.sources[0]).toMatchObject({ source: "hn", view: 3, getapp: 1, try: 2 });
+  });
+});
+
+describe("per-clip landings: the tally's campaign totals (utm_campaign = clip id), windowed like sources", () => {
+  const c = (view: number) => ({ view, getapp: 0, try: 0 });
+  it("snapshots campaigns as '<source> <campaign>'", () => {
+    const snap = snapshotOf({ sources: [], campaigns: [{ source: "tiktok", campaign: "trivia-jam-1", view: 4, getapp: 0, try: 0 }] }, new Date("2026-10-20T00:00:00Z"));
+    expect(snap.byCampaign).toEqual({ "tiktok trivia-jam-1": c(4) });
+  });
+  it("counts each clip's landings per platform since the window opened", () => {
+    const snaps: Snapshot[] = [
+      { at: "2026-10-19T06:45:00Z", bySource: {}, byCampaign: { "tiktok trivia-jam-1": c(3) } },
+      { at: "2026-10-22T00:00:00Z", bySource: {}, byCampaign: { "tiktok trivia-jam-1": c(33), "reels trivia-jam-1": c(2), "tiktok bake-shop-2": c(5) } },
+    ];
+    expect(clipsSince(snaps, new Date(FROM))).toEqual({ "trivia-jam-1": { tiktok: 30, reels: 2 }, "bake-shop-2": { tiktok: 5 } });
+  });
+  it("snapshots from before campaigns were kept count as zero", () => {
+    expect(clipsSince([{ at: "2026-10-18T00:00:00Z", bySource: {} }, { at: "2026-10-22T00:00:00Z", bySource: {}, byCampaign: { "shorts a": c(2) } }], new Date(FROM))).toEqual({ a: { shorts: 2 } });
   });
 });

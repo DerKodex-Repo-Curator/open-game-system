@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BETS, judge, type Inputs, type TryGame } from "../src/bets";
+import { EMPTY_MANUAL } from "../src/manual";
 
 /** Synthetic inputs: what the sources would report. Every bet's numbers start at zero. */
 function inputs(over: Partial<Inputs> = {}): Inputs {
@@ -9,6 +10,10 @@ function inputs(over: Partial<Inputs> = {}): Inputs {
     tryGames: [],
     waitlist: { signups: 0, bySource: {} },
     hn: { points: null },
+    clips: {},
+    getApp: {},
+    downloads: null,
+    manual: EMPTY_MANUAL,
     ...over,
   };
 }
@@ -125,5 +130,48 @@ describe("bet 5: a homeschool co-op game day", () => {
     expect(check(v, "coop-joins")?.source).toBe("missing");
     expect(check(v, "coop-taps")?.value).toBe(9);
     expect(v.status).toBe("missing");
+  });
+});
+
+describe("the gaps closed: manual numbers, exact counters, clip landings, downloads", () => {
+  const manual = (over: Partial<Inputs["manual"]>) => ({ ...EMPTY_MANUAL, updatedAt: "2026-10-26T17:00:00Z", ...over });
+  it("bet 1 reads invited households' TestFlight joins from App Store Connect when Jon has typed them", () => {
+    const funnel = { sessions: 10, sessionsWithInvite: 4, invitesSent: 5, linksOpened: 5, testflightTaps: 4, firstSessions: 1 };
+    const v = judge(bet(1), inputs({ funnel, manual: manual({ joins: { total: 9, invite: 3, coop: null } }) }), READ);
+    expect(check(v, "invite-joins")).toMatchObject({ value: 3, source: "manual" });
+    expect(v.status).toBe("pass");
+  });
+  it("bet 2: the best clip's views (typed in) and each clip's landings (front door campaigns)", () => {
+    const clips = { "trivia-jam-1": { tiktok: 30, reels: 2, shorts: 0 }, "bake-shop-2": { tiktok: 12, reels: 0, shorts: 1 } };
+    const v = judge(bet(2), inputs({ clips, manual: manual({ clipViews: { "trivia-jam-1:tiktok": 6200, "bake-shop-2:reels": 800 } }) }), READ);
+    expect(check(v, "clip-views")).toMatchObject({ value: 6200, source: "manual" });
+    expect(check(v, "clip-landings")).toMatchObject({ value: 32 });
+  });
+  it("bet 2 passes on 5,000 views and 40 short-form visits; fails when every clip stays under 1,000", () => {
+    const bySource = { tiktok: visits(45) };
+    expect(judge(bet(2), inputs({ frontDoor: { since: "x", bySource }, manual: manual({ clipViews: { "a:tiktok": 5000 } }) }), READ).status).toBe("pass");
+    expect(judge(bet(2), inputs({ manual: manual({ clipViews: { "a:tiktok": 900, "b:reels": 300 } }) }), READ).status).toBe("fail");
+  });
+  it("bet 3: tailed games count exactly; the board says which games are still estimates", () => {
+    const tryGames: TryGame[] = [
+      { game: "Rocket Crew", script: "rocket-crew-try", launches: { hn: 300 }, rounds: { hn: 70 }, sampled: false },
+      { game: "Bake Shop", script: "bake-shop-try", launches: { hn: 100 }, rounds: { hn: 30 }, sampled: true },
+    ];
+    const c = check(judge(bet(3), inputs({ tryGames }), READ), "hn-rounds");
+    expect(c?.value).toBe(100);
+    expect(c?.source).toBe("estimate");
+    expect(c?.note).toContain("Bake Shop");
+    const exact = check(judge(bet(3), inputs({ tryGames: tryGames.slice(0, 1) }), READ), "hn-rounds");
+    expect(exact?.source).toBe("exact");
+  });
+  it("bet 4 shows starter downloads once the docs count them; missing until then", () => {
+    expect(check(judge(bet(4), inputs({ downloads: null }), READ), "downloads")?.source).toBe("missing");
+    expect(check(judge(bet(4), inputs({ downloads: { "/starter.tgz": 14, "/pkg/profile-kit.tgz": 9 } }), READ), "downloads")).toMatchObject({ value: 14, source: "exact" });
+  });
+  it("bet 5 reads co-op TestFlight joins typed in from App Store Connect, and counts /get-app taps from the handout", () => {
+    const v = judge(bet(5), inputs({ getApp: { coop: 11 }, frontDoor: { since: "x", bySource: { coop: visits(20, 4) } }, manual: manual({ joins: { total: 12, invite: null, coop: 9 } }) }), READ);
+    expect(check(v, "coop-joins")).toMatchObject({ value: 9, source: "manual" });
+    expect(check(v, "coop-taps")?.value).toBe(15);
+    expect(v.status).toBe("pass");
   });
 });

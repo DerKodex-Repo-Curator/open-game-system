@@ -23,7 +23,11 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Board"] }],
   "triggers": { "crons": ["*/15 * * * *"] },
-  // HN_ITEM_ID: set once the Show HN post is up (wrangler deploy --var HN_ITEM_ID:<id>).
+  // Exact counters: the tailed try Workers (this Worker is their tail consumer), /get-app, docs downloads.
+  "analytics_engine_datasets": [{ "binding": "TRY_EVENTS", "dataset": "ogs_try_events" }],
+  // HN_ITEM_ID: once the Show HN post is up. TESTFLIGHT_URL: the public TestFlight link, once there
+  // is one (/get-app redirects there; until then to the front door). DOCS_DOWNLOADS_LIVE: "1" once
+  // the docs count downloads. Set with wrangler deploy --var NAME:value.
   "vars": {},
   "observability": { "enabled": true }
 }
