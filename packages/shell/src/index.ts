@@ -33,6 +33,7 @@ export * from "./guest-profile";
 export * from "./haptics-store";
 export * from "./hardware-back";
 export * from "./identity";
+export * from "./incoming-links";
 export * from "./js-errors";
 export * from "./native-push";
 export * from "./native-sign-in";

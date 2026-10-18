@@ -1,7 +1,9 @@
 import Constants from "expo-constants";
+import * as Notifications from "expo-notifications";
 import { useEffect, useReducer, useState, useSyncExternalStore } from "react";
 import { AppState, Linking, StyleSheet, Text, View } from "react-native";
 import { defaultShellDeps } from "./default-deps";
+import { type LinkingLike, type PushTapsLike, watchIncomingUrls } from "./incoming-links";
 import { DEFAULT_OFFLINE_THEME, OfflineScreen, type OfflineTheme } from "./OfflineScreen";
 import { type OgsShellConfig, readRuntimeConfig } from "./runtime-config";
 import { ShellWebView } from "./ShellWebView";
@@ -15,11 +17,7 @@ import {
   webViewStatus,
 } from "./webview-status";
 
-/** The slice of React Native's Linking this needs. */
-export interface LinkingLike {
-  getInitialURL(): Promise<string | null>;
-  addEventListener(type: "url", listener: (event: { url: string }) => void): { remove(): void };
-}
+export type { LinkingLike, PushTapsLike };
 
 export interface OgsShellProps {
   /** Default: the plugin's `extra.ogsShell` from Constants.expoConfig. */
@@ -32,12 +30,14 @@ export interface OgsShellProps {
   /** `import * as AppleAuthentication from "expo-apple-authentication"` (optional peer). */
   appleAuthentication?: AppleAuthModule;
   linking?: LinkingLike;
+  /** Push taps (default: expo-notifications). A tapped push's `data.url` opens like a link. */
+  pushTaps?: PushTapsLike;
   appState?: AppStateLike;
 }
 
 /**
  * A single-game app: the game's phone page full screen in a bridged WebView, the native offline
- * screen, the native sign-in sheet when the game asks, links routed into the page. "Powered by
+ * screen, the native sign-in sheet when the game asks, links and push taps routed into the page. "Powered by
  * OGS" (branding: powered-by) shows on the loading and offline screens, never over the game.
  */
 export function OgsShell(props: OgsShellProps) {
@@ -51,6 +51,7 @@ export function OgsShell(props: OgsShellProps) {
       }),
   );
   const linking = props.linking ?? Linking;
+  const pushTaps = props.pushTaps ?? Notifications;
   const appState = props.appState ?? AppState;
   const [status, dispatch] = useReducer(webViewStatus, INITIAL_WEBVIEW_STATUS);
   const [uri, setUri] = useState(config.gameUrl);
@@ -64,21 +65,21 @@ export function OgsShell(props: OgsShellProps) {
 
   useEffect(() => watchForeground(appState, () => dispatch({ type: "FOREGROUND" })), [appState]);
 
-  useEffect(() => {
-    let live = true;
-    const open = (url: string | null) => {
-      const target = url ? runtime.webViewUrlFor(url) : null;
-      if (!live || !target) return;
-      setUri(target);
-      dispatch({ type: "RETRY" });
-    };
-    linking.getInitialURL().then(open, () => {});
-    const sub = linking.addEventListener("url", ({ url }) => open(url));
-    return () => {
-      live = false;
-      sub.remove();
-    };
-  }, [linking, runtime]);
+  // Links (launch, while running) and push taps: mapped onto the game, anything else ignored.
+  useEffect(
+    () =>
+      watchIncomingUrls({
+        linking,
+        pushTaps,
+        open: (url) => {
+          const target = runtime.webViewUrlFor(url);
+          if (!target) return;
+          setUri(target);
+          dispatch({ type: "RETRY" });
+        },
+      }),
+    [linking, pushTaps, runtime],
+  );
 
   const powered = config.branding === "powered-by" ? <PoweredBy color={theme.muted} /> : null;
 
