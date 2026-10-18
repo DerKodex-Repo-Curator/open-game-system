@@ -3,6 +3,8 @@ import { register } from "./apps";
 import { doctor } from "./doctor";
 import { login } from "./login";
 import { credentials } from "./push";
+import { PUSH_SEND_USAGE, send } from "./push-send";
+import { tryPath } from "./try";
 
 /**
  * Every ogs command: its words (["apps", "register"]), its usage lines for --help, and what it runs.
@@ -33,4 +35,10 @@ export const COMMANDS: Command[] = [
     run: credentials,
   },
   { words: ["doctor"], usage: ["ogs doctor [--domain <your link domain>]"], run: doctor },
+  {
+    words: ["try"],
+    usage: ['ogs try [--command "..."] [--url <deployed https URL>] [--check-only]'],
+    run: tryPath,
+  },
+  { words: ["push", "send"], usage: [PUSH_SEND_USAGE], run: send },
 ];

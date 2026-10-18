@@ -299,3 +299,11 @@ CREATE TABLE IF NOT EXISTS app_devices (
   updated_at INTEGER NOT NULL,
   PRIMARY KEY (device_id, app_id)
 );
+
+-- A game's no-app try path (its try-kit Worker), registered with `ogs try` (PUT /api/v1/apps/:appId/try)
+-- after OGS checked its / (redirect to a TV page) and /ws-probe (426). The catalogue's tryUrl.
+CREATE TABLE IF NOT EXISTS try_paths (
+  app_id TEXT PRIMARY KEY,
+  url TEXT NOT NULL,
+  checked_at INTEGER NOT NULL
+);

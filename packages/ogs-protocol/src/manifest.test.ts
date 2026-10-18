@@ -131,6 +131,13 @@ describe("game manifest", () => {
     expect(ManifestSchema.parse({ ...valid(), tvUrl }).tvUrl).toBe(tvUrl);
   });
 
+  it("a try path is optional and must be a URL", () => {
+    expect(ManifestSchema.parse(valid()).tryUrl).toBeUndefined();
+    expect(ManifestSchema.safeParse({ ...valid(), tryUrl: "try" }).success).toBe(false);
+    const tryUrl = "https://try.rocket-crew.example/";
+    expect(ManifestSchema.parse({ ...valid(), tryUrl }).tryUrl).toBe(tryUrl);
+  });
+
   it("keeps the tagline, roles and shop facts it is given", () => {
     const roles = [
       { id: "captain", label: "Captain", audience: "grownup" },
