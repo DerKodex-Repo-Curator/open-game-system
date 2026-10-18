@@ -59,6 +59,7 @@ import { createOgsApi } from "./ogs-api";
 import { createPushApi } from "./push-api";
 import { foregroundDecision } from "./push-foreground";
 import { createRoomJoiner, roomStartUrl } from "./rooms";
+import { combineCastBackends, createScreenCastBackend } from "./screen-cast";
 import { sittingToOpen } from "./sittings";
 
 /**
@@ -126,7 +127,7 @@ function hermesRejectionTracker(): RejectionTracker | null {
 /** The cast lifecycle's log, one correlation id per cast attempt. */
 export const castTrace = createCastTrace(clientLog);
 
-export const castBackend: CastBackend =
+const chromecasts: CastBackend =
   config.fakeCast === "off"
     ? createGoogleCastBackend(castTrace)
     : createFakeCastBackend({
@@ -139,6 +140,21 @@ export const castBackend: CastBackend =
           EXPO_PUBLIC_FAKE_CAST_REFUSE_ACTIVE: process.env.EXPO_PUBLIC_FAKE_CAST_REFUSE_ACTIVE,
         }),
       });
+
+/**
+ * Browser TVs (2026-10-17-browser-tv.feature): typed in by the code they show, then cast to like a
+ * Chromecast. The API client is created below; these only call it once a phone casts.
+ */
+export const browserTvs = createScreenCastBackend({
+  api: {
+    claim: (code) => api.claimScreen(code),
+    show: (screenId, token) => api.showOnScreen(screenId, token),
+    stop: (screenId) => api.stopScreen(screenId),
+  },
+  storage: AsyncStorage,
+});
+
+export const castBackend: CastBackend = combineCastBackends(chromecasts, browserTvs);
 
 const commands = castCommands(() => castBackend.showCastDialog(), castTrace);
 export const castStore = createCastStore(commands);

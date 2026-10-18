@@ -9,9 +9,11 @@
 //   GET  /screenshot -> PNG of the TV now
 //   GET  /launcher   -> { screen, frameApp, frameSrc, starting, continueApps, roomName } read from the launcher's DOM
 //                       (continueApps: game:<appId> of each paused sitting card on the TV home;
-//                        roomName: the header, "<TV name> · <host>'s games")
-import { createServer } from "node:http";
+//                        roomName: the header, "<TV name> · <host>'s games";
+//                        screenCode: a browser TV's pairing code, while it shows one)
+
 import { mkdirSync } from "node:fs";
+import { createServer } from "node:http";
 import { join, resolve } from "node:path";
 import { chromium } from "playwright";
 import { z } from "zod";
@@ -33,9 +35,16 @@ let context = null;
 let page = null;
 
 async function tv() {
-  if (!browser) browser = await chromium.launch({ headless: !headed, args: ["--autoplay-policy=no-user-gesture-required"] });
+  if (!browser)
+    browser = await chromium.launch({
+      headless: !headed,
+      args: ["--autoplay-policy=no-user-gesture-required"],
+    });
   if (!context) {
-    context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, recordVideo: { dir: evidence, size: { width: 1280, height: 720 } } });
+    context = await browser.newContext({
+      viewport: { width: 1920, height: 1080 },
+      recordVideo: { dir: evidence, size: { width: 1280, height: 720 } },
+    });
     page = await context.newPage();
     page.on("console", (m) => console.log(`[tv] ${m.type()}: ${m.text()}`));
   }
@@ -70,7 +79,8 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === "POST" && req.url === "/load") {
       const parsed = LoadSchema.safeParse(JSON.parse((await body(req)) || "{}"));
-      if (!parsed.success) return res.writeHead(400).end(JSON.stringify({ error: parsed.error.issues }));
+      if (!parsed.success)
+        return res.writeHead(400).end(JSON.stringify({ error: parsed.error.issues }));
       await inTurn(async () => {
         // Like the real receiver: the same viewUrl again is a no-op.
         if (parsed.data.viewUrl === state.viewUrl) return;
@@ -78,7 +88,9 @@ const server = createServer(async (req, res) => {
         state.loads += 1;
         state.viewUrl = parsed.data.viewUrl;
         state.startedAt ??= Date.now();
-        console.log(`[cast] load #${state.loads} at=${Date.now()}: ${state.viewUrl.replace(/token=[^&]+/, "token=…")}`);
+        console.log(
+          `[cast] load #${state.loads} at=${Date.now()}: ${state.viewUrl.replace(/token=[^&]+/, "token=…")}`,
+        );
         await p.goto(state.viewUrl, { timeout: 15000 });
       });
       return res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(state));
@@ -106,12 +118,21 @@ const server = createServer(async (req, res) => {
               frameSrc: frame?.getAttribute("src") ?? null,
               starting: Boolean(document.querySelector('[data-testid="starting"]')),
               // Paused sittings on the TV home: the activity cards that continue a game (not tonight's game night).
-              continueApps: [...document.querySelectorAll('[data-row="activity"] [data-card="sitting"]:not([data-upcoming])')].map((e) => `game:${e.getAttribute("data-app")}`),
+              continueApps: [
+                ...document.querySelectorAll(
+                  '[data-row="activity"] [data-card="sitting"]:not([data-upcoming])',
+                ),
+              ].map((e) => `game:${e.getAttribute("data-app")}`),
               roomName: document.querySelector(".room-name")?.textContent ?? null,
+              // A browser TV waiting to pair (2026-10-17-browser-tv.feature): the code it shows.
+              screenCode:
+                document.querySelector('[data-testid="screen-code"]')?.textContent ?? null,
             };
           })
         : null;
-      return res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ ...state, dom }));
+      return res
+        .writeHead(200, { "content-type": "application/json" })
+        .end(JSON.stringify({ ...state, dom }));
     }
     if (req.method === "GET" && req.url === "/screenshot" && page) {
       const png = await page.screenshot();
@@ -124,7 +145,9 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(port, "0.0.0.0", () => console.log(`fake Chromecast on :${port} (evidence in ${join(evidence)})`));
+server.listen(port, "0.0.0.0", () =>
+  console.log(`fake Chromecast on :${port} (evidence in ${join(evidence)})`),
+);
 const shutdown = async () => {
   if (context) await context.close();
   if (browser) await browser.close();

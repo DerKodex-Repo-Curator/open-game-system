@@ -15,6 +15,7 @@ import type { CastDevice } from "../../../services/cast-store";
 import { castBackend, castNow, castPrompt, waitForOgsCast } from "../../../services/runtime";
 import { userMessage } from "../../../services/user-message";
 import { Button } from "../Button";
+import { BrowserTv } from "../remote/BrowserTv";
 import { lastStop } from "../remote/last-stop";
 import { NO_TV_CAUSES } from "../remote/no-tv";
 import { colors, fonts, TARGET } from "../theme";
@@ -103,7 +104,12 @@ function CastPromptSheet({ request }: { request: CastPromptRequest }) {
         <Text style={styles.title} accessibilityRole="header" testID="castPromptTitle">
           Play {request.game.name} on the TV
         </Text>
-        <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} bounces={false}>
+        <ScrollView
+          style={styles.body}
+          contentContainerStyle={styles.bodyContent}
+          bounces={false}
+          testID="castPromptScroll"
+        >
           {view.kind === "choose" ? (
             <>
               <Text style={styles.lead}>
@@ -159,6 +165,7 @@ function CastPromptSheet({ request }: { request: CastPromptRequest }) {
                   style={styles.flex}
                 />
               </View>
+              <BrowserTv onPaired={setPicked} />
             </View>
           )}
           {error ? (

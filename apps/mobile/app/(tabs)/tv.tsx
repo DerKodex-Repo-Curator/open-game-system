@@ -8,6 +8,7 @@ import { Button } from "../../components/ogs/Button";
 import { ErrorLine } from "../../components/ogs/ErrorLine";
 import { castPromptError } from "../../components/ogs/library/play-action";
 import { padSize, RemotePad } from "../../components/ogs/RemotePad";
+import { BrowserTv } from "../../components/ogs/remote/BrowserTv";
 import { JoinTv } from "../../components/ogs/remote/JoinTv";
 import { castTarget, lastStop } from "../../components/ogs/remote/last-stop";
 import { HolderLine, NowOnTv } from "../../components/ogs/remote/NowOnTv";
@@ -271,6 +272,12 @@ function NotCast({ connecting }: { connecting: boolean }) {
           <Text style={styles.otherText}>Play on this phone: games that don't need a TV</Text>
           <Text style={styles.chevron}>›</Text>
         </Pressable>
+        <BrowserTv
+          onPaired={(paired) => {
+            setPicked(paired);
+            setPhase("idle");
+          }}
+        />
       </Screen>
     );
 
@@ -369,6 +376,7 @@ function NotCast({ connecting }: { connecting: boolean }) {
           })}
         </View>
       ) : null}
+      <BrowserTv onPaired={setPicked} />
       <JoinTv joined={session} />
     </Screen>
   );

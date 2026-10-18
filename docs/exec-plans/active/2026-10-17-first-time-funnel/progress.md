@@ -15,6 +15,9 @@ Audit and ranking: [docs/funnel-audit.md](../../../funnel-audit.md).
   is done (`createLinkHold`, released by the tabs layout). Detox `e2e/first-time-funnel.test.ts`:
   host walk and guest-from-QR both green (before: the guest never reached the couch).
 - docs/funnel-audit.md: measured walk and the ranked friction list.
+- 2026-10-18 Browser TV (#2): API `/api/v1/screens` (b5fcfe99), TV page screen mode (6a5819ba), app
+  browser-TV cast backend combined with Google Cast + "Use a browser TV" in the cast prompt and TV tab.
+  Detox `e2e/browser-tv.test.ts` green; first-time-funnel still green; 1076 jest tests.
 
 ## Decisions
 
@@ -32,6 +35,12 @@ Audit and ranking: [docs/funnel-audit.md](../../../funnel-audit.md).
   handles https join links and the join screen handles `opengame://join/…`; both hold until a profile.
 - Detox walks get 300 s each: under the machine's load spikes the host walk passed 120 s.
 
+- Browser TVs plug in as a second cast backend (`combineCastBackends`), so the cast flow, couch
+  session and game start are unchanged; the screen gets only the launcher token and boots the
+  launcher against its own API base.
+- `getDevices()` must return the same array until something changes: the cast prompt reads it with
+  useSyncExternalStore (a new array per read was an infinite render loop, caught by Detox).
+
 ## Next
 
-See the ranked list in docs/funnel-audit.md. Next up: #2, browser TV (no Chromecast).
+See the ranked list in docs/funnel-audit.md. Next up: #4 web guest join (no app for guests), #10 no-TV copy, #8 Android /join/.

@@ -11,7 +11,7 @@ import GoogleCast from "react-native-google-cast";
 export interface CastDevice {
   id: string;
   name: string;
-  type: "chromecast" | "airplay";
+  type: "chromecast" | "airplay" | "browser";
 }
 
 export interface CastSession {

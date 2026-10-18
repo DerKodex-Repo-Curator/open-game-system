@@ -195,6 +195,35 @@ describe("ogs-api: couch sessions", () => {
   });
 });
 
+// 2026-10-17-browser-tv.feature: claim a browser TV by its code, show a launcher there, stop.
+describe("ogs-api: browser TVs", () => {
+  it("claims a screen by its code", async () => {
+    const { client, calls } = api(() => ({ body: { screenId: "sc1", name: "Browser TV" } }));
+    expect(await client.claimScreen("HSUNH9")).toEqual({ screenId: "sc1", name: "Browser TV" });
+    expect(calls[0]).toMatchObject({
+      url: `${BASE}/api/v1/screens/claim`,
+      method: "POST",
+      body: { code: "HSUNH9" },
+      headers: { authorization: "Bearer tok" },
+    });
+  });
+
+  it("a code no screen shows answers screen_not_found", async () => {
+    const { client } = api(() => errorBody("screen_not_found", 404));
+    await expect(client.claimScreen("QQQQQQ")).rejects.toMatchObject({ code: "screen_not_found" });
+  });
+
+  it("shows a launcher token on a screen, and stops it", async () => {
+    const { client, calls } = api(() => ({ status: 204, body: undefined }));
+    await client.showOnScreen("sc1", "lt");
+    await client.stopScreen("sc1");
+    expect(calls.map((c) => [c.url, c.method, c.body])).toEqual([
+      [`${BASE}/api/v1/screens/sc1/show`, "POST", { token: "lt" }],
+      [`${BASE}/api/v1/screens/sc1/stop`, "POST", undefined],
+    ]);
+  });
+});
+
 describe("ogs-api: join a friend's cast", () => {
   it("joins the session by id (the Join card), no code", async () => {
     const info = {

@@ -4,6 +4,8 @@ import {
   InstanceSchema,
   type Manifest,
   ManifestSchema,
+  type ScreenClaimed,
+  ScreenClaimedSchema,
 } from "@open-game-system/ogs-protocol";
 import { z } from "zod";
 
@@ -223,6 +225,33 @@ export function createOgsApi(opts: OgsApiOptions) {
         authed: true,
       });
       return parse(SessionInfoSchema, data);
+    },
+    /** A browser TV's code typed on this phone: it becomes this phone's TV (404 screen_not_found). */
+    async claimScreen(code: string): Promise<ScreenClaimed> {
+      const data = await request("/api/v1/screens/claim", {
+        method: "POST",
+        body: { code },
+        authed: true,
+      });
+      // ogs-protocol's schema (zod 3), so not through parse (this app's zod 4).
+      const claimed = ScreenClaimedSchema.safeParse(data);
+      if (!claimed.success) throw new OgsApiError("BAD_RESPONSE", claimed.error.message, 0);
+      return claimed.data;
+    },
+    /** Cast to a browser TV: it shows the launcher this token is for. */
+    async showOnScreen(screenId: string, token: string): Promise<void> {
+      await request(`/api/v1/screens/${encodeURIComponent(screenId)}/show`, {
+        method: "POST",
+        body: { token },
+        authed: true,
+      });
+    },
+    /** Stop casting to a browser TV: it shows its code again. */
+    async stopScreen(screenId: string): Promise<void> {
+      await request(`/api/v1/screens/${encodeURIComponent(screenId)}/stop`, {
+        method: "POST",
+        authed: true,
+      });
     },
     /** Join a friend's cast from its Join card, without the code (403 not_a_friend). */
     async joinFriendSession(sessionId: string): Promise<SessionInfo> {

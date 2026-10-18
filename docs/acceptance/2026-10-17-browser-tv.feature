@@ -1,6 +1,8 @@
-# Status: BUILDING (2026-10-17, branch claude/first-time-funnel-0e55ec). Roadmap "Web + browser TVs
+# Status: BUILT 2026-10-18 (branch claude/first-time-funnel-0e55ec; not deployed). Tests: API
+# services/api/test/screen-routes.test.ts; TV apps/tv/src/screen/pairing.test.ts; app
+# apps/mobile/services/__tests__/screen-cast.test.ts; Detox apps/mobile/e2e/browser-tv.test.ts (the whole walk).
+# Not covered by a test yet: "A paired screen stays paired" across days (the browser keeps the screen). Roadmap "Web + browser TVs
 # (direct mode)". ADR: docs/adrs/2026-10-17-browser-screens.md. Audit: docs/funnel-audit.md #2.
-# API: services/api/test/screen-routes.test.ts.
 
 Feature: Any TV with a browser is an OGS TV, no Chromecast needed
 
