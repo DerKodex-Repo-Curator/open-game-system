@@ -1,7 +1,7 @@
 import { createStore } from "@open-game-system/app-bridge-native";
 import type { Store } from "@open-game-system/app-bridge-types";
 import { AccountBridgeEventSchema, type AccountBridgeState } from "@open-game-system/ogs-protocol";
-import type { UntrustedEvent } from "./haptics-store";
+import type { UntrustedEvent } from "./ogs-bridge";
 
 export type AccountStores = { account: { state: AccountBridgeState; events: UntrustedEvent } };
 

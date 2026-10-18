@@ -127,6 +127,9 @@ const webView = (root: ReactTestInstance) => {
   return wv;
 };
 
+// The first render loads react-native and the bridge from source: slow on a cold, busy machine.
+jest.setTimeout(30000);
+
 beforeEach(() => {
   jest.spyOn(console, "log").mockImplementation(() => {});
 });

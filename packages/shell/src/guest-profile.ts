@@ -1,12 +1,12 @@
 import { z } from "zod";
 import type { ShellRequest } from "./api-client";
+import type { SecureStorage } from "./identity";
 import {
-  loadIdentity,
-  type SecureStorage,
+  loadShellIdentity,
   type ShellIdentity,
   ShellProfileSchema,
-  saveIdentity,
-} from "./identity";
+  saveShellIdentity,
+} from "./shell-identity";
 
 /**
  * Guest first: on first launch a single-game app makes an OGS device profile with the existing
@@ -74,7 +74,7 @@ export function ensureGuestProfile(deps: GuestDeps): Promise<ShellIdentity> {
 }
 
 async function makeGuest(deps: GuestDeps): Promise<ShellIdentity> {
-  const stored = await loadIdentity(deps.storage);
+  const stored = await loadShellIdentity(deps.storage);
   if (stored) return stored;
   const device = await deps.device();
   const random = deps.random ?? Math.random;
@@ -90,6 +90,6 @@ async function makeGuest(deps: GuestDeps): Promise<ShellIdentity> {
     deviceToken: created.token,
     login: "guest",
   };
-  await saveIdentity(deps.storage, identity);
+  await saveShellIdentity(deps.storage, identity);
   return identity;
 }

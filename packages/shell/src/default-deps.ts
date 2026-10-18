@@ -1,25 +1,35 @@
-import * as AppleAuthentication from "expo-apple-authentication";
 import * as Application from "expo-application";
 import * as Crypto from "expo-crypto";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
-import { streamServerUrl } from "../cast-view";
-import { createGoogleCastBackend } from "../google-cast-backend";
 import { castGameStores } from "./cast-stores";
+import { streamServerUrl } from "./cast-view";
 import { createDeviceSource } from "./device";
 import { expoHapticsPlayer } from "./expo-haptics-player";
+import { createGoogleCastBackend } from "./google-cast-backend";
 import { apnsEnvironmentFromEntitlement } from "./native-push";
 import type { ShellRuntimeConfig, ShellRuntimeDeps } from "./shell-runtime";
-import { appleSignIn, unavailableSignIn } from "./sign-in-providers";
+import { type AppleAuthModule, appleSignIn, unavailableSignIn } from "./sign-in-providers";
 
 /**
  * The runtime's dependencies on a real device: Google Cast (the game's `cast` store), SecureStore,
- * expo-notifications, expo-haptics. Sign in with Apple on iOS; Google is not wired yet
+ * expo-notifications, expo-haptics. Sign in with Apple on iOS when the app passes
+ * expo-apple-authentication in; Google is not wired yet
  * (unavailable on both platforms in v1 of the runtime).
  */
-export function defaultShellDeps(config: ShellRuntimeConfig): ShellRuntimeDeps {
+export function defaultShellDeps(
+  config: ShellRuntimeConfig,
+  options: {
+    /**
+     * `import * as AppleAuthentication from "expo-apple-authentication"` (an optional peer: the
+     * shell never imports it). Without it, Sign in with Apple is not offered.
+     */
+    appleAuthentication?: AppleAuthModule;
+  } = {},
+): ShellRuntimeDeps {
+  const apple = options.appleAuthentication;
   const storage = SecureStore;
   return {
     fetch: (url, init) => fetch(url, init),
@@ -38,13 +48,15 @@ export function defaultShellDeps(config: ShellRuntimeConfig): ShellRuntimeDeps {
       ),
     haptics: expoHapticsPlayer(),
     signInProviders: [
-      Platform.OS === "ios"
-        ? appleSignIn(AppleAuthentication, () => Crypto.randomUUID())
+      Platform.OS === "ios" && apple
+        ? appleSignIn(apple, () => Crypto.randomUUID())
         : unavailableSignIn("apple"),
       unavailableSignIn("google"),
     ],
-    gameStores: castGameStores(createGoogleCastBackend(), {
-      streamServerUrl: streamServerUrl({}, config.apiBase),
-    }),
+    // The Google Cast backend is made when the runtime asks for the stores, not here.
+    gameStores: (ctx) =>
+      castGameStores(createGoogleCastBackend(), {
+        streamServerUrl: streamServerUrl({}, config.apiBase),
+      })(ctx),
   };
 }

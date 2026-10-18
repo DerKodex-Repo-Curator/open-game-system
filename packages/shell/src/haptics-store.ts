@@ -1,5 +1,6 @@
 import type { Store } from "@open-game-system/app-bridge-types";
 import { type HapticsBridgeEvent, HapticsBridgeEventSchema } from "@open-game-system/ogs-protocol";
+import type { UntrustedEvent } from "./ogs-bridge";
 
 /** Plays a haptic (expo-haptics in the app, a fake in tests). */
 export interface HapticsPlayer {
@@ -7,8 +8,6 @@ export interface HapticsPlayer {
   notify(kind: Extract<HapticsBridgeEvent, { type: "NOTIFY" }>["kind"]): Promise<void>;
 }
 
-/** The page sends whatever JSON it likes; it is parsed here (HapticsBridgeEventSchema). */
-export type UntrustedEvent = { type: string } & Record<string, unknown>;
 export type HapticsBridgeState = Record<string, never>;
 export type HapticsStores = { haptics: { state: HapticsBridgeState; events: UntrustedEvent } };
 

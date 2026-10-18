@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ShellRequest } from "./api-client";
-import type { ShellIdentity } from "./identity";
+import type { ShellIdentity } from "./shell-identity";
 
 /**
  * Push for a single-game app (OGS hosts push with the developer's own APNs key / FCM account):

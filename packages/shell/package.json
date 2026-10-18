@@ -19,9 +19,9 @@
       "default": "./build/index.js"
     },
     "./app": {
-      "react-native": "./src/single/app.ts",
-      "types": "./src/single/app.ts",
-      "default": "./build/single/app.js"
+      "react-native": "./src/shell-app.ts",
+      "types": "./src/shell-app.ts",
+      "default": "./build/shell-app.js"
     },
     "./modules/*": {
       "react-native": "./src/*.ts",

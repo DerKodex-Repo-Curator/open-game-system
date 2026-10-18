@@ -7,6 +7,7 @@ import { type OgsShellConfig, readRuntimeConfig } from "./runtime-config";
 import { ShellWebView } from "./ShellWebView";
 import { SignInSheet } from "./SignInSheet";
 import { createShellRuntime, type ShellRuntime, type ShellRuntimeDeps } from "./shell-runtime";
+import type { AppleAuthModule } from "./sign-in-providers";
 import {
   type AppStateLike,
   INITIAL_WEBVIEW_STATUS,
@@ -28,6 +29,8 @@ export interface OgsShellProps {
   /** Overrides for the default dependencies (e.g. the game's cast/profile/notifications stores). */
   deps?: Partial<ShellRuntimeDeps>;
   theme?: Partial<OfflineTheme>;
+  /** `import * as AppleAuthentication from "expo-apple-authentication"` (optional peer). */
+  appleAuthentication?: AppleAuthModule;
   linking?: LinkingLike;
   appState?: AppStateLike;
 }
@@ -41,7 +44,11 @@ export function OgsShell(props: OgsShellProps) {
   const [config] = useState(() => props.config ?? readRuntimeConfig(Constants.expoConfig));
   const [runtime] = useState(
     () =>
-      props.runtime ?? createShellRuntime(config, { ...defaultShellDeps(config), ...props.deps }),
+      props.runtime ??
+      createShellRuntime(config, {
+        ...defaultShellDeps(config, { appleAuthentication: props.appleAuthentication }),
+        ...props.deps,
+      }),
   );
   const linking = props.linking ?? Linking;
   const appState = props.appState ?? AppState;

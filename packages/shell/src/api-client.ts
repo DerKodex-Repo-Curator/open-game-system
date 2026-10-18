@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { FetchLike } from "./api-request";
 
 /**
  * The single-game shell's OGS API request: JSON in and out, an optional device token, every
@@ -15,8 +16,6 @@ export class ShellApiError extends Error {
     this.name = "ShellApiError";
   }
 }
-
-export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 
 export interface ShellApiOptions {
   /** e.g. https://api.opengame.org */

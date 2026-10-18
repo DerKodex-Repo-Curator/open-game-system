@@ -1,5 +1,5 @@
-import type { CastBackend } from "../cast-backend";
-import { castCommands, startCastSync } from "../cast-sync";
+import type { CastBackend } from "./cast-backend";
+import { castCommands, startCastSync } from "./cast-sync";
 import type { ShellContext } from "./shell-runtime";
 import { createSingleGameCastStore } from "./single-cast";
 

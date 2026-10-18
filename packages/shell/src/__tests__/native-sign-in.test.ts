@@ -1,13 +1,13 @@
 import { type FakeAnswer, fakeFetch } from "../__fixtures__/fake-fetch";
 import { fakeStorage } from "../__fixtures__/fake-storage";
 import { createShellRequest } from "../api-client";
-import { loadIdentity, type ShellIdentity, saveIdentity } from "../identity";
 import {
   createNativeAuthApi,
   createNativeSignIn,
   type NativeSignInProvider,
   type SignInState,
 } from "../native-sign-in";
+import { loadShellIdentity, type ShellIdentity, saveShellIdentity } from "../shell-identity";
 
 const device = { deviceId: "dev-1", kind: "phone" as const, name: "iPhone" };
 const guest: ShellIdentity = {
@@ -48,7 +48,7 @@ async function setup(opts: {
     "POST /api/v1/auth/native": opts.answer ?? (() => ({ status: 200, body: signedIn })),
   });
   const { storage } = fakeStorage();
-  if (opts.stored !== null) await saveIdentity(storage, opts.stored ?? guest);
+  if (opts.stored !== null) await saveShellIdentity(storage, opts.stored ?? guest);
   const onIdentity = jest.fn();
   const flow = createNativeSignIn({
     api: createNativeAuthApi(createShellRequest({ baseUrl: "https://api.test", fetch })),
@@ -90,7 +90,7 @@ describe("native sign-in", () => {
       deviceToken: "new-token",
       login: "apple",
     };
-    await expect(loadIdentity(storage)).resolves.toEqual(expected);
+    await expect(loadShellIdentity(storage)).resolves.toEqual(expected);
     expect(onIdentity).toHaveBeenCalledWith(expected);
     expect(states).toEqual([
       { status: "idle" },
@@ -103,7 +103,7 @@ describe("native sign-in", () => {
     const other = { ...signedIn, profile: { ...signedIn.profile, id: "owner-9", handle: "jon" } };
     const { flow, storage } = await setup({ answer: () => ({ status: 200, body: other }) });
     await flow.start("apple");
-    await expect(loadIdentity(storage)).resolves.toMatchObject({
+    await expect(loadShellIdentity(storage)).resolves.toMatchObject({
       profile: { id: "owner-9" },
       deviceToken: "new-token",
       deviceId: "dev-1",
@@ -120,7 +120,7 @@ describe("native sign-in", () => {
       nonce: "n-1",
       device,
     });
-    await expect(loadIdentity(storage)).resolves.toMatchObject({
+    await expect(loadShellIdentity(storage)).resolves.toMatchObject({
       deviceId: "dev-1",
       login: "apple",
     });
@@ -146,7 +146,7 @@ describe("native sign-in", () => {
     await flow.start("apple");
     expect(flow.getState()).toEqual({ status: "cancelled" });
     expect(calls).toHaveLength(0);
-    await expect(loadIdentity(storage)).resolves.toEqual(guest);
+    await expect(loadShellIdentity(storage)).resolves.toEqual(guest);
     expect(onIdentity).not.toHaveBeenCalled();
   });
 
@@ -159,7 +159,7 @@ describe("native sign-in", () => {
     });
     await flow.start("apple");
     expect(flow.getState()).toEqual({ status: "error", code: "invalid_token" });
-    await expect(loadIdentity(storage)).resolves.toEqual(guest);
+    await expect(loadShellIdentity(storage)).resolves.toEqual(guest);
   });
 
   it("is an error when the answer has no token", async () => {

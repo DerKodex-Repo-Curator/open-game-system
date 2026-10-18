@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { SecureStorage } from "./identity";
 
 /** A profile: what games see (`handle` is the @id without the "@"). Same as the OGS API's. */
 export const ShellProfileSchema = z.object({
@@ -21,16 +22,9 @@ export const ShellIdentitySchema = z.object({
 });
 export type ShellIdentity = z.infer<typeof ShellIdentitySchema>;
 
-/** The slice of expo-secure-store this needs. */
-export interface SecureStorage {
-  getItemAsync(key: string): Promise<string | null>;
-  setItemAsync(key: string, value: string): Promise<void>;
-  deleteItemAsync(key: string): Promise<void>;
-}
-
 export const IDENTITY_KEY = "ogs.identity";
 
-export async function loadIdentity(storage: SecureStorage): Promise<ShellIdentity | null> {
+export async function loadShellIdentity(storage: SecureStorage): Promise<ShellIdentity | null> {
   const raw = await storage.getItemAsync(IDENTITY_KEY);
   if (!raw) return null;
   try {
@@ -41,6 +35,9 @@ export async function loadIdentity(storage: SecureStorage): Promise<ShellIdentit
   }
 }
 
-export async function saveIdentity(storage: SecureStorage, identity: ShellIdentity): Promise<void> {
+export async function saveShellIdentity(
+  storage: SecureStorage,
+  identity: ShellIdentity,
+): Promise<void> {
   await storage.setItemAsync(IDENTITY_KEY, JSON.stringify(identity));
 }

@@ -1,14 +1,14 @@
 import type { Store } from "@open-game-system/app-bridge-types";
 import { z } from "zod";
+import type { ShellRequest } from "./api-client";
+import { castLauncherUrl } from "./cast-launcher-url";
 import {
   type CastCommands,
   createCastStore,
   type NativeCastEvents,
   type NativeCastState,
-} from "../cast-store";
-import type { ShellRequest } from "./api-client";
-import { castLauncherUrl } from "./cast-launcher-url";
-import type { ShellIdentity } from "./identity";
+} from "./cast-store";
+import type { ShellIdentity } from "./shell-identity";
 
 /**
  * Cast from a single-game app: the receiver shows the OGS launcher as the OGS app does, with

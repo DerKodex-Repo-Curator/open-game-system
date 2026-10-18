@@ -1,14 +1,14 @@
 import { z } from "zod";
 import { ShellApiError, type ShellRequest } from "./api-client";
 import type { ShellDevice } from "./guest-profile";
+import type { SecureStorage } from "./identity";
 import {
-  loadIdentity,
-  type SecureStorage,
+  loadShellIdentity,
   type ShellIdentity,
   type ShellProfile,
   ShellProfileSchema,
-  saveIdentity,
-} from "./identity";
+  saveShellIdentity,
+} from "./shell-identity";
 
 /**
  * Native sign-in (guest first, native upgrade): the shell shows the platform's sheet (Sign in with
@@ -102,7 +102,7 @@ export function createNativeSignIn(deps: NativeSignInDeps) {
     }
     if (credential.status === "cancelled") return set({ status: "cancelled" });
     try {
-      const guest = await loadIdentity(deps.storage);
+      const guest = await loadShellIdentity(deps.storage);
       const device = await deps.device();
       const answer = await deps.api.authNative(
         {
@@ -120,7 +120,7 @@ export function createNativeSignIn(deps: NativeSignInDeps) {
         deviceToken: answer.token,
         login: name,
       };
-      await saveIdentity(deps.storage, identity);
+      await saveShellIdentity(deps.storage, identity);
       deps.onIdentity?.(identity);
       set({ status: "signed-in", provider: name, profile: answer.profile });
     } catch (err) {

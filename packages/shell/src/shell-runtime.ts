@@ -7,11 +7,12 @@ import type {
   Store,
 } from "@open-game-system/app-bridge-types";
 import { createAccountStore } from "./account-store";
-import { createShellRequest, type FetchLike, type ShellRequest } from "./api-client";
+import { createShellRequest, type ShellRequest } from "./api-client";
+import type { FetchLike, OgsApiOptions } from "./api-request";
 import { castLauncherUrl } from "./cast-launcher-url";
 import { createGuestApi, ensureGuestProfile, type ShellDevice } from "./guest-profile";
 import { createHapticsStore, type HapticsPlayer } from "./haptics-store";
-import type { SecureStorage, ShellIdentity } from "./identity";
+import type { SecureStorage } from "./identity";
 import {
   type ApnsEnvironment,
   createNativePush,
@@ -25,6 +26,7 @@ import {
   type NativeSignInProvider,
   type SignInState,
 } from "./native-sign-in";
+import type { ShellIdentity } from "./shell-identity";
 import { webViewUrlFor } from "./shell-links";
 
 /** What the runtime needs from the shell config (`extra.ogsShell`) plus the API base. */
@@ -46,6 +48,8 @@ export interface ShellContext {
   config: ShellRuntimeConfig;
   /** The OGS API request (parsed answers, ShellApiError failures). */
   request: ShellRequest;
+  /** For the OGS app's API clients (createApiRequest): the current device token as `auth`. */
+  apiOptions: OgsApiOptions;
   getIdentity(): ShellIdentity | null;
   /** Called with each new identity (the guest once made, then each sign-in). */
   onIdentity(listener: (identity: ShellIdentity | null) => void): () => void;
@@ -141,6 +145,11 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
   const ctx: ShellContext = {
     config,
     request,
+    apiOptions: {
+      baseUrl: config.apiBase,
+      fetch: deps.fetch,
+      auth: () => (identity ? { token: identity.deviceToken } : null),
+    },
     getIdentity: () => identity,
     onIdentity(listener) {
       identityListeners.add(listener);

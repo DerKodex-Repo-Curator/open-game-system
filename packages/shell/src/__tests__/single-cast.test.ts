@@ -1,8 +1,8 @@
-import { castCommands, startCastSync } from "../../cast-sync";
-import { createFakeCastBackend, FAKE_TV } from "../../fake-cast";
 import { fakeFetch } from "../__fixtures__/fake-fetch";
 import { createShellRequest } from "../api-client";
-import type { ShellIdentity } from "../identity";
+import { castCommands, startCastSync } from "../cast-sync";
+import { createFakeCastBackend, FAKE_TV } from "../fake-cast";
+import type { ShellIdentity } from "../shell-identity";
 import { createSingleGameCastStore } from "../single-cast";
 
 jest.mock("react-native-google-cast", () => ({

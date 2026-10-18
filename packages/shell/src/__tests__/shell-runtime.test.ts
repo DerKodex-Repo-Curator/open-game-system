@@ -1,8 +1,8 @@
 import { fakeFetch } from "../__fixtures__/fake-fetch";
 import { fakeStorage } from "../__fixtures__/fake-storage";
-import { loadIdentity } from "../identity";
 import type { PushNotificationsModule } from "../native-push";
 import type { NativeSignInProvider } from "../native-sign-in";
+import { loadShellIdentity } from "../shell-identity";
 import { createShellRuntime, type ShellRuntimeDeps } from "../shell-runtime";
 
 const config = {
@@ -133,7 +133,7 @@ describe("createShellRuntime", () => {
     await runtime.signInWith("apple");
     await runtime.idle();
     expect(runtime.getIdentity()).toMatchObject({ login: "apple", deviceToken: "apple-token" });
-    await expect(loadIdentity(storage)).resolves.toMatchObject({ deviceToken: "apple-token" });
+    await expect(loadShellIdentity(storage)).resolves.toMatchObject({ deviceToken: "apple-token" });
     expect(identities).toEqual(["apple-token"]);
     expect(runtime.sheet.getSnapshot().visible).toBe(false);
     expect(pageStates.at(-1)).toEqual({ login: "apple", signingIn: false });

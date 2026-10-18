@@ -2,7 +2,7 @@ import { fakeFetch } from "../__fixtures__/fake-fetch";
 import { fakeStorage } from "../__fixtures__/fake-storage";
 import { createShellRequest } from "../api-client";
 import { createGuestApi, ensureGuestProfile, GUEST_STICKERS } from "../guest-profile";
-import { IDENTITY_KEY, loadIdentity, saveIdentity } from "../identity";
+import { IDENTITY_KEY, loadShellIdentity, saveShellIdentity } from "../shell-identity";
 
 const device = { deviceId: "dev-1", kind: "phone" as const, name: "Jon's iPhone" };
 const created = {
@@ -39,7 +39,7 @@ describe("ensureGuestProfile", () => {
       deviceToken: "device-token-1",
       login: "guest",
     });
-    await expect(loadIdentity(storage)).resolves.toEqual(identity);
+    await expect(loadShellIdentity(storage)).resolves.toEqual(identity);
   });
 
   it("uses the game's guest name when given", async () => {
@@ -67,7 +67,7 @@ describe("ensureGuestProfile", () => {
       deviceToken: "older",
       login: "apple" as const,
     };
-    await saveIdentity(storage, stored);
+    await saveShellIdentity(storage, stored);
     await expect(ensureGuestProfile(deps)).resolves.toEqual(stored);
     await expect(ensureGuestProfile(deps)).resolves.toEqual(stored);
     expect(calls).toHaveLength(0);
