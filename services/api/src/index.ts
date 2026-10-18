@@ -17,6 +17,7 @@ import profiles from "./routes/profiles";
 import push from "./routes/push";
 import pushSettings from "./routes/push-settings";
 import join from "./routes/join";
+import screens from "./routes/screens";
 import sessions from "./routes/sessions";
 import stream from "./routes/stream";
 import wellKnown from "./routes/well-known";
@@ -57,6 +58,8 @@ app.route("/api/v1/auth", auth);
 app.route("/api/v1/sessions", sessions);
 // The join page's look at a couch by its TV code (no token)
 app.route("/api/v1/join", join);
+// Browser screens: a browser on the TV, paired with a code (no Chromecast)
+app.route("/api/v1/screens", screens);
 
 // Friends (slice 2): invites, requests, the list with presence, friends' casts
 app.route("/api/v1/friends", friends);

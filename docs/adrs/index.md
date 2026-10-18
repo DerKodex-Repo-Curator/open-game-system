@@ -18,3 +18,4 @@ Named `YYYY-MM-DD-short-description.md` and sorted chronologically.
 | 2026-10-06 | [TV platform coverage estimates (unverified for custom receivers)](2026-10-06-tv-platform-coverage.md) | Accepted (planning input) |
 | 2026-10-07 | [Beta distribution: TestFlight + Firebase App Distribution, EAS Update, and a forced update](2026-10-07-beta-distribution.md) | Accepted |
 | 2026-10-07 | [Game pushes go through OGS to the app or the game's PWA; game links open the app (planned)](2026-10-07-game-push-and-app-links.md) | Accepted (supersedes 2026-03-14 device tokens) |
+| 2026-10-17 | [Browser screens are a cast device, paired through the API](2026-10-17-browser-screens.md) | Accepted |

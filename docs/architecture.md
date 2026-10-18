@@ -149,6 +149,11 @@ route → 403 `profile_token_required`.
 | GET | `/api/v1/sessions/:sid` | its launcher, host or a member | → `{ sessionId, code, tvName, host }`; 403 `not_a_member`, 404 `session_not_found` |
 | POST | `/api/v1/sessions/join` | phone/tablet | `{ code }` (TV code; case, spaces, dashes ignored) → session view; 404 `session_not_found` |
 | GET | `/api/v1/join/:code` | none | The join page's look at a couch (opengame.org/join/<code>): `{ code, tvName, host: {name, sticker}, couch: [{name, sticker}] }`, host first then join order; no ids or @ids. 404 `session_not_found` (expired/unknown), 400 `invalid_code` |
+| POST | `/api/v1/screens` | none | A browser on the TV becomes a screen: `{ screenId, code, secret }` (201); the secret is kept only as a SHA-256 hash |
+| GET | `/api/v1/screens/:id` | `X-Screen-Secret` | `{ code, show: { token } \| null }`: the launcher token to show; 401 `missing_secret`, 403 `wrong_secret`, 404 `screen_not_found` (unclaimed > 1 h, claimed and unused > 30 days) |
+| POST | `/api/v1/screens/claim` | phone/tablet | `{ code }` → `{ screenId, name: "Browser TV" }`; the caller owns it; 404 `screen_not_found` |
+| POST | `/api/v1/screens/:id/show` | phone/tablet (owner) | `{ token }`: a launcher token for a couch the caller hosts → 204; 400 not a launcher token, 403 `not_your_screen` / `not_your_couch` |
+| POST | `/api/v1/screens/:id/stop` | phone/tablet (owner) | Back to the code → 204 |
 | POST | `/api/v1/auth/apple`, `/auth/google` | optional phone/tablet | `{ idToken, nonce?, device? }`: with a token links the login (back up) → `Me`; without signs in (`device` required) → `Me & { token }`. 401 `invalid_id_token`, 409 `login_in_use`, 404 `login_not_found` |
 | POST | `/api/v1/auth/email/start` | none | `{ email }` → 202 `{ sent: true }` (6-digit code, 10 min, 5 tries, sent with Cloudflare Email Service); 503 `email_unavailable` (no `SEND_EMAIL` binding), 502 `email_failed` (the binding refused the send) |
 | POST | `/api/v1/auth/email/verify` | optional phone/tablet | `{ email, code, device? }` → like `/auth/apple`; 401 `invalid_code` |

@@ -217,3 +217,17 @@ CREATE TABLE IF NOT EXISTS push_vapid_keys (
   iv TEXT NOT NULL,
   created_at INTEGER NOT NULL
 );
+
+-- Browser screens (2026-10-17-browser-tv.feature): a browser on the TV that shows a phone's launcher
+-- without a Chromecast. code: what the phone types. secret_hash: SHA-256 of the secret only the
+-- screen holds. owner_profile_id: the phone's profile that claimed it. token: the launcher token it
+-- shows now (NULL: show the code). last_used_at: the claim's life runs from here.
+CREATE TABLE IF NOT EXISTS screens (
+  id TEXT PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  secret_hash TEXT NOT NULL,
+  owner_profile_id TEXT REFERENCES profiles(id),
+  token TEXT,
+  created_at INTEGER NOT NULL,
+  last_used_at INTEGER NOT NULL
+);
