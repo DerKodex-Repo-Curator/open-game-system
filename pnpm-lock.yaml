@@ -939,6 +939,9 @@ importers:
         specifier: ^4.3.6
         version: 4.4.3
     devDependencies:
+      '@open-game-system/ogs-protocol':
+        specifier: workspace:*
+        version: link:../ogs-protocol
       '@types/node':
         specifier: ^24
         version: 24.19.2

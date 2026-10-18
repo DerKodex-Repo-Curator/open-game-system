@@ -26,6 +26,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@open-game-system/ogs-protocol": "workspace:*",
     "@types/node": "^24",
     "vitest": "^4.1.0"
   }
