@@ -5,19 +5,19 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "create-ogs-app": "./dist/cli.mjs"
+    "create-ogs-app": "./dist/bin.mjs"
   },
   "files": [
     "dist",
     "template"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=20.12"
   },
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.examples.json",
     "lint": "biome lint src test",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -26,7 +26,12 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@open-game-system/cast-kit-react": "workspace:*",
+    "@open-game-system/notification-kit-server": "workspace:*",
+    "@open-game-system/profile-kit": "workspace:*",
     "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "react": "^19.2.4",
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"
   }

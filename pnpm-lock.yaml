@@ -1024,9 +1024,24 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
+      '@open-game-system/cast-kit-react':
+        specifier: workspace:*
+        version: link:../cast-kit-react
+      '@open-game-system/notification-kit-server':
+        specifier: workspace:*
+        version: link:../notification-kit-server
+      '@open-game-system/profile-kit':
+        specifier: workspace:*
+        version: link:../profile-kit
       '@types/node':
         specifier: ^25.5.0
         version: 25.5.0
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.14
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -14757,7 +14772,7 @@ snapshots:
   '@napi-rs/wasm-runtime@1.1.1':
     dependencies:
       '@emnapi/core': 1.9.0
-      '@emnapi/runtime': 1.9.0
+      '@emnapi/runtime': 1.11.3
       '@tybys/wasm-util': 0.10.1
     optional: true
 
@@ -23977,7 +23992,7 @@ snapshots:
       picomatch: 4.0.3
       rolldown: 1.0.0-rc.9
       rolldown-plugin-dts: 0.22.5(rolldown@1.0.0-rc.9)(typescript@5.9.3)
-      semver: 7.7.4
+      semver: 7.8.5
       tinyexec: 1.0.4
       tinyglobby: 0.2.15
       tree-kill: 1.2.2

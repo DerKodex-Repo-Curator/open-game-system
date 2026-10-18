@@ -58,7 +58,8 @@
       "!**/*.css",
       "!**/.claude",
       "!**/.stryker-tmp",
-      "!**/.nightshift"
+      "!**/.nightshift",
+      "!packages/create-ogs-app/template"
     ]
   },
   "overrides": [

@@ -68,7 +68,7 @@ export const AnswersSchema = z.object({
   teamId: z
     .string()
     .trim()
-    .regex(/^[A-Z0-9]{10}$/, "is the 10-character Apple Team ID, like 34S957HD77"),
+    .regex(/^[A-Z0-9]{10}$/, "must be 10 characters (A-Z, 0-9), like 34S957HD77"),
   linkDomains: z.array(linkDomain).transform((domains) => [...new Set(domains)]),
   branding: z.enum(["hidden", "powered-by"]).default("hidden"),
   shellVersion: z.string().trim().min(1).default(SHELL_VERSION),
