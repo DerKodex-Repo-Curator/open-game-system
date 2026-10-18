@@ -1,3 +1,4 @@
+import "../services/log-guard-install";
 import { useFonts } from "expo-font";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";

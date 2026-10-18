@@ -85,22 +85,13 @@ export function createWebBridge<TStores extends BridgeStores>(): Bridge<TStores>
 
   // Handle messages from native
   if (typeof window !== "undefined" && window.ReactNativeWebView) {
-    console.log(
-      "[Web Bridge] ReactNativeWebView detected. Adding message listener and sending BRIDGE_READY.",
-    );
     // Send bridge ready message
     window.ReactNativeWebView.postMessage(JSON.stringify({ type: "BRIDGE_READY" }));
 
     const messageHandler = (event: MessageEvent) => {
-      console.log("[Web Bridge] Received raw message event:", event);
       try {
         const message = JSON.parse(event.data) as NativeToWebMessage;
-        console.log("[Web Bridge] Parsed message data:", message);
         if (message.type === "STATE_INIT") {
-          console.log(
-            `[Web Bridge] Handling STATE_INIT for store '${String(message.storeKey)}'`,
-            message.data,
-          );
           if (message.data === null) {
             // Remove state when receiving null data
             stateByStore.delete(message.storeKey as keyof TStores);
@@ -111,7 +102,7 @@ export function createWebBridge<TStores extends BridgeStores>(): Bridge<TStores>
           notifyStateListeners(message.storeKey as keyof TStores);
           notifyStoreListeners();
         } else if (message.type === "STATE_UPDATE") {
-          // console.log(`[Web Bridge] Handling STATE_UPDATE for store '${String(message.storeKey)}'`, message.operations); // Log update handling
+          //  // Log update handling
           if (message.data === null) {
             // Remove state when receiving null data
             stateByStore.delete(message.storeKey as keyof TStores);
@@ -123,16 +114,13 @@ export function createWebBridge<TStores extends BridgeStores>(): Bridge<TStores>
             if (currentState) {
               const result = applyPatch(currentState, message.operations);
               stateByStore.set(message.storeKey as keyof TStores, result.newDocument);
-              console.log(
-                `[Web Bridge] State updated for store '${String(message.storeKey)}' via patch:`,
-                result.newDocument,
-              );
               notifyStateListeners(message.storeKey as keyof TStores);
             }
           }
         }
-      } catch (error) {
-        console.error("[Web Bridge] Error handling message:", error); // Keep basic error log
+      } catch {
+        // Not the error itself: a JSON error quotes the message, which may carry a token.
+        console.error("[Web Bridge] Could not handle a message from the app; ignored.");
       }
     };
 
@@ -187,7 +175,6 @@ export function createWebBridge<TStores extends BridgeStores>(): Bridge<TStores>
             };
           },
           dispatch: async (event: TStores[K]["events"]): Promise<void> => {
-            console.log(`[Web Bridge] Dispatching event for store ${String(storeKey)}:`, event);
             if (!window.ReactNativeWebView) {
               console.warn("[Web Bridge] Cannot dispatch events: ReactNativeWebView not available");
               return;
@@ -197,7 +184,6 @@ export function createWebBridge<TStores extends BridgeStores>(): Bridge<TStores>
               storeKey: storeKey as string,
               event,
             };
-            console.log("[Web Bridge] Sending message to native:", message);
             window.ReactNativeWebView.postMessage(JSON.stringify(message));
           },
           reset: () => {
