@@ -2,7 +2,11 @@
 # (built 2026-10-17: apps/tv/src/ui/JoinCode.tsx, e2e apps/tv/e2e/join-qr.e2e.ts decodes the QR off the TV;
 # the link is ogs-protocol join.ts); "Scanning with the app installed opens the app" and "An expired or unknown
 # code" (built 2026-10-17: opengame.org/join/<code> apps/web/src/pages/Join.tsx + GET /api/v1/join/:code; the app
-# holds a join link through onboarding, apps/mobile/e2e/first-time-funnel.test.ts), and except "Every phone follows the TV" (built 2026-10-06 for app phones and kids' iPads: couch session
+# holds a join link through onboarding, apps/mobile/e2e/first-time-funnel.test.ts); "A guest joins from the
+# browser without the app" and "The join page offers the app but never requires it" (built 2026-10-18:
+# POST /api/v1/join/:code/guest, apps/web pages/join/; e2e/first-time-funnel-web.mjs: QR → join → on the TV's
+# couch → follows into the game's room → Home → remote moves the TV). Still PLANNED for guests: the game token's
+# guest flag, removing guest profiles when the couch ends, and the app upgrade; and except "Every phone follows the TV" (built 2026-10-06 for app phones and kids' iPads: couch session
 # reducer packages/ogs-protocol/src/session.ts, app apps/mobile/services/couch-follow.ts; tests in
 # session.rules.test.ts "every phone follows the TV" + "kids' iPads follow the TV" + "which phone's TV page
 # the launcher frames", couch-follow.test.ts, the API integration

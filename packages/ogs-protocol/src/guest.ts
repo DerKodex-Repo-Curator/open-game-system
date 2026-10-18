@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { type GuestJoined, GuestJoinedSchema, normaliseTvCode } from "./join";
 import { roomStartUrl } from "./rooms";
 import type { FollowTarget } from "./session";
@@ -81,4 +82,48 @@ export function guestScreen(
   if (target.room)
     return { kind: "game", appId: game.appId, url: roomStartUrl(game.startUrl, target.room) };
   return game.tvUrl ? { kind: "game", appId: game.appId, url: game.startUrl } : { kind: "wait" };
+}
+
+const FollowTargetSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("launcher") }),
+  z.object({
+    kind: z.literal("game"),
+    appId: z.string(),
+    instanceId: z.string(),
+    roleId: z.string(),
+    room: z.string().optional(),
+  }),
+]);
+const GuestFrameSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("follow"), target: FollowTargetSchema }),
+  z.object({
+    type: z.literal("state"),
+    state: z.object({
+      members: z.array(z.object({ name: z.string(), sticker: z.string() })),
+      current: z.object({ appId: z.string() }).nullable().optional(),
+    }),
+  }),
+]);
+
+/** What a guest's browser takes from the couch session: follows, and who is on the couch. */
+export type GuestFrame =
+  | { type: "follow"; target: FollowTarget }
+  | { type: "state"; members: { name: string; sticker: string }[]; currentAppId: string | null };
+
+/** A couch session frame, parsed; null for anything a guest doesn't use. */
+export function readGuestFrame(data: string): GuestFrame | null {
+  let json: unknown;
+  try {
+    json = JSON.parse(data);
+  } catch {
+    return null;
+  }
+  const frame = GuestFrameSchema.safeParse(json);
+  if (!frame.success) return null;
+  if (frame.data.type === "follow") return frame.data;
+  return {
+    type: "state",
+    members: frame.data.state.members.map(({ name, sticker }) => ({ name, sticker })),
+    currentAppId: frame.data.state.current?.appId ?? null,
+  };
 }

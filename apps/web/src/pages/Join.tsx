@@ -1,5 +1,7 @@
 import {
   appJoinLink,
+  type GuestJoined,
+  GuestJoinedSchema,
   type JoinLookup,
   loadJoin,
   normaliseTvCode,
@@ -8,6 +10,8 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { GuestCouch } from "./join/GuestCouch";
+import { GuestForm } from "./join/GuestForm";
 
 /** The OGS API and launcher (sticker art) this page reads; production unless the build says. */
 const API = import.meta.env.VITE_OGS_API ?? "https://opengame-api.jonathanrmumm.workers.dev";
@@ -53,8 +57,41 @@ const Join = () => {
   );
 };
 
+/** A guest who joined from this tab stays joined across a reload (this tab only). */
+const guestKey = (code: string) => `ogs.guest.${code}`;
+function savedGuest(code: string): GuestJoined | null {
+  try {
+    const saved = GuestJoinedSchema.safeParse(
+      JSON.parse(sessionStorage.getItem(guestKey(code)) ?? "null"),
+    );
+    return saved.success ? saved.data : null;
+  } catch {
+    return null;
+  }
+}
+
 function Couch({ lookup }: { lookup: Extract<JoinLookup, { kind: "couch" }> }) {
   const { couch } = lookup;
+  const [guest, setGuest] = useState<GuestJoined | null>(() => savedGuest(couch.code));
+  const [joining, setJoining] = useState(false);
+  if (guest) return <GuestCouch api={API} launcher={LAUNCHER} joined={guest} />;
+  if (joining)
+    return (
+      <>
+        <h1 className="text-3xl font-bold mb-6">Join {couch.host.name}'s couch</h1>
+        <GuestForm
+          api={API}
+          launcher={LAUNCHER}
+          code={couch.code}
+          onJoined={(joined) => {
+            try {
+              sessionStorage.setItem(guestKey(joined.code), JSON.stringify(joined));
+            } catch {}
+            setGuest(joined);
+          }}
+        />
+      </>
+    );
   return (
     <>
       <p className="text-sm uppercase tracking-widest text-muted-foreground mb-2">{couch.tvName}</p>
@@ -77,9 +114,18 @@ function Couch({ lookup }: { lookup: Extract<JoinLookup, { kind: "couch" }> }) {
           );
         })}
       </ul>
-      <Button asChild size="lg" className="w-full mb-3">
+      {/* No install needed: the browser is enough. The app is the upgrade, never required. */}
+      <Button
+        size="lg"
+        className="w-full mb-3"
+        data-testid="join-browser"
+        onClick={() => setJoining(true)}
+      >
+        Join from this browser
+      </Button>
+      <Button asChild size="lg" variant="outline" className="w-full mb-3">
         <a href={appJoinLink(couch.code)} data-testid="join-open-app">
-          Open in the OGS app
+          Have the OGS app? Open it instead
         </a>
       </Button>
       <GetApp host={couch.host.name} />
@@ -90,15 +136,15 @@ function Couch({ lookup }: { lookup: Extract<JoinLookup, { kind: "couch" }> }) {
 function GetApp({ host }: { host: string }) {
   return GET_APP ? (
     <p className="text-sm text-muted-foreground" data-testid="join-get-app">
-      No OGS app yet?{" "}
+      Want the app?{" "}
       <a className="underline font-medium" href={GET_APP}>
-        Get it here
-      </a>
-      , then scan the TV again.
+        Get OGS
+      </a>{" "}
+      (it remembers you across games).
     </p>
   ) : (
     <p className="text-sm text-muted-foreground" data-testid="join-get-app">
-      No OGS app yet? It's in beta: ask {host} to send you an invite, then scan the TV again.
+      The OGS app is in beta: ask {host} for an invite to keep your profile across games.
     </p>
   );
 }

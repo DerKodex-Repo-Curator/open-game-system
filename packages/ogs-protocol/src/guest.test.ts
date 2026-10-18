@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GUEST_STICKERS, guestScreen, joinAsGuest } from "./guest";
+import { GUEST_STICKERS, guestScreen, joinAsGuest, readGuestFrame } from "./guest";
 
 // Acceptance: 2026-10-06-join-and-invite.feature, "A guest joins from the browser without the app",
 // "A game starts and every phone opens it", "Home brings every phone back".
@@ -105,5 +105,51 @@ describe("guestScreen: where a guest's browser is, as the TV moves", () => {
   it("a game that makes rooms waits for the TV to name one; an unknown game stays on the remote", () => {
     expect(guestScreen(game("rocket-crew"), games)).toEqual({ kind: "wait" });
     expect(guestScreen(game("mystery", "KQTP"), games)).toEqual({ kind: "remote" });
+  });
+});
+
+describe("readGuestFrame: what the couch session tells a guest's browser", () => {
+  it("reads a follow", () => {
+    const target = {
+      kind: "game",
+      appId: "bake-shop",
+      instanceId: "i1",
+      roleId: "player",
+      room: "KQTP",
+    };
+    expect(readGuestFrame(JSON.stringify({ type: "follow", target }))).toEqual({
+      type: "follow",
+      target,
+    });
+    expect(
+      readGuestFrame(JSON.stringify({ type: "follow", target: { kind: "launcher" } })),
+    ).toEqual({
+      type: "follow",
+      target: { kind: "launcher" },
+    });
+  });
+
+  it("reads who is on the couch and the game on the TV from a state", () => {
+    const frame = readGuestFrame(
+      JSON.stringify({
+        type: "state",
+        state: {
+          members: [{ profileId: "p1", name: "Dana", sticker: "bear" }],
+          current: { appId: "bake-shop" },
+          extra: true,
+        },
+      }),
+    );
+    expect(frame).toEqual({
+      type: "state",
+      members: [{ name: "Dana", sticker: "bear" }],
+      currentAppId: "bake-shop",
+    });
+  });
+
+  it("ignores anything else", () => {
+    expect(readGuestFrame("not json")).toBeNull();
+    expect(readGuestFrame(JSON.stringify({ type: "remote.offer", from: "x" }))).toBeNull();
+    expect(readGuestFrame(JSON.stringify({ type: "follow", target: { kind: "nope" } }))).toBeNull();
   });
 });

@@ -19,6 +19,10 @@ Audit and ranking: [docs/funnel-audit.md](../../../funnel-audit.md).
   browser-TV cast backend combined with Google Cast + "Use a browser TV" in the cast prompt and TV tab.
   Detox `e2e/browser-tv.test.ts` green; first-time-funnel still green; 1076 jest tests.
 
+- 2026-10-18 Guests from the browser (#4): API `POST /api/v1/join/:code/guest`, the join page's
+  Join from this browser (form + browser remote that follows the TV), `e2e/first-time-funnel-web.mjs`
+  all 6 checks green. No-TV view leads with the browser TV (#10).
+
 ## Decisions
 
 - The launcher e2e's old copy assertion ("Join from your phone") follows the owner-approved join
@@ -43,4 +47,4 @@ Audit and ranking: [docs/funnel-audit.md](../../../funnel-audit.md).
 
 ## Next
 
-See the ranked list in docs/funnel-audit.md. Next up: #4 web guest join (no app for guests), #10 no-TV copy, #8 Android /join/.
+See the ranked list in docs/funnel-audit.md. Next up: #8 Android /join/ (native build), guest game-token flag, guest cleanup, deploy (owner).

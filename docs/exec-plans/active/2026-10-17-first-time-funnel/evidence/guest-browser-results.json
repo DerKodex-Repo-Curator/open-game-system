@@ -1,0 +1,56 @@
+{
+  "steps": [
+    {
+      "step": "guest: scan → join page",
+      "ms": 1104,
+      "taps": 0
+    },
+    {
+      "step": "guest: Join from this browser, name, sticker, Join → the remote",
+      "ms": 646,
+      "taps": 4
+    },
+    {
+      "step": "guest: the TV starts a game → the guest's phone opens it (0 taps)",
+      "ms": 84,
+      "taps": 0
+    },
+    {
+      "step": "guest: Home → back to the remote",
+      "ms": 162,
+      "taps": 0
+    }
+  ],
+  "results": [
+    {
+      "name": "the TV's QR is opengame.org/join/<its code>",
+      "ok": true,
+      "detail": "https://opengame.org/join/W7FXSG"
+    },
+    {
+      "name": "the join page names the host's couch",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the TV shows the guest on the couch",
+      "ok": true,
+      "detail": "Dana, Grandma"
+    },
+    {
+      "name": "the guest's phone opens the game's phone page in the TV's room",
+      "ok": true,
+      "detail": "http://localhost:5302/?ogsRoom=OVEN"
+    },
+    {
+      "name": "Home brings the guest back to the remote",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the guest's remote moves the TV's focus",
+      "ok": true,
+      "detail": "game:bake-shop → game:rocket-crew"
+    }
+  ]
+}
