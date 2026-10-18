@@ -30,6 +30,16 @@ export function readPlayLink(url: string): { appId: string; room: string } | nul
   return room.success ? { appId: m[1], room: room.data } : null;
 }
 
+/**
+ * A play link with no room (`opengame.org/play/<appId>`, any origin or the app's scheme): open the
+ * game in OGS, not a room. A link with a room is an invite (readPlayLink).
+ */
+export function readGameLink(url: string): { appId: string } | null {
+  if (readPlayLink(url)) return null;
+  const m = /^(?:[a-z]+:\/\/[^/?#]+\/|[a-z]+:\/\/)play\/([a-z0-9-]+)\/?(?:[?#].*)?$/.exec(url);
+  return m?.[1] ? { appId: m[1] } : null;
+}
+
 /** POST /games/:appId/invites: the room and the friends (profile ids) to invite. */
 export const GameInviteRequestSchema = z.object({
   room: RoomIdSchema,

@@ -23,6 +23,12 @@ Audit and ranking: [docs/funnel-audit.md](../../../funnel-audit.md).
   Join from this browser (form + browser remote that follows the TV), `e2e/first-time-funnel-web.mjs`
   all 6 checks green. No-TV view leads with the browser TV (#10).
 
+- 2026-10-18 Batch verification: Stryker 100% on every new module (protocol, TV, API, app
+  screen-cast and link-routing); CRAP < 8 for every new function (docs/quality.md).
+- 2026-10-18 Game links (#12): `opengame.org/play/<appId>` with no room opens that game's page in
+  the app (after onboarding on a fresh install); invite links on the play screen are held through
+  onboarding too; the site offers Open in the OGS app. Third Detox walk green.
+
 ## Decisions
 
 - The launcher e2e's old copy assertion ("Join from your phone") follows the owner-approved join

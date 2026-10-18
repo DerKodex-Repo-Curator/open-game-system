@@ -196,4 +196,29 @@ describe("A stranger household, from nothing to playing", () => {
     },
     WALK_MS,
   );
+
+  it(
+    "a stranger from a game's link (the front door's 'Play on your TV'): the app opens on that game after onboarding",
+    async () => {
+      begin();
+      await device.launchApp({
+        newInstance: true,
+        delete: true,
+        permissions: { notifications: "NO" },
+        url: `https://opengame.org/play/${GAME}`,
+      });
+      await visible("onboardingMakeProfile", 30000);
+      end("game link: tap → the app opens (installed)");
+
+      begin();
+      await onboard("Kim", "owl");
+      await waitFor(element(by.id("gamePage")))
+        .toExist()
+        .withTimeout(15000);
+      await visible("gamePlay");
+      end("game link: onboarding → that game's page, Play");
+      await shot("funnel-06-game-link");
+    },
+    WALK_MS,
+  );
 });

@@ -2,6 +2,10 @@
 # a real device check are open. Scenario → test map: docs/exec-plans/active/2026-10-08-push-overnight-briefing.md. Checked 2026-10-07: opengame.org's association file and the Android
 # intent filter cover only /open; triviajam.tv's covers only /games/*; triviajam.tv has no assetlinks.json;
 # apps/mobile/services/deep-links.ts hard-codes triviajam.tv.
+# 2026-10-18 (first-time funnel): a play link without a room ("An outside developer's domain goes through the
+# play link") opens the app on that game's page, after onboarding on a fresh install; the site shows "Open in
+# the OGS app" for it (ogs-protocol readGameLink; apps/mobile link-routing, app/play/[appId]; Detox
+# e2e/first-time-funnel.test.ts).
 # Spec: docs/product-specs/push-notifications.md "Taps and links". ADR: docs/adrs/2026-10-07-game-push-and-app-links.md.
 
 Feature: A game's links open in the OGS app when it is installed
@@ -48,7 +52,8 @@ Feature: A game's links open in the OGS app when it is installed
     Given a game on a domain that is not in the app's associated domains
     When its page, outside OGS, shows "Play on TV with OGS"
     Then the link is "https://opengame.org/play/<appId>"
-    And tapping it opens the OGS app
+    And tapping it opens the OGS app on that game's page, with Play
+    And on a phone that just installed OGS, onboarding comes first, then that game's page
 
   Scenario: The association files cover the whole site
     When "https://triviajam.tv/.well-known/apple-app-site-association" is fetched

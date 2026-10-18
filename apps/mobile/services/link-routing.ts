@@ -1,10 +1,11 @@
-import { readJoinLink, readPlayLink } from "@open-game-system/ogs-protocol";
+import { readGameLink, readJoinLink, readPlayLink } from "@open-game-system/ogs-protocol";
 import { extractGameUrl } from "./deep-links";
 
 export type LinkTarget =
   | { kind: "play"; appId: string; room: string }
   | { kind: "game"; url: string }
-  | { kind: "join"; code: string };
+  | { kind: "join"; code: string }
+  | { kind: "page"; appId: string };
 
 /** The URL's origin, or undefined when it isn't a URL. */
 const originOf = (url: string): string | undefined => {
@@ -24,6 +25,8 @@ export function routeLink(url: string, startUrls: readonly string[]): LinkTarget
   if (join) return { kind: "join", code: join.code };
   const play = readPlayLink(url);
   if (play) return { kind: "play", appId: play.appId, room: play.room };
+  const page = readGameLink(url);
+  if (page) return { kind: "page", appId: page.appId };
   const origin = originOf(url);
   if (origin?.startsWith("https://") && startUrls.some((s) => originOf(s) === origin))
     return { kind: "game", url };
@@ -43,10 +46,12 @@ export function openLink(
     play: (appId: string, room: string) => void;
     game: (url: string) => void;
     join: (code: string) => void;
+    page: (appId: string) => void;
   },
 ): void {
   const target = routeLink(url, deps.startUrls);
-  if (target?.kind === "join") deps.join(target.code);
+  if (target?.kind === "page") deps.page(target.appId);
+  else if (target?.kind === "join") deps.join(target.code);
   else if (target?.kind === "play") deps.play(target.appId, target.room);
   else if (target) deps.game(target.url);
   else if (from === "push") deps.game(url);
@@ -90,21 +95,22 @@ export function createLinkOpener(deps: {
   push: (path: string) => void;
   game: (url: string) => void;
 }) {
-  const open = (url: string, from: LinkFrom) => {
-    if (from === "link" && url.startsWith("opengame") && readJoinLink(url)) return;
-    if (deps.hold.offer(url, from, deps.hasProfile())) return;
+  /** Where each kind of link goes in the app. */
+  const go = (url: string, from: LinkFrom) =>
     openLink(url, from, {
       startUrls: deps.startUrls(),
       play: (appId, room) => deps.push(`/play/${appId}?room=${encodeURIComponent(room)}`),
       game: deps.game,
       join: (code) => deps.push(`/join/${code}`),
+      page: (appId) => deps.push(`/library/${appId}`),
     });
+  const open = (url: string, from: LinkFrom) => {
+    // The app scheme's join and game links are Expo Router's (app/join/[code], app/play/[appId]).
+    const routed = readJoinLink(url) ?? readGameLink(url);
+    if (from === "link" && url.startsWith("opengame") && routed) return;
+    if (deps.hold.offer(url, from, deps.hasProfile())) return;
+    go(url, from);
   };
-  /** A held link, now that there is a profile: it goes where it said. */
-  const openHeld = (url: string, from: LinkFrom) => {
-    const join = readJoinLink(url);
-    if (join) deps.push(`/join/${join.code}`);
-    else open(url, from);
-  };
-  return { open, openHeld };
+  /** A held link, now that there is a profile: it goes where it said (the router's too). */
+  return { open, openHeld: go };
 }

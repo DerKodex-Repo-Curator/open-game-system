@@ -50,6 +50,7 @@ Loss figures are estimates (stated assumptions), not measurements.
 | 8 | **Android doesn't claim `opengame.org/join/`** (needs an intent filter, a native build that forces every tester to update). iOS gets it from the AASA file. | Android guests | Android share | Follow-up |
 | 9 | **The join page can't link to the app** until #1 exists: it says "It's in beta: ask <host> to send you an invite". `VITE_OGS_GET_APP` turns on a real link. | Guests | (part of #1) | Waits on #1 |
 | 10 | "No TV found" leads with Chromecast troubleshooting; "Use a browser TV" sits below it. A household that has no Chromecast reads three wrong causes first. | Hosts without Chromecast | est. 5–10% of them | **Fixed**: "No Chromecast? Any TV with a browser works" and the button come first |
+| 12 | **A game link without a room was a dead end** ("That link has no room in it", and the site said "missing its room"): the front door's and games' "Play on your TV" link had nowhere to go. | Hosts from a game's page or the front door | all of them | **Fixed**: `opengame.org/play/<appId>` opens that game's page in the app (after onboarding on a fresh install); the site offers Open in the OGS app. Invite links held through onboarding too (the play screen said "Make your OGS profile first" and stopped). |
 | 11 | Onboarding asks about notifications before any value, and for an @id. Measured 5 taps + a name, ~20 s. | Everyone | est. <5% | Leave |
 
 ## Owner actions (only Jon can do these)

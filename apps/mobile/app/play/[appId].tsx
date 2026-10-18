@@ -5,12 +5,12 @@ import { Button } from "../../components/ogs/Button";
 import { Screen } from "../../components/ogs/Screen";
 import { colors } from "../../components/ogs/theme";
 import type { JoinOutcome } from "../../services/rooms";
-import { roomJoiner, useApp } from "../../services/runtime";
+import { appState, linkHold, roomJoiner, useApp } from "../../services/runtime";
 
 /**
  * An invite link opened in OGS (spec §7): opengame.org/play/<appId>?room=<room> or
  * opengame://play/…. Starts the game in that room on this couch's TV, or asks to cast first and
- * starts once the TV is cast.
+ * starts once the TV is cast. Without a room it is a game link: the game's page.
  */
 export default function PlayLinkScreen() {
   const router = useRouter();
@@ -20,6 +20,23 @@ export default function PlayLinkScreen() {
   const ready = app.identity !== null && game !== undefined;
   const [outcome, setOutcome] = useState<JoinOutcome | null>(null);
 
+  // A first-time phone (no profile yet) holds the link through onboarding; a link with no room
+  // opens the game's page, where Play is the one button (2026-10-07-game-links.feature).
+  useEffect(() => {
+    if (!appId) return;
+    let live = true;
+    void appState.init().then(() => {
+      if (!live) return;
+      const link = `opengame://play/${appId}${room ? `?room=${encodeURIComponent(room)}` : ""}`;
+      if (linkHold.offer(link, "link", appState.getSnapshot().identity !== null))
+        router.replace("/");
+      else if (!room) router.replace(`/library/${appId}`);
+    });
+    return () => {
+      live = false;
+    };
+  }, [appId, room, router]);
+
   useEffect(() => {
     if (!ready || !appId || !room || outcome !== null) return;
     setOutcome(roomJoiner.join(appId, room));
@@ -27,7 +44,7 @@ export default function PlayLinkScreen() {
 
   const name = game?.name ?? "this game";
   const text = !room
-    ? "That link has no room in it."
+    ? `Opening ${name}…`
     : app.identity === null
       ? "Make your OGS profile first."
       : outcome === "cast-first"

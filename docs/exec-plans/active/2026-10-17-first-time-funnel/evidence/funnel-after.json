@@ -1,37 +1,49 @@
 [
   {
     "step": "host: first launch to the welcome",
-    "ms": 22469,
+    "ms": 13404,
     "taps": 0,
     "typed": 0
   },
   {
     "step": "host: onboarding (make a profile)",
-    "ms": 23736,
+    "ms": 20727,
     "taps": 5,
     "typed": 1
   },
   {
     "step": "host: pick a game, Play",
-    "ms": 4790,
+    "ms": 4267,
     "taps": 2,
     "typed": 0
   },
   {
     "step": "host: Cast → the game on the TV",
-    "ms": 4746,
+    "ms": 2450,
     "taps": 1,
     "typed": 0
   },
   {
     "step": "guest: scan → the app opens (installed)",
-    "ms": 28884,
+    "ms": 16013,
     "taps": 0,
     "typed": 0
   },
   {
     "step": "guest: onboarding → on the couch",
-    "ms": 26318,
+    "ms": 20743,
+    "taps": 5,
+    "typed": 1
+  },
+  {
+    "step": "game link: tap → the app opens (installed)",
+    "ms": 12979,
+    "taps": 0,
+    "typed": 0
+  },
+  {
+    "step": "game link: onboarding → that game's page, Play",
+    "ms": 21200,
     "taps": 5,
     "typed": 1
   }

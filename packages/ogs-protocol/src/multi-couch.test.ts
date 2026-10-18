@@ -8,6 +8,7 @@ import {
   FriendRoomSchema,
   GameInviteRequestSchema,
   playLink,
+  readGameLink,
   readPlayLink,
   whoIsPlaying,
 } from "./rooms";
@@ -321,5 +322,32 @@ describe("invites and rooms over the API", () => {
       room: "KQTP",
     };
     expect(PresenceSchema.parse(casting)).toEqual(casting);
+  });
+});
+
+// 2026-10-07-game-links.feature, "An outside developer's domain goes through the play link": a play
+// link without a room opens the OGS app on that game (its page, where Play is the one button).
+describe("a game link (a play link without a room)", () => {
+  it.each([
+    ["https://opengame.org/play/night-flight", "night-flight"],
+    ["https://opengame.org/play/night-flight/", "night-flight"],
+    ["https://opengame.org/play/night-flight?utm_source=frontdoor", "night-flight"],
+    ["https://opengame.org/play/night-flight?room=", "night-flight"],
+    ["opengame://play/trivia-jam", "trivia-jam"],
+    ["http://localhost:5173/play/rocket-crew#x", "rocket-crew"],
+  ])("reads %s", (url, appId) => {
+    expect(readGameLink(url)).toEqual({ appId });
+  });
+
+  it.each([
+    "https://opengame.org/play/night-flight?room=KQTP",
+    "https://opengame.org/play/Night_Flight",
+    "https://opengame.org/play/",
+    "https://opengame.org/play/night-flight/more",
+    "https://opengame.org/join/NT9WPH",
+    "see https://opengame.org/play/night-flight",
+    "not a url",
+  ])("ignores %s", (url) => {
+    expect(readGameLink(url)).toBeNull();
   });
 });

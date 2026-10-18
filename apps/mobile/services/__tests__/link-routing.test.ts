@@ -61,6 +61,15 @@ describe("where a link or a notification tap goes", () => {
   });
 });
 
+describe("a game link (opengame.org/play/<appId>, no room)", () => {
+  it("opens that game's page", () => {
+    expect(routeLink("https://opengame.org/play/night-flight", startUrls)).toEqual({
+      kind: "page",
+      appId: "night-flight",
+    });
+  });
+});
+
 describe("a join link (the TV's QR, opengame.org/join/<code>)", () => {
   it("joins that TV's couch with its code", () => {
     for (const url of ["https://opengame.org/join/NT9WPH", "opengame://join/nt9wph"])
@@ -80,9 +89,16 @@ describe("opening a link or a tap", () => {
       play: (a, r) => went.push(`play:${a}:${r}`),
       game: (u) => went.push(`game:${u}`),
       join: (c) => went.push(`join:${c}`),
+      page: (a) => went.push(`page:${a}`),
     });
     return went;
   };
+
+  it("a game link opens the game's page", () => {
+    expect(run("https://opengame.org/play/trivia-jam?utm_source=frontdoor", "link")).toEqual([
+      "page:trivia-jam",
+    ]);
+  });
 
   it("a join link joins the couch", () => {
     expect(run("https://opengame.org/join/NT9WPH", "link")).toEqual(["join:NT9WPH"]);
@@ -176,9 +192,18 @@ describe("the app's link opener", () => {
     o.links.open("https://triviajam.tv/host", "link");
     expect(o.went).toEqual([
       "push:/join/NT9WPH",
+      // A room that can't be one: the game's page rather than nothing.
+      "push:/library/night-flight",
       "push:/play/night-flight?room=KQTP",
       "game:https://triviajam.tv/host",
     ]);
+  });
+
+  it("an https game link opens the game's page; the app scheme's is the router's", () => {
+    const o = opener(true);
+    o.links.open("https://opengame.org/play/trivia-jam", "link");
+    o.links.open("opengame://play/trivia-jam", "link");
+    expect(o.went).toEqual(["push:/library/trivia-jam"]);
   });
 
   it("a join link from a push isn't left to the router", () => {
