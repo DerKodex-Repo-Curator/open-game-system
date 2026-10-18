@@ -4,6 +4,8 @@ import { dev } from "./dev";
 import { doctor } from "./doctor";
 import { INIT_USAGE, init } from "./init";
 import { login } from "./login";
+import { check } from "./manifest";
+import { publish } from "./publish";
 import { credentials } from "./push";
 import { PUSH_SEND_USAGE, send } from "./push-send";
 import { tryPath } from "./try";
@@ -51,4 +53,10 @@ export const COMMANDS: Command[] = [
     run: dev,
   },
   { words: ["init"], usage: INIT_USAGE, run: init },
+  {
+    words: ["manifest", "check"],
+    usage: ["ogs manifest check [file] [--offline]"],
+    run: check,
+  },
+  { words: ["publish"], usage: ["ogs publish [file] [--status]"], run: publish },
 ];

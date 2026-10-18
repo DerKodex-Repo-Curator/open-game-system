@@ -11,6 +11,8 @@ export interface Env {
   DEBUG_STATE_TOKEN?: string;
   /** CI's bearer token for PUT /api/v1/app-release/:platform (a secret). Unset: every write is refused. */
   RELEASE_TOKEN?: string;
+  /** The catalogue reviewer's bearer token for /api/v1/admin/catalogue-entries/* (a secret). Unset: every review is refused. */
+  OGS_ADMIN_TOKEN?: string;
   STREAM_SERVER_URL?: string;
   /** Sign in with Apple / Google: OIDC issuers (default: the real ones) and accepted client ids (CSV). */
   APPLE_ISSUER?: string;

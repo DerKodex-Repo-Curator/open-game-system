@@ -25,12 +25,12 @@ takes `--app <appId>`; without it, the app you logged in with last.
 
 | Command | What it does |
 |---|---|
-| `ogs init` | Adds OGS to an existing web game: the kits, `ogs.manifest.json`, the quickstart's code, an agent prompt |
-| `ogs dev` | Runs the game with a fake OGS app and TV, with QR codes for real phones |
-| `ogs manifest check` | Checks `ogs.manifest.json`: the schema, the catalogue's rules, the live URLs |
-| `ogs publish` | Submits or updates the game's catalogue entry (reviewed); `--status` shows where it is |
-| `ogs try` | Deploys the game's [try path](try-kit.md) and registers it with OGS |
-| `ogs push send` | Sends a test push or push link to a player's handle (yours) |
+| [`ogs init`](cli-init.md) | Adds OGS to an existing web game: the kits, `ogs.manifest.json`, the quickstart's code, an agent prompt |
+| [`ogs dev`](cli-dev.md) | Runs the game with a fake OGS app and TV, with QR codes for real phones |
+| [`ogs manifest check`](cli-catalogue.md) | Checks `ogs.manifest.json`: the schema, the catalogue's rules, the live URLs |
+| [`ogs publish`](cli-catalogue.md) | Submits or updates the game's catalogue entry (reviewed); `--status` shows where it is |
+| [`ogs try`](cli-deliver.md) | Deploys the game's [try path](try-kit.md) and registers it with OGS |
+| [`ogs push send`](cli-deliver.md) | Sends a test push or push link to a player's handle (yours) |
 | `ogs apps register` | Registers the game's own iOS / Android app (bundle id / package) |
 | `ogs push credentials` | Uploads the app's APNs key / FCM service account (stored encrypted) |
 | `ogs doctor` | Checks the app's registration, push credentials, link files and TV page |
@@ -71,5 +71,12 @@ All under `https://opengame-api.jonathanrmumm.workers.dev/api/v1` (a preview has
 | GET | `/apps/:appId/push-credentials` | game key | → what's configured (ids only) |
 | GET | `/apps/app-links` | none | → every registered app (for link files) |
 | POST | `/games/:appId/notifications` | game key | `{ to: [handle], title, body, url?, tag?, whenOpen? }` → `{ results: [{ to, status }] }` |
+| GET | `/games/:appId/push-handles/:handle` | game key | → `{ handle, surfaces: [{ kind: ogs\|web\|app, lastActiveAt }] }` (where a push would go) |
+| POST | `/manifests/check` | none (rate limited) | a manifest → `{ valid, issues, warnings, checked }` |
+| PUT / GET | `/apps/:appId/catalogue-entry` | game key | the manifest → 202 `{ status: "pending" }` / → `{ status: none\|pending\|live\|rejected, … }` |
+| PUT / GET | `/apps/:appId/try` | game key | `{ url }` → `{ appId, url, checkedAt }`; 422 `try_path_not_found` |
+| GET | `/dev/kits` | none | → where the docs, `llms.txt`, the quickstart and the kit tarballs are |
+| GET | `/catalogue` | none | → every game's manifest (with `tryUrl` when registered) |
 
-The commands' own pages list the rest of their endpoints.
+Each command's page has the details: [init](cli-init.md), [dev](cli-dev.md),
+[manifest check and publish](cli-catalogue.md), [try and push send](cli-deliver.md).

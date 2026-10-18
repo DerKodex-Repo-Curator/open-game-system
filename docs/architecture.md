@@ -171,7 +171,7 @@ route → 403 `profile_token_required`.
 | DELETE | `/api/v1/friends/:profileId` | phone/tablet | → 204 (mutual); 404 `friend_not_found` |
 | GET | `/api/v1/friends/casting` | phone/tablet | → `CastingFriend[] { sessionId, tvName, host, game, joined }`: friends hosting a session whose TV is connected, newest first |
 | GET | `/api/v1/friends/rooms` | phone/tablet | → `FriendRoom[] { appId, game, room, couches: [{ sessionId, label, host }], joined }`: rooms of `multiCouch` games a friend's live TV is in (Join with your couch), newest first; couches first to arrive first (spec §7) |
-| GET | `/api/v1/catalogue` | none | → `Manifest[]` (the five deployed games, `services/api/src/catalogue.ts`; local dev/e2e may point start URLs at local servers with `CATALOGUE_START_URLS` = JSON `{ appId: url }`) |
+| GET | `/api/v1/catalogue` | none | → `Manifest[]` (the seed plus approved catalogue entries replacing by appId, each with `tryUrl` when registered; the five deployed games, `services/api/src/catalogue.ts`; local dev/e2e may point start URLs at local servers with `CATALOGUE_START_URLS` = JSON `{ appId: url }`) |
 | POST | `/api/v1/games/:appId/token` | phone/tablet | Game token for the app's WebView → `{ token, profile: { id, handle, name, avatar }, expiresAt }`. Optional `{ sid }`: the couch this phone is on, so the token carries `couch: { sid, label }`. 404 `game_not_found` / `session_not_found`, 403 `profile_token_required` (launcher) / `not_a_member`, 400 `invalid_body`, 503 `game_tokens_unavailable` |
 | POST | `/api/v1/games/:appId/invites` | phone/tablet | Invite friends to this game's room: `{ room, to: [profileId] }` → 201 `{ link, invited: [{ profileId, pushed }] }`; a push to each friend's devices, link `<PLAY_BASE_URL>/play/<appId>?room=` (default opengame.org). 403 `not_a_friend`, 409 `not_multi_couch`, 404 `game_not_found`, 400 `invalid_body` (spec §7) |
 | POST | `/api/v1/sessions/:sid/game-token` | its launcher, host or a member | `{ appId }` → `{ token, players, expiresAt }` for the framed TV page (`sid`, players = host + joined, `couch: { sid, label: host's name }`); 403 `not_a_member`, 404 `session_not_found` / `game_not_found`, 503 `game_tokens_unavailable` |
@@ -188,6 +188,12 @@ route → 403 `profile_token_required`.
 | PUT / GET | `/api/v1/apps/:appId/push-credentials` | game API key | `{ ios: { p8, keyId, teamId } }` or `{ android: { serviceAccount } }` → 204, sealed with PUSH_KEY_SECRET; GET says what's configured (ids, never a key); 409 `app_not_registered`, 400 `invalid_credentials`, 503 without PUSH_KEY_SECRET |
 | PUT | `/api/v1/apps/:appId/devices/:deviceId` | phone/tablet (its own `did`) | The shell's native push token: `{ platform: ios, token (hex), apnsEnvironment: sandbox\|production }` or `{ platform: android, token }` → 204; 403 `not_your_device`, 409 `app_not_registered` |
 | GET | `/api/v1/apps/app-links` · `/apps/apple-app-site-association` · `/apps/assetlinks.json` | none | Every registered app; the latter two are opengame.org's finished link files (registered apps first for `/play/<appId>` and `/play/<appId>/*`, then the OGS app), passed through by `apps/web/functions/.well-known/*` (static files as fallback). Cache 5 min |
+| POST | `/api/v1/manifests/check` | none (per-IP limit, CLIENT_EVENTS_LIMITER) | `ogs manifest check`: a manifest → `{ valid, issues, warnings, checked }` (schema, catalogue rules, live GETs of startUrl/tvUrl); 429 `rate_limited` |
+| PUT / GET | `/api/v1/apps/:appId/catalogue-entry` | game key | `ogs publish`: the manifest → 202 `{ appId, status: "pending", submittedAt }`; 400 `invalid_manifest` (+ issues) / `app_id_mismatch` · GET → `{ status: none\|pending\|live\|rejected, submittedAt?, reviewedAt?, note?, live?, pending? }` |
+| POST | `/api/v1/admin/catalogue-entries/:appId/approve` · `/reject` | `Bearer <OGS_ADMIN_TOKEN>` (unset refuses all) | Pending goes live / is dropped (`{ note }` required to reject); 404 `nothing_pending` |
+| PUT / GET | `/api/v1/apps/:appId/try` | game key | `ogs try`: `{ url }` (https); OGS checks `/` answers 3xx + Location and `/ws-probe` 426 (5 s, no redirects followed) → `{ appId, url, checkedAt }`; 422 `try_path_not_found` · GET; 404 `no_try_path` |
+| GET | `/api/v1/games/:appId/push-handles/:handle` | game key | `ogs push send --check`: `{ handle, surfaces: [{ kind: ogs\|web\|app, lastActiveAt }] }`, no ids or tokens; 404 `handle_not_found` |
+| GET | `/api/v1/dev/kits` | none (cache 5 min) | `ogs init`: the docs base, llms.txt, quickstart and kit tarball URLs (`OGS_DOCS_BASE`, default ogs-docs.pages.dev); 500 `docs_base_invalid` |
 
 The mobile app currently signs in with email only (owner, 2026-10-04); `/auth/apple` and
 `/auth/google` stay in the API, tested, for when the app adds them back (see `roadmap.md`).
@@ -306,6 +312,8 @@ someone drops it deliberately.
 | `native_apps` | `(app_id, platform)` | store_id (bundle id / package, unique per platform), team_id (ios), sha256_fingerprints, google_client_ids (JSON, android), created_at, updated_at (ms) | A game's own App Store / Play Store app (ADR 2026-10-18-multi-tenant-push) |
 | `app_push_credentials` | `(app_id, platform)` | key_id, team_id (ios) · project_id, client_email (android) · secret_enc, iv (AES-GCM, PUSH_KEY_SECRET), updated_at (ms) | The app's APNs .p8 / FCM service account, sealed |
 | `app_devices` | `(device_id, app_id)` | platform, token (native APNs / FCM), apns_environment, updated_at (ms) | A device running a game's own app; dead tokens removed on send |
+| `catalogue_entries` | `app_id` | status (pending/live/rejected), manifest_json (live), pending_json, submitted_at, reviewed_at (ms), note | `ogs publish`; live entries join the seed in GET /catalogue |
+| `try_paths` | `app_id` | url, checked_at (ms) | `ogs try`; the catalogue's tryUrl |
 
 Canonical schema: `services/api/schema.sql`
 

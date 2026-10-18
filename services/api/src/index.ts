@@ -7,6 +7,7 @@ import apps from "./routes/apps";
 import appDevices from "./routes/app-devices";
 import auth from "./routes/auth";
 import catalogue from "./routes/catalogue";
+import catalogueEntries from "./routes/catalogue-entries";
 import clientEvents from "./routes/client-events";
 import couch from "./routes/couch";
 import deliver from "./routes/deliver";
@@ -87,6 +88,8 @@ app.route("/api/v1/couch", couch);
 
 // Catalogue of games (public)
 app.route("/api/v1/catalogue", catalogue);
+// The catalogue's developer API: manifests/check (public), catalogue-entry (game key), admin review
+app.route("/api/v1", catalogueEntries);
 
 // Client wide events (app: profile token; cast receiver: none) → Workers Logs
 app.route("/api/v1/client-events", clientEvents);

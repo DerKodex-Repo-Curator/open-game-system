@@ -73,6 +73,27 @@ export const PAGES: PageDef[] = [
     source: content("cli.md"),
   },
   {
+    slug: "cli-init",
+    nav: "ogs init",
+    summary:
+      "Add OGS to an existing web game in one command: the kits, ogs.manifest.json, the quickstart's code (optional codemod) and an agent prompt; GET /dev/kits.",
+    source: content("cli-init.md"),
+  },
+  {
+    slug: "cli-dev",
+    nav: "ogs dev",
+    summary:
+      "Run your game with a fake OGS app and TV, fake game tokens with their own JWKS, and QR codes for real phones; no device needed.",
+    source: content("cli-dev.md"),
+  },
+  {
+    slug: "cli-catalogue",
+    nav: "ogs manifest check and publish",
+    summary:
+      "Check ogs.manifest.json (schema, catalogue rules, live URLs; POST /manifests/check) and submit the game's catalogue entry for review (PUT /apps/:appId/catalogue-entry).",
+    source: content("cli-catalogue.md"),
+  },
+  {
     slug: "cli-deliver",
     nav: "ogs try and ogs push send",
     summary:
