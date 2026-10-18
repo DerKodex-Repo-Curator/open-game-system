@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import type { ShellConfigInput } from "@open-game-system/shell/plugin";
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
 /**
@@ -20,7 +21,7 @@ const shell = {
   linkDomains: __OGS_LINK_DOMAINS__,
   /** The TV shows your manifest's tvUrl full screen on the OGS Cast receiver. */
   cast: { receiver: "ogs" },
-};
+} satisfies ShellConfigInput;
 
 /** Android push needs your Firebase app's config (README: "Push"). Not a secret: commit it. */
 const GOOGLE_SERVICES = "./google-services.json";

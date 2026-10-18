@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { type CliIO, main } from "../src/cli";
@@ -122,6 +123,7 @@ describe("create-ogs-app generates an app", () => {
     expect(config).toContain('branding: "hidden"');
     expect(config).toContain('linkDomains: ["rocketcrew.tv"]');
     expect(config).toContain('cast: { receiver: "ogs" }');
+    expect(config).toContain("} satisfies ShellConfigInput;");
     expect(config).toContain('plugins: ["expo-router", ["@open-game-system/shell", shell]]');
     expect(config).toMatch(/backgroundColor: "#[0-9a-f]{6}"/);
   });
@@ -143,7 +145,11 @@ describe("create-ogs-app generates an app", () => {
     await main(["app", ...rocketCrewFlags, "--shell-version", "^0.3.0"], io);
     const pkg = readPackageJson(join(cwd, "app/package.json"));
     const mobile = readPackageJson(join(REPO_ROOT, "apps/mobile/package.json"));
-    const mobileAll = { ...mobile.dependencies, ...mobile.devDependencies };
+    // The OGS app takes the shell from the workspace; a game's app takes it from npm.
+    const { "@open-game-system/shell": _workspace, ...mobileAll } = {
+      ...mobile.dependencies,
+      ...mobile.devDependencies,
+    };
     expect(pkg.name).toBe("rocket-crew-app");
     expect(pkg.main).toBe("expo-router/entry");
     expect(pkg.dependencies["@open-game-system/shell"]).toBe("^0.3.0");
@@ -171,6 +177,32 @@ describe("create-ogs-app generates an app", () => {
       (name) => !(name in pkg.dependencies) && !(name in pkg.devDependencies),
     );
     expect(missing).toEqual([]);
+  });
+
+  it("package.json has every module the shell plugin configures (once packages/shell exists)", {
+    skip: !existsSync(join(REPO_ROOT, "packages/shell/plugin/src/index.ts")),
+  }, async () => {
+    const { io } = fakeIO(cwd);
+    await main(["app", ...rocketCrewFlags], io);
+    const pkg = readPackageJson(join(cwd, "app/package.json"));
+    const plugin = z
+      .object({ nativeConfigFor: z.function(), parseShellConfig: z.function() })
+      .parse(
+        await import(pathToFileURL(join(REPO_ROOT, "packages/shell/plugin/src/index.ts")).href),
+      );
+    const config = plugin.parseShellConfig({
+      appId: "rocket-crew",
+      name: "Rocket Crew",
+      gameUrl: "https://rocketcrew.tv/phone",
+      splash: { image: "./assets/splash-icon.png", backgroundColor: "#2a5c8a" },
+      linkDomains: ["rocketcrew.tv"],
+    });
+    const native = z
+      .object({ plugins: z.array(z.union([z.string(), z.tuple([z.string(), z.unknown()])])) })
+      .parse(plugin.nativeConfigFor(config));
+    const names = native.plugins.map((p) => (typeof p === "string" ? p : p[0]));
+    expect(names.length).toBeGreaterThan(0);
+    expect(names.filter((name) => !(name in pkg.dependencies))).toEqual([]);
   });
 
   it("eas.json: development, preview for TestFlight, production; no secrets", async () => {

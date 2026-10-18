@@ -65,6 +65,9 @@ examples/              the game side: cast button, profile, push link
 Everything is in `app.config.ts`. The ids are yours, and the shell plugin never sets them:
 
 ```ts
+import type { ShellConfigInput } from "@open-game-system/shell/plugin";
+import type { ConfigContext, ExpoConfig } from "expo/config";
+
 const shell = {
   appId: "rocket-crew",                    // your OGS catalogue id
   name: "Rocket Crew",
@@ -74,7 +77,7 @@ const shell = {
   branding: "hidden",                      // or "powered-by"
   linkDomains: ["rocketcrew.tv"],          // opengame.org/play/<appId> is always on
   cast: { receiver: "ogs" },
-};
+} satisfies ShellConfigInput;
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
