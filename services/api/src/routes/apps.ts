@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { assetlinks, siteAssociation } from "../lib/app-link-files";
 import { apiError, invalidBody, parseBody } from "../lib/http";
 import { AndroidAppSchema, appLinks, appOf, appsOf, IosAppSchema, registerApp } from "../lib/native-apps";
 import { CredentialsUploadSchema, credentialSummary, storeCredentials } from "../lib/push-credentials";
@@ -17,6 +18,16 @@ const appIdOf = (c: { req: { param: (name: "appId") => string | undefined } }) =
 apps.get("/app-links", async (c) => {
   c.header("Cache-Control", "public, max-age=300");
   return c.json(await appLinks(c.env.DB));
+});
+
+/** GET /apple-app-site-association, /assetlinks.json — opengame.org's link files, built (public). */
+apps.get("/apple-app-site-association", async (c) => {
+  c.header("Cache-Control", "public, max-age=300");
+  return c.json(siteAssociation(await appLinks(c.env.DB)));
+});
+apps.get("/assetlinks.json", async (c) => {
+  c.header("Cache-Control", "public, max-age=300");
+  return c.json(assetlinks(await appLinks(c.env.DB)));
 });
 
 /** PUT /:appId/native/ios `{ bundleId, teamId }` · /:appId/native/android `{ package, sha256CertFingerprints, googleClientIds }`. */
