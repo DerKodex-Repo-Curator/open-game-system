@@ -1,7 +1,7 @@
 import type { Instance } from "@open-game-system/ogs-protocol";
 import { describe, expect, it } from "vitest";
 import { FIXTURE_GAMES } from "../session/fixture";
-import { buildHome, homeFocusRows } from "./home";
+import { buildHome, homeFocusRows, homeStart, recoverFocus } from "./home";
 
 // The second visit (docs/acceptance/2026-10-18-second-visit.feature, "Play again on the TV"): the
 // game the household played last comes first on the TV, and OK starts a new game of it. A finished
@@ -81,5 +81,25 @@ describe("Play again: the last game played comes first on the TV", () => {
 
   it("a household that never played has no Play again", () => {
     expect(home([]).cards.map((c) => c.kind)).toEqual(["surprise"]);
+  });
+});
+
+describe("the ring starts on Play again", () => {
+  it("arriving home with a Play again card, the ring is on it: OK starts the game", () => {
+    const h = home([played("night-flight", NOW - DAY)]);
+    expect(recoverFocus(homeFocusRows(h), null, null, homeStart(h))).toBe("play:night-flight");
+  });
+
+  it("without one, the first icon as before", () => {
+    const h = home([]);
+    expect(homeStart(h)).toBeNull();
+    expect(recoverFocus(homeFocusRows(h), null, null, homeStart(h))).toBe(h.icons[0]?.itemId);
+  });
+
+  it("a focus already on screen, or a page's game to return to, still wins", () => {
+    const h = home([played("night-flight", NOW - DAY)]);
+    const rows = homeFocusRows(h);
+    expect(recoverFocus(rows, "game:bake-shop", null, homeStart(h))).toBeNull();
+    expect(recoverFocus(rows, "action:new", "bake-shop", homeStart(h))).toBe("game:bake-shop");
   });
 });

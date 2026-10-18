@@ -1,4 +1,5 @@
 import "../services/log-guard-install";
+import "../services/e2e-clock-install";
 import { useFonts } from "expo-font";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
