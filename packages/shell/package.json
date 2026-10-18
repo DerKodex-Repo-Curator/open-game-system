@@ -32,12 +32,13 @@
     "!src/**/__tests__"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsc -p plugin/tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && pnpm run build:plugin",
+    "build:plugin": "tsc -p plugin/tsconfig.build.json",
     "clean": "rm -rf build plugin/build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p plugin/tsconfig.json",
     "lint": "biome check .",
-    "test": "vitest run --passWithNoTests && jest --ci --passWithNoTests",
-    "test:plugin": "vitest run --passWithNoTests",
+    "test": "pnpm run build:plugin && vitest run && jest --ci --passWithNoTests",
+    "test:plugin": "pnpm run build:plugin && vitest run",
     "test:runtime": "jest --ci --passWithNoTests"
   },
   "dependencies": {
