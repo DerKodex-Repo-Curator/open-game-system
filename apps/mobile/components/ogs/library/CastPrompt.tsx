@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,7 +18,7 @@ import { userMessage } from "../../../services/user-message";
 import { Button } from "../Button";
 import { BrowserTv } from "../remote/BrowserTv";
 import { lastStop } from "../remote/last-stop";
-import { NO_TV_CAUSES } from "../remote/no-tv";
+import { noTvCauses } from "../remote/no-tv";
 import { colors, fonts, TARGET } from "../theme";
 import { type CastPromptRequest, castPromptView, confirmCast } from "./play-action";
 
@@ -148,7 +149,7 @@ function CastPromptSheet({ request }: { request: CastPromptRequest }) {
               <Text style={styles.lead}>No Chromecast? Any TV with a browser works.</Text>
               <BrowserTv onPaired={setPicked} />
               <Text style={styles.lead}>Have a Chromecast? Usually it's one of these:</Text>
-              {NO_TV_CAUSES.map(([title, body]) => (
+              {noTvCauses(Platform.OS).map(([title, body]) => (
                 <View key={title} style={styles.cause}>
                   <Text style={styles.causeTitle}>{title}</Text>
                   <Text style={styles.causeBody}>{body}</Text>

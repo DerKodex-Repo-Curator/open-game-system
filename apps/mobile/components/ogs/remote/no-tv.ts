@@ -4,3 +4,8 @@ export const NO_TV_CAUSES: ReadonlyArray<readonly [title: string, body: string]>
   ["Different Wi-Fi", "Your phone and the TV need to be on the same Wi-Fi."],
   ["The TV is asleep", "Turn the TV on and switch to the Chromecast's input."],
 ];
+
+/** The causes for this phone: Android has no Local Network switch (it's iOS's). */
+export function noTvCauses(os: string): typeof NO_TV_CAUSES {
+  return os === "ios" ? NO_TV_CAUSES : NO_TV_CAUSES.slice(1);
+}

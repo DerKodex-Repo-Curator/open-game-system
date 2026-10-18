@@ -7,7 +7,15 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Dimensions, PanResponder, StyleSheet, Text, View } from "react-native";
+import {
+  Animated,
+  BackHandler,
+  Dimensions,
+  PanResponder,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { GameErrorScreen } from "../components/GameErrorScreen";
 import { GameArt } from "../components/ogs/GameArt";
 import { colors, fonts } from "../components/ogs/theme";
@@ -20,6 +28,7 @@ import type { NotificationsStores } from "../services/game-notifications";
 import type { ProfileStores } from "../services/game-profile";
 import { latestGameUrl, reportSittingFor, sittingId } from "../services/game-rejoin";
 import { consumePendingGameUrl, subscribeToGameUrl } from "../services/game-url-store";
+import { subscribeHardwareBack } from "../services/hardware-back";
 import { createOgsBridgeStore, type OgsStores } from "../services/ogs-bridge";
 import {
   appState,
@@ -171,6 +180,9 @@ export default function GameScreen() {
     if (!appId) return;
     return gamePresence.onClose(appId, () => leaveRef.current(true));
   }, [appId]);
+
+  // Android's back button leaves like the swipe does (home on the TV), not a bare pop.
+  useEffect(() => subscribeHardwareBack(BackHandler, () => leaveRef.current()), []);
 
   // --- Swipe-back gesture (a cancelled swipe never calls onBack) ---
   const swipe = swipeBackHandlers({

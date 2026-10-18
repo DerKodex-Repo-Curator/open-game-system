@@ -46,6 +46,11 @@
               "scheme": "https",
               "host": "opengame.org",
               "pathPrefix": "/play/"
+            },
+            {
+              "scheme": "https",
+              "host": "opengame.org",
+              "pathPrefix": "/join/"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
@@ -84,7 +89,8 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "./plugins/with-detox-android"
     ],
     "experiments": {
       "typedRoutes": true

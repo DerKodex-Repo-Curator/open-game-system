@@ -57,10 +57,23 @@
         "EXPO_PUBLIC_OGS_API": "https://opengame-api.jonathanrmumm.workers.dev",
         "EXPO_PUBLIC_OGS_TV": "https://ogs-tv.pages.dev"
       }
+    },
+    "play": {
+      "extends": "beta",
+      "distribution": "store",
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   },
   "submit": {
     "production": {},
-    "beta": {}
+    "beta": {},
+    "play": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    }
   }
 }

@@ -23,6 +23,20 @@ module.exports = {
       build:
         "xcodebuild -workspace ios/opengameapp.xcworkspace -scheme opengameapp -configuration Release -sdk iphonesimulator -derivedDataPath ios/build -quiet",
     },
+    // Android: a release APK and its test APK, built after `DETOX_ANDROID=1 expo prebuild -p android`
+    // (plugins/with-detox-android.js adds the Detox instrumentation). DETOX_ANDROID_DIR: a build
+    // elsewhere (each agent its own output).
+    "android.release": {
+      type: "android.apk",
+      binaryPath:
+        process.env.DETOX_ANDROID_APK ??
+        "android/app/build/outputs/apk/release/app-release.apk",
+      testBinaryPath:
+        process.env.DETOX_ANDROID_TEST_APK ??
+        "android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk",
+      build:
+        "cd android && ./gradlew assembleRelease assembleAndroidTest -DtestBuildType=release && cd ..",
+    },
     "ios.debug": {
       type: "ios.app",
       binaryPath: "ios/build/Build/Products/Debug-iphonesimulator/opengameapp.app",
@@ -31,6 +45,11 @@ module.exports = {
     },
   },
   devices: {
+    emulator: {
+      type: "android.emulator",
+      // DETOX_AVD_NAME: an emulator of your own.
+      device: { avdName: process.env.DETOX_AVD_NAME ?? "ogs_pixel_35" },
+    },
     simulator: {
       type: "ios.simulator",
       // DETOX_SIM_NAME: run on a named simulator of your own (never someone else's).
@@ -40,6 +59,10 @@ module.exports = {
     },
   },
   configurations: {
+    "android.emu.release": {
+      device: "emulator",
+      app: "android.release",
+    },
     "ios.sim.release": {
       device: "simulator",
       app: "ios.release",
