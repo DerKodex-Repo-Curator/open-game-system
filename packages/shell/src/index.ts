@@ -50,4 +50,5 @@ export * from "./shell-links";
 export * from "./shell-runtime";
 export * from "./sign-in-providers";
 export * from "./single-cast";
+export * from "./user-agent";
 export * from "./webview-status";

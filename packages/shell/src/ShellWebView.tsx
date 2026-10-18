@@ -11,6 +11,8 @@ export interface ShellWebViewProps<TStores extends BridgeStores> {
   attempt: number;
   onStatus: (event: WebViewStatusEvent) => void;
   onNavigate?: (url: string) => void;
+  /** Appended to the WebView's user agent (OgsShell/<appId>: see shellUserAgentName). */
+  userAgentName?: string;
 }
 
 /** The game's page: app-bridge's BridgedWebView with the settings games rely on. */
@@ -20,6 +22,7 @@ export function ShellWebView<TStores extends BridgeStores>({
   attempt,
   onStatus,
   onNavigate,
+  userAgentName,
 }: ShellWebViewProps<TStores>) {
   return (
     <View style={styles.container} testID="gameWebView">
@@ -27,6 +30,7 @@ export function ShellWebView<TStores extends BridgeStores>({
         key={attempt}
         bridge={bridge}
         source={{ uri }}
+        applicationNameForUserAgent={userAgentName}
         style={styles.webview}
         javaScriptEnabled={true}
         domStorageEnabled={true}

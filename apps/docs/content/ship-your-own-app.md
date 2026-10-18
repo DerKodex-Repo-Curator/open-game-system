@@ -100,6 +100,10 @@ On the game side, copy what you need from `examples/`:
   `@open-game-system/cast-kit-react`, styled like your game; `useCastViewUrl(url)` names the TV page
   for a room. Show it **only in your own app**: inside the OGS app, OGS casts once for every game
   ([Rules, no cast button](rules.md#1-no-cast-button)).
+- **Your own app or not** (`examples/web/in-own-app.ts`): the app's WebView adds
+  `OgsShell/<appId>` to the user agent, so `navigator.userAgent.includes("OgsShell/rocket-crew")` is
+  true only in your own app: not in a plain browser, and not inside the OGS app (whose WebView also
+  has the app bridge, so "has a bridge" alone can't tell them apart).
 - **Profile** (`examples/web/player-badge.tsx`): `useOgsProfile()`. Guests and signed-in players look
   the same to your page; key saves on `profile.id`. `null` in a plain browser: ask for a name.
 - **Push link** (`examples/server/send-push-link.ts`): `createOgsNotifier` with a `url` on your

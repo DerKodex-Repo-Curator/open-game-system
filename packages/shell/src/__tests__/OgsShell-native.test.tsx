@@ -111,7 +111,7 @@ beforeEach(() => {
 });
 afterEach(() => jest.restoreAllMocks());
 
-describe("<OgsShell /> push taps", () => {
+describe("<OgsShell /> push taps and the in-app signal", () => {
   it("opens the page of the push that launched the app", async () => {
     const taps = fakeTaps(tap("https://play.rocketcrew.tv/room/AB", "cold"));
     const tree = await render(taps);
@@ -126,6 +126,14 @@ describe("<OgsShell /> push taps", () => {
     expect(uri(tree.root)).toBe("https://play.rocketcrew.tv/room/CD");
     act(() => taps.tap(tap("https://elsewhere.example/x", "n2")));
     expect(uri(tree.root)).toBe("https://play.rocketcrew.tv/room/CD");
+  });
+
+  it("tells the page it is in the game's own app: OgsShell/<appId> in the user agent", async () => {
+    const tree = await render(fakeTaps(null));
+    const [wv] = tree.root.findAll(
+      (n) => n.props.testID === "bridged" && typeof n.type !== "string",
+    );
+    expect(wv?.props.applicationNameForUserAgent).toBe("OgsShell/rocket-crew");
   });
 
   it("stops listening for push taps when unmounted", async () => {

@@ -10,6 +10,7 @@ import { ShellWebView } from "./ShellWebView";
 import { SignInSheet } from "./SignInSheet";
 import { createShellRuntime, type ShellRuntime, type ShellRuntimeDeps } from "./shell-runtime";
 import type { AppleAuthModule } from "./sign-in-providers";
+import { shellUserAgentName } from "./user-agent";
 import {
   type AppStateLike,
   INITIAL_WEBVIEW_STATUS,
@@ -100,6 +101,7 @@ export function OgsShell(props: OgsShellProps) {
           uri={uri}
           attempt={status.attempt}
           onStatus={dispatch}
+          userAgentName={shellUserAgentName(config.appId)}
         />
       )}
       {status.phase === "loading" ? (

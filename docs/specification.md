@@ -142,6 +142,11 @@ on `false`, and only what was playing before. Pattern: `createAudioPause` in
   (`AccountBridgeEventSchema`; state `{ login: "none" | "guest" | "apple" | "google", signingIn }`,
   `AccountBridgeStateSchema`) and the app shows its native sheet; the signed-in player then arrives
   through the `profile` store.
+- **Own app or the OGS app (OGS shell):** a single-game app's WebView adds `OgsShell/<appId>` to the
+  user agent (react-native-webview `applicationNameForUserAgent`; `shellUserAgentName` in
+  `packages/shell/src/user-agent.ts`). The page checks `navigator.userAgent.includes("OgsShell/<appId>")`:
+  true only in its own app, where the cast button is the game's (the one exception to "no cast button").
+  The OGS app adds nothing, and `isOGSCastAvailable()` is true in both apps (it only sees the bridge).
 
 ## 4. Server: verify the token
 

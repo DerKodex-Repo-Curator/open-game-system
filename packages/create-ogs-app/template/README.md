@@ -64,7 +64,8 @@ manifest's `tvUrl` full screen with nothing around it, and your TV page gets the
 `useCastViewUrl(url)`.
 
 Inside the OGS app the same page shows no cast button (OGS casts once for every game): the
-example checks `inOwnApp()`.
+example checks `inOwnApp()` ([`examples/web/in-own-app.ts`](examples/web/in-own-app.ts)). This app's
+WebView adds `OgsShell/__OGS_APP_ID__` to the user agent; a plain browser and the OGS app don't.
 
 ## Profiles and sign-in
 
