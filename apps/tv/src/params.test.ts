@@ -123,3 +123,24 @@ describe("view timeout knob", () => {
     expect(viewTimeoutMs("?frameTimeout=1500")).toBe(20_000);
   });
 });
+
+describe("chrome=none: a white-label app casts its game with no launcher around it", () => {
+  it("adds chrome { appId } to a live launcher URL", () => {
+    expect(parseParams(`?api=https://api.opengame.org&token=${LAUNCHER}&chrome=none&app=rocket-crew`)).toEqual({
+      ok: true,
+      params: { mode: "live", api: "https://api.opengame.org", token: LAUNCHER, sessionId: "s1", chrome: { appId: "rocket-crew" } },
+    });
+  });
+  it("works in fake mode (design and tests)", () => {
+    expect(parseParams("?fake=1&chrome=none&app=rocket-crew")).toEqual({ ok: true, params: { mode: "fake", hold: false, chrome: { appId: "rocket-crew" } } });
+  });
+  it("needs a valid app id", () => {
+    expect(parseParams(`?api=https://api.opengame.org&token=${LAUNCHER}&chrome=none`).ok).toBe(false);
+    expect(parseParams(`?api=https://api.opengame.org&token=${LAUNCHER}&chrome=none&app=Not%20An%20Id`).ok).toBe(false);
+  });
+  it("any other chrome value leaves the launcher as it is", () => {
+    expect(parseParams(`?api=https://api.opengame.org&token=${LAUNCHER}&chrome=full&app=rocket-crew`)).toEqual(
+      parseParams(`?api=https://api.opengame.org&token=${LAUNCHER}`),
+    );
+  });
+});

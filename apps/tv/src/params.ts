@@ -11,9 +11,24 @@ const LiveSchema = z.object({
   token: z.string().min(1),
 });
 
+/**
+ * `chrome=none&app=<appId>`: a white-label app's cast (docs/acceptance/2026-10-18-cast-chrome-none.feature):
+ * the game's TV page full screen, with no launcher around it. Present only then.
+ */
+export type Chrome = { chrome?: { appId: string } };
+
 export type LauncherParams =
-  | { mode: "fake"; hold: boolean; fresh?: true }
-  | { mode: "live"; api: string; token: string; sessionId: string };
+  | ({ mode: "fake"; hold: boolean; fresh?: true } & Chrome)
+  | ({ mode: "live"; api: string; token: string; sessionId: string } & Chrome);
+
+const APP_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+/** The chrome part of the URL: nothing, `{ chrome }`, or an error for chrome=none without a valid app. */
+function chromeOf(q: URLSearchParams): Chrome | { error: string } {
+  if (q.get("chrome") !== "none") return {};
+  const appId = q.get("app") ?? "";
+  return APP_ID.test(appId) ? { chrome: { appId } } : { error: "app: required with chrome=none" };
+}
 
 /** A positive millisecond knob from the URL, else its default. */
 function msKnob(search: string, name: string, fallback: number): number {
@@ -34,11 +49,13 @@ export type ParamsResult = { ok: true; params: LauncherParams } | { ok: false; e
 
 export function parseParams(search: string): ParamsResult {
   const q = new URLSearchParams(search);
+  const chrome = chromeOf(q);
+  if ("error" in chrome) return { ok: false, error: chrome.error };
   if (q.get("fake") === "1") {
     const hold = q.get("hold") === "1";
     // `world=fresh`: a couch before anyone has played anything (design and tests).
     const params: LauncherParams =
-      q.get("world") === "fresh" ? { mode: "fake", hold, fresh: true } : { mode: "fake", hold };
+      q.get("world") === "fresh" ? { mode: "fake", hold, fresh: true, ...chrome } : { mode: "fake", hold, ...chrome };
     return { ok: true, params };
   }
   const r = LiveSchema.safeParse({
@@ -50,7 +67,7 @@ export function parseParams(search: string): ParamsResult {
     return { ok: false, error: r.error.issues.map((i) => i.path.join(".")).join(", ") };
   const sessionId = launcherSessionOf(r.data.token);
   if (!sessionId) return { ok: false, error: "token: not a launcher token" };
-  return { ok: true, params: { mode: "live", ...r.data, sessionId } };
+  return { ok: true, params: { mode: "live", ...r.data, sessionId, ...chrome } };
 }
 
 export function wsUrl(api: string, token: string): string {

@@ -28,11 +28,13 @@ import { useFrames } from "./useFrames";
 import { useNow } from "./useNow";
 import { useTheme } from "./useTheme";
 import { useViewTimeout } from "./useViewTimeout";
+import { Chromeless } from "./Chromeless";
 
 export function App({ boot }: { boot: Boot }) {
   return (
     <Stage>
-      <Suspense fallback={<Assembling />}>
+      {/* chrome=none shows nothing of OGS, not even while it loads. */}
+      <Suspense fallback={boot.chrome ? <div style={{ position: "fixed", inset: 0, background: "#000" }} /> : <Assembling />}>
         <Launcher boot={boot} />
       </Suspense>
     </Stage>
@@ -42,6 +44,17 @@ export function App({ boot }: { boot: Boot }) {
 function Launcher({ boot }: { boot: Boot }) {
   const data = use(boot.data);
   const snap = useSyncExternalStore(boot.client.subscribe, boot.client.getSnapshot);
+  if (boot.chrome)
+    return (
+      <Chromeless
+        appId={boot.chrome.appId}
+        client={boot.client}
+        state={snap.state}
+        manifest={data.games.find((g) => g.appId === boot.chrome?.appId) ?? null}
+        frameTimeoutMs={boot.frameTimeoutMs}
+        grants={boot.grants}
+      />
+    );
   if (!snap.state) return <Connecting data={data} />;
   return (
     <Living
