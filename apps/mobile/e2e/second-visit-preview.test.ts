@@ -88,7 +88,7 @@ async function captainRound(suffix: string) {
   const line = await inGame(".line", "(el) => el.textContent");
   await step(`captain-line${suffix}`, { line: str(line, "captain line") });
   await wait(`round-done${suffix}`);
-  await device.enableSynchronization();
+  // Synchronization stays off: the game is still running (the app is closed next, or the walk ends).
 }
 
 describe("The second visit (preview)", () => {
@@ -187,8 +187,13 @@ describe("The second visit (preview)", () => {
       await step("day2-cast", { target: targetText, openedMs: opened });
 
       // Grandma rejoins in one tap; then OK on the TV's Play again.
-      await wait("day2-guest-on-couch");
+      const { down } = await wait("day2-guest-on-couch");
       const beforeOk = Date.now();
+      // The ring is on yesterday's game's card, or one press up from it (a sitting card).
+      if (down === true) await tap("remoteDown");
+      // OK starts the game on the TV and this phone follows into it: a running game never lets the
+      // app go idle, so Detox's synchronization is off from here (captainRound polls).
+      await device.disableSynchronization();
       await tap("remoteOk");
       await waitFor(element(by.id("gameScreen")))
         .toExist()

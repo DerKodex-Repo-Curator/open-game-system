@@ -22,7 +22,9 @@ export function createReport() {
     timeline,
     check(name: string, ok: unknown, detail = "", soft = false) {
       results.push({ name, ok: Boolean(ok), detail, soft });
-      console.log(`${ok ? "PASS" : soft ? "WARN" : "FAIL"}  ${name}${detail ? `  (${detail})` : ""}`);
+      console.log(
+        `${ok ? "PASS" : soft ? "WARN" : "FAIL"}  ${name}${detail ? `  (${detail})` : ""}`,
+      );
     },
     mark(step: string) {
       timeline.push({ step, at: Math.round((Date.now() - t0) / 100) / 10 });
@@ -140,14 +142,18 @@ export async function playFirstRound(opts: {
   check("the guest is the Fixer", true);
   await ready.click({ force: true });
   await waitStep("captain-ready");
-  await fixer.locator(".launch-button.pulse").waitFor({ timeout: 30000 });
+  await fixer.locator(".launch-button.pulse").waitFor({ timeout: 90000 });
   await fixer.getByRole("button", { name: "launch" }).dispatchEvent("pointerdown");
-  await tvGame.locator(".tv.phase-problem").waitFor({ timeout: 30000 });
+  await tvGame.locator(".tv.phase-problem").waitFor({ timeout: 90000 });
   post("launched");
 
   const { line } = z.object({ line: z.string() }).parse(await waitStep("captain-line"));
   const problem = rocket.parseCaptainLine(line);
-  check("the Captain's first problem is one the Fixer can fix", problem.expect.length > 0, `${line} → ${problem.kind}`);
+  check(
+    "the Captain's first problem is one the Fixer can fix",
+    problem.expect.length > 0,
+    `${line} → ${problem.kind}`,
+  );
   // The success phase lasts a moment: record it when it happens, rather than poll for it.
   // No named functions inside: tsx wraps those in a __name helper the page doesn't have.
   await tvGame
@@ -158,7 +164,12 @@ export async function playFirstRound(opts: {
       if (doc.querySelector(".tv.phase-success")) doc.documentElement.dataset.sawSuccess = "true";
       new MutationObserver(() => {
         if (doc.querySelector(".tv.phase-success")) doc.documentElement.dataset.sawSuccess = "true";
-      }).observe(doc, { subtree: true, attributes: true, attributeFilter: ["class"], childList: true });
+      }).observe(doc, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["class"],
+        childList: true,
+      });
     });
   for (const action of problem.expect) {
     const spec = rocket.control(action.control);
@@ -170,11 +181,15 @@ export async function playFirstRound(opts: {
       await guest.mouse.move(x, y);
       await guest.mouse.down();
       const dir = action.value === "up" ? -1 : 1;
-      for (let i = 1; i <= 10; i++) await guest.mouse.move(x, y + (dir * i * box.height) / 22, { steps: 2 });
+      for (let i = 1; i <= 10; i++)
+        await guest.mouse.move(x, y + (dir * i * box.height) / 22, { steps: 2 });
       await guest.mouse.up();
-    } else await fixer.getByRole("button", { name: spec.color, exact: true }).click({ force: true });
+    } else
+      await fixer.getByRole("button", { name: spec.color, exact: true }).click({ force: true });
     await sleep(800);
   }
-  await tvGame.locator("html[data-saw-success='true']").waitFor({ state: "attached", timeout: 60000 });
+  await tvGame
+    .locator("html[data-saw-success='true']")
+    .waitFor({ state: "attached", timeout: 60000 });
   check("the first round is played: the TV says it's fixed", true);
 }

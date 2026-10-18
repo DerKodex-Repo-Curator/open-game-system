@@ -69,16 +69,26 @@ async function openTv(ctx: BrowserContext): Promise<{ tv: Page; screenId: string
   await tv.goto(TV_PAGE);
   await tv.getByTestId("screen-fullscreen").click();
   // Its code, or (a cast left on overnight, with the API's clock real) yesterday's launcher.
-  await tv.getByTestId("screen-code").or(tv.getByTestId("home")).first().waitFor({ timeout: 30000 });
+  await tv
+    .getByTestId("screen-code")
+    .or(tv.getByTestId("home"))
+    .first()
+    .waitFor({ timeout: 30000 });
   const kept = await tv.evaluate(() => localStorage.getItem("ogs.screen"));
-  const screenId = z.object({ screenId: z.string() }).safeParse(JSON.parse(kept ?? "null")).data?.screenId ?? "";
+  const screenId =
+    z.object({ screenId: z.string() }).safeParse(JSON.parse(kept ?? "null")).data?.screenId ?? "";
   return { tv, screenId };
 }
-const codeOf = async (tv: Page) => (await tv.getByTestId("screen-code").textContent({ timeout: 30000 }))?.trim() ?? "";
+const codeOf = async (tv: Page) =>
+  (await tv.getByTestId("screen-code").textContent({ timeout: 30000 }))?.trim() ?? "";
 
 /** Grandma scans the TV's QR with her phone's camera: the join page in her browser. */
 async function openJoin(ctx: BrowserContext, tv: Page, scanned: string): Promise<Page> {
-  check("the TV's QR is a join link", /^https:\/\/opengame\.org\/join\/[A-Z2-9]{6}$/.test(scanned), scanned);
+  check(
+    "the TV's QR is a join link",
+    /^https:\/\/opengame\.org\/join\/[A-Z2-9]{6}$/.test(scanned),
+    scanned,
+  );
   const guest = await ctx.newPage();
   await guest.goto(`${SITE}${new URL(scanned).pathname}`);
   await guest.getByTestId("join-browser").click();
@@ -94,10 +104,19 @@ const open: Record<string, Page> = {};
 async function main() {
   const tvServer = serve("apps/tv", TV_PORT);
   const siteServer = serve("apps/web", SITE_PORT);
-  const browser: Browser = await chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required"] });
+  const browser: Browser = await chromium.launch({
+    args: ["--autoplay-policy=no-user-gesture-required"],
+  });
   const phone = spawn(
     "pnpm",
-    ["exec", "detox", "test", "--configuration", process.env.DETOX_CONFIGURATION ?? "ios.sim.release", "e2e/second-visit-preview.test.ts"],
+    [
+      "exec",
+      "detox",
+      "test",
+      "--configuration",
+      process.env.DETOX_CONFIGURATION ?? "ios.sim.release",
+      "e2e/second-visit-preview.test.ts",
+    ],
     {
       cwd: resolve("apps/mobile"),
       env: { ...process.env, FUNNEL_COORD: `http://localhost:${PORT}` },
@@ -105,7 +124,12 @@ async function main() {
     },
   );
   const phoneDone = new Promise<number>((r) => phone.on("exit", (c) => r(c ?? 1)));
-  try {
+  // The phone's half failed: stop waiting for its steps (they would hold the step port for 20 min).
+  const phoneFailed = phoneDone.then((c): Promise<never> => {
+    if (c !== 0) throw new Error(`the phone's half failed (exit ${c})`);
+    return new Promise<never>(() => {});
+  });
+  async function walk() {
     await until(TV_PAGE);
     await until(`${SITE}/`);
     mark("start");
@@ -131,7 +155,14 @@ async function main() {
     check("day 1: Grandma is on the couch", await onCouch(day1.tv, "Grandma"));
     steps.post("guest-on-couch");
     await steps.waitStep("host-in-game");
-    await playFirstRound({ tv: day1.tv, guest: guest1, guestName: "Grandma", rocket, ...steps, check });
+    await playFirstRound({
+      tv: day1.tv,
+      guest: guest1,
+      guestName: "Grandma",
+      rocket,
+      ...steps,
+      check,
+    });
     await day1.tv.screenshot({ path: join(EVIDENCE, "01-day1-round.png") });
     steps.post("round-done");
 
@@ -145,15 +176,28 @@ async function main() {
 
     // --- Day 2: a day later ------------------------------------------------------------------------
     const tomorrow = Date.now() + DAY;
-    const tvCtx2 = await browser.newContext({ viewport: { width: 1920, height: 1080 }, storageState: tvKept });
+    const tvCtx2 = await browser.newContext({
+      viewport: { width: 1920, height: 1080 },
+      storageState: tvKept,
+    });
     await tvCtx2.clock.setSystemTime(tomorrow);
     const day2 = await openTv(tvCtx2);
     open.tv = day2.tv;
-    check("day 2: the TV page is the same screen as yesterday", day2.screenId !== "" && day2.screenId === day1.screenId, day2.screenId);
+    check(
+      "day 2: the TV page is the same screen as yesterday",
+      day2.screenId !== "" && day2.screenId === day1.screenId,
+      day2.screenId,
+    );
     steps.post("day2-tv-ready");
 
-    const cast = z.object({ target: z.string(), openedMs: z.number() }).parse(await steps.waitStep("day2-cast"));
-    check("day 2: the phone's Cast already names the TV (no code typed)", cast.target === "Browser TV", cast.target);
+    const cast = z
+      .object({ target: z.string(), openedMs: z.number() })
+      .parse(await steps.waitStep("day2-cast"));
+    check(
+      "day 2: the phone's Cast already names the TV (no code typed)",
+      cast.target === "Browser TV",
+      cast.target,
+    );
     // The TV shows tonight's couch (its QR, a new code), not yesterday's.
     let couch2 = "";
     for (let i = 0; i < 60; i++) {
@@ -161,35 +205,74 @@ async function main() {
       if (couch2 && couch2 !== couch1) break;
       await sleep(1000);
     }
-    check("day 2: the cast is a new couch (a new join code)", couch2 !== "" && couch2 !== couch1, `${couch1} → ${couch2}`);
-    const again = day2.tv.locator('[data-card="again"][data-app="rocket-crew"]');
-    await again.waitFor({ timeout: 30000 });
-    const firstCard = await day2.tv.locator("[data-row=activity] [data-card]").first().getAttribute("data-card");
-    check("day 2: the TV's first card is Play again for Rocket Crew", firstCard === "again");
-    check("day 2: the ring starts on Play again", (await again.getAttribute("data-focused")) !== null);
-    const firstIcon = await day2.tv.locator("[data-row=games] [data-item]").first().getAttribute("data-item");
-    check("day 2: Rocket Crew is the first game in the TV's row", firstIcon === "game:rocket-crew", firstIcon ?? "");
+    check(
+      "day 2: the cast is a new couch (a new join code)",
+      couch2 !== "" && couch2 !== couch1,
+      `${couch1} → ${couch2}`,
+    );
+    // Yesterday's game is the first card: Play again (its sitting over), or its sitting to continue
+    // (still within the game's TTL). The ring starts on Play again; on a sitting, Dana presses Down.
+    const firstCard = day2.tv.locator("[data-row=activity] [data-card]").first();
+    await firstCard.waitFor({ timeout: 30000 });
+    const kind = (await firstCard.getAttribute("data-card")) ?? "";
+    check(
+      "day 2: the TV's first card is yesterday's game (Play again, or its sitting)",
+      (kind === "again" || kind === "sitting") &&
+        (await firstCard.getAttribute("data-app")) === "rocket-crew",
+      kind,
+    );
+    const ringOnCard = (await firstCard.getAttribute("data-focused")) !== null;
+    if (kind === "again") check("day 2: the ring starts on Play again", ringOnCard);
+    const firstIcon = await day2.tv
+      .locator("[data-row=games] [data-item]")
+      .first()
+      .getAttribute("data-item");
+    check(
+      "day 2: Rocket Crew is the first game in the TV's row",
+      firstIcon === "game:rocket-crew",
+      firstIcon ?? "",
+    );
     await day2.tv.screenshot({ path: join(EVIDENCE, "02-day2-tv-home.png") });
 
-    const guestCtx2 = await browser.newContext({ ...devices["iPhone 15"], storageState: guestKept });
+    const guestCtx2 = await browser.newContext({
+      ...devices["iPhone 15"],
+      storageState: guestKept,
+    });
     await guestCtx2.clock.setSystemTime(tomorrow);
     const guest2 = await openJoin(guestCtx2, day2.tv, couch2);
     open.guest = guest2;
     const joinAgain = guest2.getByTestId("guest-join-again");
     await joinAgain.waitFor({ timeout: 20000 });
-    check("day 2: the join page offers Join as Grandma", (await joinAgain.textContent())?.trim() === "Join as Grandma");
+    check(
+      "day 2: the join page offers Join as Grandma",
+      (await joinAgain.textContent())?.trim() === "Join as Grandma",
+    );
     await guest2.screenshot({ path: join(EVIDENCE, "03-day2-join-again.png") });
     await joinAgain.click();
     await guest2.getByTestId("guest-remote").waitFor({ timeout: 30000 });
     check("day 2: one tap puts Grandma on the couch", await onCouch(day2.tv, "Grandma"));
-    steps.post("day2-guest-on-couch");
+    steps.post("day2-guest-on-couch", { down: !ringOnCard });
 
-    const inGame = z.object({ castMs: z.number(), okToGameMs: z.number() }).parse(await steps.waitStep("day2-host-in-game"));
-    await playFirstRound({ tv: day2.tv, guest: guest2, guestName: "Grandma", rocket, ...steps, check, suffix: "-2" });
+    const inGame = z
+      .object({ castMs: z.number(), okToGameMs: z.number() })
+      .parse(await steps.waitStep("day2-host-in-game"));
+    await playFirstRound({
+      tv: day2.tv,
+      guest: guest2,
+      guestName: "Grandma",
+      rocket,
+      ...steps,
+      check,
+      suffix: "-2",
+    });
     await day2.tv.screenshot({ path: join(EVIDENCE, "04-day2-round.png") });
     steps.post("round-done-2");
     const { taps } = z.object({ taps: z.number() }).parse(await steps.waitStep("day2-taps"));
-    check("day 2: Dana's taps, app open to the first round", taps <= 4, `${taps} taps: TV, Cast, OK, Ready`);
+    check(
+      "day 2: Dana's taps, app open to the first round",
+      taps <= (ringOnCard ? 4 : 5),
+      `${taps} taps: TV, Cast, ${ringOnCard ? "" : "Down, "}OK, Ready`,
+    );
     const danaMs = inGame.castMs + inGame.okToGameMs;
     check(
       "day 2: Dana's own time, app open to the game on the TV, under 10 s",
@@ -198,11 +281,19 @@ async function main() {
       true,
     );
     check("the phone finished its half", (await phoneDone) === 0);
+  }
+  try {
+    await Promise.race([walk(), phoneFailed]);
   } catch (e) {
     check("the walk finished", false, String(e));
     for (const [name, page] of Object.entries(open)) {
       await page.screenshot({ path: join(EVIDENCE, `fail-${name}.png`) }).catch(() => undefined);
-      console.log(`${name} frames: ${page.frames().map((f) => f.url()).join(" | ")}`);
+      console.log(
+        `${name} frames: ${page
+          .frames()
+          .map((f) => f.url())
+          .join(" | ")}`,
+      );
     }
     phone.kill("SIGTERM");
   } finally {
@@ -210,7 +301,10 @@ async function main() {
     steps.close();
     tvServer.kill();
     siteServer.kill();
-    writeFileSync(join(EVIDENCE, "results.json"), `${JSON.stringify({ timeline: report.timeline, results: report.results }, null, 2)}\n`);
+    writeFileSync(
+      join(EVIDENCE, "results.json"),
+      `${JSON.stringify({ timeline: report.timeline, results: report.results }, null, 2)}\n`,
+    );
   }
   const failed = report.results.filter((r) => !r.ok && !r.soft);
   console.log(failed.length ? `${failed.length} failed` : "all passed");
