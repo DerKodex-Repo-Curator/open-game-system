@@ -6,7 +6,7 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
   entry: ["src/index.ts", "src/react.tsx", "src/server.ts"],
   format: ["esm", "cjs"],
-  dts: { resolve: [/^@open-game-system\//] },
+  dts: { resolver: "tsc" },
   clean: true,
   // app-bridge-web has main (cjs) + module (esm) and no exports map: prefer its ESM build, or the
   // inlined CJS pulls `node:module` (createRequire) into the browser bundle.

@@ -867,13 +867,16 @@ importers:
 
   packages/cast-kit-core:
     dependencies:
-      '@open-game-system/app-bridge-web':
-        specifier: workspace:^
-        version: link:../app-bridge-web
+      fast-json-patch:
+        specifier: ^3.1.1
+        version: 3.1.1
       zod:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
+      '@open-game-system/app-bridge-web':
+        specifier: workspace:^
+        version: link:../app-bridge-web
       jsdom:
         specifier: ^28.1.0
         version: 28.1.0
@@ -886,13 +889,22 @@ importers:
 
   packages/cast-kit-react:
     dependencies:
+      fast-json-patch:
+        specifier: ^3.1.1
+        version: 3.1.1
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+    devDependencies:
       '@open-game-system/app-bridge-react':
         specifier: workspace:^
         version: link:../app-bridge-react
+      '@open-game-system/app-bridge-web':
+        specifier: workspace:^
+        version: link:../app-bridge-web
       '@open-game-system/cast-kit-core':
         specifier: workspace:^
         version: link:../cast-kit-core
-    devDependencies:
       '@testing-library/jest-dom':
         specifier: ^6.9.1
         version: 6.9.1

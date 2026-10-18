@@ -263,3 +263,9 @@ Persistent project knowledge. Review at the start of each task.
 - **In headless Chromium, read a worker's notifications inside the worker.** The page's `(await navigator.serviceWorker.ready).getNotifications()` intermittently came back empty while the worker's own `registration.getNotifications()` listed them; `context.serviceWorkers()[0].evaluate(...)` is reliable.
 - **No phone had ever registered for pushes (found 2026-10-09).** `services/notifications.ts` posted the Expo token to a hard-coded `https://api.opengame.org`, which has no DNS record, and under its own random `ogs_device_id`, while the API finds a profile's phones through `profile_devices` (the profile's device id). Registration now uses `config.apiBase` and the profile's device id, once the profile exists (`services/push-registration.ts`). Check `SELECT … FROM devices` in production before trusting any push path.
 
+
+## Kits outside the monorepo (2026-10-18)
+
+- **A packed kit must not depend on another `@open-game-system/*` package.** cast-kit-core's tarball listed `@open-game-system/app-bridge-web@^0.1.0` (the workspace version; npm only has `0.20250411.3`), and cast-kit-react listed `cast-kit-core@^0.2.0` (npm: `0.1.1`), so neither installed outside the monorepo without pnpm overrides. Both now bundle their `@open-game-system/*` deps like profile-kit (`deps.alwaysBundle`), keeping only zod, fast-json-patch and react outside.
+- **`dts: { resolve: [...] }` is silently ignored by tsdown 0.21.** profile-kit's `.d.mts` still imported `@open-game-system/ogs-protocol`, so an outside game's `GameToken`, `OgsProfile` and friends were `any`. `dts: { resolver: "tsc" }` inlines them.
+- **`pnpm --filter <kit> build` without turbo packs a broken tarball** when `ogs-protocol` has no `dist/` yet (tsdown only warns `UNRESOLVED_IMPORT` and leaves the import in). Build with `pnpm turbo run build --filter=<kit>`; profile-kit's `dist.test.ts` catches the broken bundle.
