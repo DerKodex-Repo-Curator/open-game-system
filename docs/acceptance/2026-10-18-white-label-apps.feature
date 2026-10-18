@@ -22,7 +22,7 @@ Feature: A game ships as its own app, and OGS hosts its push and links
 
   Scenario: Only the game's key can register its app
     When someone registers bundle id "tv.rocketcrew.app" for "rocket-crew" with Codebreakers' API key
-    Then the API answers 403 "forbidden"
+    Then the API answers 403 "wrong_game"
     And without any key it answers 401
 
   Scenario: A bundle id belongs to one game

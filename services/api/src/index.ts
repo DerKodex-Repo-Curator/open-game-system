@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { anyToken } from "./middleware/profile-auth";
 import { onError, wideEvent } from "./middleware/wide-event";
 import appRelease from "./routes/app-release";
+import apps from "./routes/apps";
 import auth from "./routes/auth";
 import catalogue from "./routes/catalogue";
 import clientEvents from "./routes/client-events";
@@ -40,6 +41,8 @@ app.get("/api/v1/health", (c) => {
 
 // Device registration (no API key required - called by the OGS app)
 app.route("/api/v1/devices", devices);
+// White-label apps: registration, push credentials (game API key), app links (public).
+app.route("/api/v1/apps", apps);
 
 // Profiles (docs/product-specs/ogs-profiles.html): POST /profiles, GET /handles (no token)
 app.route("/api/v1", profiles);

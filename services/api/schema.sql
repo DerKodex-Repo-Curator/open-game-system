@@ -254,3 +254,48 @@ CREATE TABLE IF NOT EXISTS family_invites (
   first_session_profile_id TEXT,
   first_session_at INTEGER
 );
+
+-- White-label apps (2026-10-18-white-label-apps.feature, ADR 2026-10-18-multi-tenant-push): a game's own
+-- App Store / Play Store app. One per game per platform; a bundle id / package belongs to one game.
+-- ios: store_id = bundle id, team_id set. android: store_id = package, fingerprints and Google
+-- client ids (JSON arrays). Times: ms.
+CREATE TABLE IF NOT EXISTS native_apps (
+  app_id TEXT NOT NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('ios', 'android')),
+  store_id TEXT NOT NULL,
+  team_id TEXT,
+  sha256_fingerprints TEXT NOT NULL DEFAULT '[]',
+  google_client_ids TEXT NOT NULL DEFAULT '[]',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (app_id, platform),
+  UNIQUE (platform, store_id)
+);
+
+-- Each app's push credentials, AES-GCM encrypted under PUSH_KEY_SECRET (src/lib/secret-box.ts).
+-- ios: the .p8 with key_id and team_id. android: the FCM service account (project_id, client_email
+-- shown; private key only inside secret_enc).
+CREATE TABLE IF NOT EXISTS app_push_credentials (
+  app_id TEXT NOT NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('ios', 'android')),
+  key_id TEXT,
+  team_id TEXT,
+  project_id TEXT,
+  client_email TEXT,
+  secret_enc TEXT NOT NULL,
+  iv TEXT NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (app_id, platform)
+);
+
+-- A device running a game's white-label app: its native push token (APNs device token / FCM
+-- registration token) for that app. The OGS app's Expo tokens stay in `devices`.
+CREATE TABLE IF NOT EXISTS app_devices (
+  device_id TEXT NOT NULL,
+  app_id TEXT NOT NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('ios', 'android')),
+  token TEXT NOT NULL,
+  apns_environment TEXT CHECK (apns_environment IN ('sandbox', 'production')),
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (device_id, app_id)
+);
