@@ -6,12 +6,14 @@ on:
     paths:
       - "apps/mobile/**"
       - "packages/shell/**"
+      - "examples/shell-single-game/**"
       - ".github/workflows/ci-mobile.yml"
   pull_request:
     branches: [main]
     paths:
       - "apps/mobile/**"
       - "packages/shell/**"
+      - "examples/shell-single-game/**"
       - ".github/workflows/ci-mobile.yml"
 
 jobs:
@@ -40,6 +42,11 @@ jobs:
 
       - name: Test shell
         run: pnpm --filter @open-game-system/shell test
+
+      - name: Shell fixture app (expo config --type introspect)
+        run: |
+          pnpm --filter @open-game-system/example-shell-single-game typecheck
+          pnpm --filter @open-game-system/example-shell-single-game test
 
       - name: Test mobile
         run: pnpm --filter @open-game-system/mobile test:ci

@@ -3,7 +3,8 @@
 # plugin; the single-game runtime (links, offline screen, guest profile, native sign-in, haptics, cast
 # chrome "none") follows in steps 7–13.
 # Tests: packages/shell/plugin/src/__tests__ (Vitest), packages/shell/src/__tests__ (jest-expo),
-# apps/mobile/services/__tests__/shell-resolution.test.ts (one copy of every mocked native module).
+# apps/mobile/services/__tests__/shell-resolution.test.ts (one copy of every mocked native module),
+# examples/shell-single-game/__tests__/introspect.test.ts (a real Expo app, `expo config --type introspect`).
 
 Feature: A game ships as its own app on the OGS shell
 
@@ -50,6 +51,17 @@ Feature: A game ships as its own app on the OGS shell
       Given an app config that already lists "applinks:opengame.org" and the react-native-google-cast plugin
       When the plugin runs twice
       Then every associated domain, Bonjour service, intent filter and plugin appears once
+
+    Scenario: A real Expo app gets the native config without a prebuild
+      Given the fixture app examples/shell-single-game with appId "example-game", gameUrl "https://example.com/phone",
+        linkDomains "example.com", branding "powered-by" and bundle id "com.example.game"
+      When Expo resolves its config with every plugin and native mod (`expo config --type introspect`)
+      Then the associated domains entitlement has "applinks:example.com" and "applinks:opengame.org"
+      And Android has auto-verified VIEW intent filters for "https://example.com/" and "https://opengame.org/play/example-game"
+      And NSBonjourServices has "_googlecast._tcp" and the OGS receiver's "_807AD5E9._googlecast._tcp"
+      And the Sign in with Apple entitlement is on
+      And extra.ogsShell has the appId, gameUrl, branding and linkDomains
+      And the bundle identifier and Android package are "com.example.game"
 
   Rule: The OGS app is the shell's first consumer and keeps working unchanged
 
