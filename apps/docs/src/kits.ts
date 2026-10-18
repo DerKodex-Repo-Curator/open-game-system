@@ -4,8 +4,11 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { REPO_ROOT } from "./paths";
 
-/** The kits a game installs. Not on npm yet: the site hosts each at /pkg/<kit>.tgz. */
-export const KITS = ["profile-kit", "cast-kit-core", "cast-kit-react"] as const;
+/**
+ * The kits a game installs. Not on npm yet: the site hosts each at /pkg/<kit>.tgz. ogs-protocol is
+ * there for its schemas (a game can check its manifest with ManifestSchema).
+ */
+export const KITS = ["profile-kit", "cast-kit-core", "cast-kit-react", "ogs-protocol"] as const;
 export const STARTER_DIR = resolve(REPO_ROOT, "templates/ogs-starter");
 
 export interface Hosted {

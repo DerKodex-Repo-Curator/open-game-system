@@ -15,8 +15,8 @@
     "kits:update": "node scripts/update-kits.mjs"
   },
   "dependencies": {
-    "@open-game-system/cast-kit-core": "file:vendor/open-game-system-cast-kit-core-0.2.0.tgz",
-    "@open-game-system/profile-kit": "file:vendor/open-game-system-profile-kit-0.1.0.tgz",
+    "@open-game-system/cast-kit-core": "file:vendor/cast-kit-core.tgz",
+    "@open-game-system/profile-kit": "file:vendor/profile-kit.tgz",
     "qrcode-generator": "^1.4.4",
     "zod": "^3.25.76"
   },

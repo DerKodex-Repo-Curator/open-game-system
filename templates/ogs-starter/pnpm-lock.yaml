@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@open-game-system/cast-kit-core':
-        specifier: file:vendor/open-game-system-cast-kit-core-0.2.0.tgz
-        version: file:vendor/open-game-system-cast-kit-core-0.2.0.tgz
+        specifier: file:vendor/cast-kit-core.tgz
+        version: file:vendor/cast-kit-core.tgz
       '@open-game-system/profile-kit':
-        specifier: file:vendor/open-game-system-profile-kit-0.1.0.tgz
-        version: file:vendor/open-game-system-profile-kit-0.1.0.tgz
+        specifier: file:vendor/profile-kit.tgz
+        version: file:vendor/profile-kit.tgz
       qrcode-generator:
         specifier: ^1.4.4
         version: 1.5.2
@@ -472,12 +472,12 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@open-game-system/cast-kit-core@file:vendor/open-game-system-cast-kit-core-0.2.0.tgz':
-    resolution: {integrity: sha512-+nmKOC/+W4MIsSPZRz7nriby3bQ2dzcmzHakncqTvZQmUCgUJ6T64Ipug590gBmQDrozS0R3H/fmUjjQ2qQaKw==, tarball: file:vendor/open-game-system-cast-kit-core-0.2.0.tgz}
+  '@open-game-system/cast-kit-core@file:vendor/cast-kit-core.tgz':
+    resolution: {integrity: sha512-+nmKOC/+W4MIsSPZRz7nriby3bQ2dzcmzHakncqTvZQmUCgUJ6T64Ipug590gBmQDrozS0R3H/fmUjjQ2qQaKw==, tarball: file:vendor/cast-kit-core.tgz}
     version: 0.2.0
 
-  '@open-game-system/profile-kit@file:vendor/open-game-system-profile-kit-0.1.0.tgz':
-    resolution: {integrity: sha512-n/Sas4+N1WM/CnGgsbI9n0WI8vaQWv1Crog7g54yfKGj7RrN15/1r+wTf5glyI7k8tch/jlKN5EEFmfuPM8Bhg==, tarball: file:vendor/open-game-system-profile-kit-0.1.0.tgz}
+  '@open-game-system/profile-kit@file:vendor/profile-kit.tgz':
+    resolution: {integrity: sha512-wTIZ4TFsROWMKVv+mbEwa2AcKzoNSLLwERVsXSj3wR6w6OebJB0D0a5W/08CNXANCkC1uZFlFZzOP8kXoOP9Bw==, tarball: file:vendor/profile-kit.tgz}
     version: 0.1.0
     peerDependencies:
       react: '>=18.0.0'
@@ -1235,12 +1235,12 @@ snapshots:
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
 
-  '@open-game-system/cast-kit-core@file:vendor/open-game-system-cast-kit-core-0.2.0.tgz':
+  '@open-game-system/cast-kit-core@file:vendor/cast-kit-core.tgz':
     dependencies:
       fast-json-patch: 3.1.1
       zod: 3.25.76
 
-  '@open-game-system/profile-kit@file:vendor/open-game-system-profile-kit-0.1.0.tgz':
+  '@open-game-system/profile-kit@file:vendor/profile-kit.tgz':
     dependencies:
       fast-json-patch: 3.1.1
       zod: 3.25.76

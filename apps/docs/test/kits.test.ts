@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { KITS, packKits, packStarter } from "../src/kits";
+import { KITS, packKits, packStarter, STARTER_DIR } from "../src/kits";
 
 /**
  * The docs site hosts the kits as tarballs (they are not on npm), so a game outside the monorepo
@@ -23,7 +23,7 @@ const Pkg = z.object({
 });
 
 describe("the hosted kits", () => {
-  it("packs profile-kit, cast-kit-core and cast-kit-react to /pkg/<kit>.tgz", () => {
+  it("packs profile-kit, cast-kit-core, cast-kit-react and ogs-protocol to /pkg/<kit>.tgz", () => {
     expect(kits.map((k) => k.path)).toEqual(KITS.map((k) => `pkg/${k}.tgz`));
   });
 
@@ -44,12 +44,25 @@ describe("the hosted kits", () => {
 });
 
 describe("the hosted starter", () => {
+  it.each(["profile-kit", "cast-kit-core"])("vendors the same %s the site hosts", (kit) => {
+    const vendored = join(STARTER_DIR, "vendor", `${kit}.tgz`);
+    const hosted = join(out, `pkg/${kit}.tgz`);
+    const files = tarList(hosted).filter((e) => e && !e.endsWith("/"));
+    expect(tarList(vendored).filter((e) => e && !e.endsWith("/")).sort()).toEqual([...files].sort());
+    for (const entry of files) {
+      const [a, b] = [tarRead(vendored, entry), tarRead(hosted, entry)];
+      // pnpm pack orders package.json's keys differently from run to run: compare it as data.
+      const same = entry.endsWith("package.json") ? [JSON.parse(a), JSON.parse(b)] : [a, b];
+      expect(same[0], `${entry}: re-vendor with pnpm kits:update`).toEqual(same[1]);
+    }
+  });
+
   it("packs templates/ogs-starter to /starter.tgz from its tracked files only", () => {
     expect(starter.path).toBe("starter.tgz");
     const entries = tarList(join(out, "starter.tgz"));
     expect(entries).toContain("ogs-starter/package.json");
     expect(entries).toContain("ogs-starter/src/tv/main.ts");
-    expect(entries).toContain("ogs-starter/vendor/open-game-system-profile-kit-0.1.0.tgz");
+    expect(entries).toContain("ogs-starter/vendor/profile-kit.tgz");
     expect(entries.some((e) => e.includes("node_modules/"))).toBe(false);
   });
 });

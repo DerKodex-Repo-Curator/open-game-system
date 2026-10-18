@@ -5,10 +5,17 @@ import { newKeyPair } from "./keys";
 
 /**
  * Seam tests run the real Worker (`wrangler dev`) with OGS's key set swapped for a local one, so
- * the tests can sign game tokens the Worker accepts.
+ * the tests can sign game tokens the Worker accepts. Both get free ports, so another dev server on
+ * the machine can't answer in their place.
  */
-const GAME_PORT = 8797;
-const JWKS_PORT = 8831;
+async function freePort(): Promise<number> {
+  const probe = createServer();
+  await new Promise<void>((r) => probe.listen(0, "127.0.0.1", r));
+  const address = probe.address();
+  await new Promise<void>((r) => probe.close(() => r()));
+  if (!address || typeof address === "string") throw new Error("no free port");
+  return address.port;
+}
 
 declare module "vitest" {
   export interface ProvidedContext {
@@ -26,9 +33,13 @@ export async function setup(project: TestProject) {
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify(jwks));
   });
-  await new Promise<void>((r) => jwksServer?.listen(JWKS_PORT, r));
+  await new Promise<void>((r) => jwksServer?.listen(0, "127.0.0.1", r));
+  const jwksAddress = jwksServer.address();
+  if (!jwksAddress || typeof jwksAddress === "string") throw new Error("JWKS server has no port");
+  const jwksUrl = `http://127.0.0.1:${jwksAddress.port}/.well-known/jwks.json`;
 
-  const gameUrl = process.env.GAME_URL ?? `http://localhost:${GAME_PORT}`;
+  const gamePort = await freePort();
+  const gameUrl = process.env.GAME_URL ?? `http://127.0.0.1:${gamePort}`;
   if (!process.env.GAME_URL) {
     wrangler = spawn(
       "pnpm",
@@ -36,10 +47,12 @@ export async function setup(project: TestProject) {
         "exec",
         "wrangler",
         "dev",
+        "--ip",
+        "127.0.0.1",
         "--port",
-        String(GAME_PORT),
+        String(gamePort),
         "--var",
-        `OGS_JWKS_URL:http://localhost:${JWKS_PORT}/.well-known/jwks.json`,
+        `OGS_JWKS_URL:${jwksUrl}`,
       ],
       { stdio: "ignore", detached: true },
     );
