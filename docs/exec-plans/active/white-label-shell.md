@@ -81,3 +81,25 @@ Then create-ogs-app (template + `pnpm create ogs-app` + REVIEW_NOTES.md + apps/d
 then Rocket Crew `~/src/rocket-crew/app/`.
 
 Rule for every step: never edit an existing test; a step that would break one is reverted and the module stays in the app.
+
+## Progress notes
+
+Steps 0–6 done on `claude/shell-app` (2026-10-18). apps/mobile: 90 suites / 1142 tests green after every step
+(baseline 89 / 1114 + the new shell-resolution guard). Shell: 47 Vitest + 2 jest-expo tests.
+
+- **Moved** (shim in apps/mobile/services): cast-once, cast-trace, client-log, js-errors, game-url-store, hardware-back,
+  push-registration, push-foreground, game-loading (step 3); cast-session-device, cast-backend, cast-store, cast-view,
+  cast-sync, google-cast-backend, fake-cast, screen-cast (step 4; cast-session-device and cast-backend moved here, not in
+  step 3, because they import cast-store/cast-sync types); notifications, consent-sheet (step 5); game-profile, push-api,
+  ogs-bridge, game-notifications (step 6).
+- **Split** (step 6): `ogs-api.ts` → shell `api-request.ts` (OgsApiError, createApiRequest, ProfileSchema, LoginSchema,
+  Credential, OgsApiOptions, FetchLike, and `InstanceSource`, which ogs-bridge needs); the app's ogs-api re-exports them.
+  `identity.ts` → shell `identity.ts` (schema + secure storage); STICKERS stay in the app file, which re-exports the rest.
+- **Kept**: everything the plan lists under "Stay in apps/mobile". No move had to be reverted (no existing test needed an edit).
+- **Peer-variant fix** (step 0): the shell's `expo` first resolved to a second `.pnpm` folder; the shell now also pins
+  `@expo/dom-webview` and `react-dom` (apps/mobile's specifiers) and its zod is locked to 4.3.6 like the app (docs/lessons.md).
+- **Fingerprint**: apps/mobile `a047351a13541a5cf26ae57447dd1026dcb6beeb` before step 0 and after step 6 (`npx @expo/fingerprint .`).
+- **Plugin**: `withOgsShell` applies the sub-plugins' Expo plugins through `withPlugins` only when the app neither lists them
+  nor has run them (pluginHistory), and is `createRunOncePlugin`'d. `expo-apple-authentication` is not installed in this
+  monorepo: an app using the shell must depend on it (create-ogs-app will).
+- `mobile-release.yml` also watches `packages/shell/**` (shell code ships to the OGS app over the air).

@@ -9,6 +9,16 @@ import {
   type ScreenClaimed,
   ScreenClaimedSchema,
 } from "@open-game-system/ogs-protocol";
+import {
+  type Credential,
+  createApiRequest,
+  type InstanceSource,
+  LoginSchema,
+  OgsApiError,
+  type OgsApiOptions,
+  type Profile,
+  ProfileSchema,
+} from "@open-game-system/shell/modules/api-request";
 import { z } from "zod";
 
 /**
@@ -17,32 +27,20 @@ import { z } from "zod";
  * is injected so tests need no server.
  */
 
-export class OgsApiError extends Error {
-  constructor(
-    readonly code: string,
-    message: string,
-    readonly status: number,
-  ) {
-    super(message);
-    this.name = "OgsApiError";
-  }
-}
-
-/** A profile: what games and friends see. `handle` is the @id without the "@". */
-export const ProfileSchema = z.object({
-  id: z.string().min(1),
-  handle: z.string().min(1),
-  name: z.string().min(1),
-  sticker: z.string().min(1),
-});
-export type Profile = z.infer<typeof ProfileSchema>;
-
-export const LoginSchema = z.object({
-  provider: z.enum(["apple", "google", "email"]),
-  email: z.string().nullable(),
-});
-export type Login = z.infer<typeof LoginSchema>;
-export type Provider = Login["provider"];
+// The generic request, error and profile/login schemas live in the shell (shared with every OGS-powered app).
+export {
+  type Credential,
+  createApiRequest,
+  type FetchLike,
+  type InstanceSource,
+  type Login,
+  LoginSchema,
+  OgsApiError,
+  type OgsApiOptions,
+  type Profile,
+  ProfileSchema,
+  type Provider,
+} from "@open-game-system/shell/modules/api-request";
 
 export const MeSchema = z.object({ profile: ProfileSchema, logins: z.array(LoginSchema) });
 export type Me = z.infer<typeof MeSchema>;
@@ -74,12 +72,6 @@ export interface DeviceInfo {
   name: string;
 }
 
-/** What proves a login: a provider's ID token, or an email and the 6-digit code sent to it. */
-export type Credential =
-  | { provider: "apple"; idToken: string }
-  | { provider: "google"; idToken: string }
-  | { provider: "email"; email: string; code: string };
-
 export interface NewProfile {
   name: string;
   handle?: string;
@@ -89,22 +81,8 @@ export interface NewProfile {
 
 export type ProfilePatch = Partial<Pick<Profile, "name" | "handle" | "sticker">>;
 
-const ErrorBodySchema = z.object({
-  error: z.object({ code: z.string(), message: z.string(), status: z.number() }),
-});
 const ListSchema = z.array(z.unknown());
 const LibrarySchema = z.object({ appIds: z.array(z.string()) });
-
-export type InstanceSource = Exclude<Instance["source"], "server">;
-
-type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
-
-export interface OgsApiOptions {
-  baseUrl: string;
-  fetch: FetchLike;
-  /** This device's token for its profile, or null before it has one. */
-  auth: () => { token: string } | null;
-}
 
 /** Drop what doesn't parse (one bad manifest must not empty the Library), keep the rest. */
 function parseEach<T>(items: unknown[], parse: (x: unknown) => { success: boolean; data?: T }) {
@@ -130,60 +108,6 @@ function credentialRequest(c: Credential): { path: string; body: Record<string, 
     case "email":
       return { path: "/api/v1/auth/email/verify", body: { email: c.email, code: c.code } };
   }
-}
-
-/**
- * The API's request and parse: JSON in and out, the profile token when `authed`, and every failure
- * as an OgsApiError (OFFLINE, the API's error code, or BAD_RESPONSE). Shared by every client
- * (this one, services/friends-api.ts).
- */
-export function createApiRequest({ baseUrl, fetch, auth }: OgsApiOptions) {
-  async function request(
-    path: string,
-    init: { method?: string; body?: unknown; authed?: boolean } = {},
-  ): Promise<unknown> {
-    const headers: Record<string, string> = { Accept: "application/json" };
-    if (init.body !== undefined) headers["Content-Type"] = "application/json";
-    if (init.authed) {
-      const id = auth();
-      if (!id) throw new OgsApiError("NO_PROFILE", "This device has no OGS profile yet", 0);
-      headers.Authorization = `Bearer ${id.token}`;
-    }
-    let res: Response;
-    try {
-      res = await fetch(`${baseUrl}${path}`, {
-        method: init.method ?? "GET",
-        headers,
-        body: init.body === undefined ? undefined : JSON.stringify(init.body),
-      });
-    } catch (err) {
-      throw new OgsApiError("OFFLINE", `Can't reach OGS: ${String(err)}`, 0);
-    }
-    const text = await res.text();
-    let json: unknown = null;
-    try {
-      json = text ? JSON.parse(text) : null;
-    } catch {
-      json = null;
-    }
-    if (!res.ok) {
-      const parsed = ErrorBodySchema.safeParse(json);
-      if (parsed.success) {
-        const { code, message, status } = parsed.data.error;
-        throw new OgsApiError(code, message, status);
-      }
-      throw new OgsApiError(`HTTP_${res.status}`, `OGS answered ${res.status}`, res.status);
-    }
-    return json;
-  }
-
-  function parse<T>(schema: z.ZodType<T>, data: unknown): T {
-    const r = schema.safeParse(data);
-    if (!r.success) throw new OgsApiError("BAD_RESPONSE", r.error.message, 0);
-    return r.data;
-  }
-
-  return { request, parse };
 }
 
 export function createOgsApi(opts: OgsApiOptions) {

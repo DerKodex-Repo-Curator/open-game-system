@@ -22,6 +22,7 @@ Grade each package/domain. Update after major changes.
 | cast-kit-core | C | has tests | configured | Stryker configured. Sparse test coverage. |
 | cast-kit-react | C | has tests | configured | Stryker configured. Sparse test coverage. |
 | apps/web | C | 22 e2e (receiver) | — | Marketing site: build only. `public/receiver.html` (the Cast receiver) has 22 deterministic e2e tests (`e2e/tests/receiver-*.e2e.ts`: LOAD_VIEW, PEER_OFFER + HUD, stops) and 3 full-pipe tests against the real local renderer (`e2e/tests/stream-pipe.e2e.ts`: moving frames, idle 410, Chrome relaunch; the Realtime leg opt-in); see docs/testing/e2e.md. |
+| shell | B | 47 Vitest (config plugin) + 2 jest-expo; the moved runtime modules are tested by apps/mobile's suites through the shims | — | Moved modules are outside apps/mobile's `collectCoverageFrom`/Stryker `mutate` (both `services/**`), so their coverage and mutation score are not measured until the tests or a shell Stryker config cover `packages/shell/src`. |
 | apps/mobile | B | passing (Jest) + Detox | configured | Services tested, Stryker configured. Detox: 16 files in `apps/mobile/e2e` (incl. the `multi-couch.mjs` / `phones-follow.mjs` driver files), all passing on one local stack 2026-10-07 (docs/testing/e2e.md, "The whole Detox suite"). |
 
 ## Grading Scale
