@@ -1,0 +1,33 @@
+{
+  "name": "create-ogs-app",
+  "version": "0.1.0",
+  "description": "Ship your OGS web game as its own iOS and Android app: `pnpm create ogs-app` makes an Expo app with the @open-game-system/shell plugin (casting, profiles, push links, native sign-in)",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "create-ogs-app": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist",
+    "template"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint src test",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}
