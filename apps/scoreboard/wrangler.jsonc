@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The distribution bets' scoreboard. Preview only (workers.dev). It reads what OGS already records
+  // and writes only its own Durable Object: no producer's code or config changes.
+  "name": "ogs-scoreboard",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-01",
+  "account_id": "ccf4d9a0a3b76ffae0b6ee048de66f07",
+  "workers_dev": true,
+  // Workers Logs (every try Worker's wide events) through the Analytics SQL binding: no API token.
+  "analytics": { "binding": "ANALYTICS_SQL" },
+  // Read-only: SELECTs on opengame-api's tables (bet 1) and the docs waitlist (bet 4).
+  "d1_databases": [
+    { "binding": "API_DB", "database_name": "opengame-api-db", "database_id": "cec599e8-e064-4034-b035-3d97ed3b222c" },
+    { "binding": "WAITLIST_DB", "database_name": "ogs-docs-waitlist", "database_id": "58d6c744-acaf-4936-9ada-617c03fb242f" }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "BOARD", "class_name": "Board" },
+      // The front door's click log (apps/front-door): only its summary() is called.
+      { "name": "TALLY", "class_name": "Tally", "script_name": "ogs-front-door" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Board"] }],
+  "triggers": { "crons": ["*/15 * * * *"] },
+  // HN_ITEM_ID: set once the Show HN post is up (wrangler deploy --var HN_ITEM_ID:<id>).
+  "vars": {},
+  "observability": { "enabled": true }
+}

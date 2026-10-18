@@ -1,0 +1,23 @@
+{
+  "name": "@open-game-system/scoreboard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The distribution bets' scoreboard: reads the wide events OGS already emits (Workers Logs, the front door's tally, the docs waitlist) and shows each bet against its thresholds",
+  "scripts": {
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "lint": "tsc --noEmit && tsc --noEmit -p test",
+    "test": "vitest run",
+    "deploy:preview": "wrangler deploy"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261004.1",
+    "@types/node": "^24",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.151.1"
+  }
+}

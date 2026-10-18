@@ -40,6 +40,7 @@
 | `apps/web` | `@open-game-system/web` | opengame.org marketing website (Vite + React + Tailwind) | None |
 | `apps/tv` | `@open-game-system/tv` | OGS TV launcher: the one page the Chromecast stream shows for the whole cast; frames each game's TV page (Vite + React, Vitest + Playwright) | `ogs-protocol` |
 | `apps/docs` | `@open-game-system/docs` | Docs site for game developers and their coding agents (ogs-docs.pages.dev): `content/*.md` + `docs/specification.md` rendered to static HTML with `.md` twins, `llms.txt`, `llms-full.txt`; protocol tables generated from the zod schemas; tests fail when profile-kit's exports drift from the reference | `ogs-protocol` |
+| `apps/scoreboard` | `@open-game-system/scoreboard` | The distribution bets' scoreboard (preview Worker `ogs-scoreboard`): reads opengame-api's D1 and the docs waitlist (read-only), the front door's Tally over RPC, the try Workers' wide events in Workers Logs (Analytics SQL binding) and the HN API; shows each bet against its lines | none |
 
 ### Examples (`examples/`)
 
