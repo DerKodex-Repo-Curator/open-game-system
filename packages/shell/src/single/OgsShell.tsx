@@ -40,7 +40,8 @@ export interface OgsShellProps {
 export function OgsShell(props: OgsShellProps) {
   const [config] = useState(() => props.config ?? readRuntimeConfig(Constants.expoConfig));
   const [runtime] = useState(
-    () => props.runtime ?? createShellRuntime(config, { ...defaultShellDeps(), ...props.deps }),
+    () =>
+      props.runtime ?? createShellRuntime(config, { ...defaultShellDeps(config), ...props.deps }),
   );
   const linking = props.linking ?? Linking;
   const appState = props.appState ?? AppState;

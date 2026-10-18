@@ -5,17 +5,21 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { streamServerUrl } from "../cast-view";
+import { createGoogleCastBackend } from "../google-cast-backend";
+import { castGameStores } from "./cast-stores";
 import { createDeviceSource } from "./device";
 import { expoHapticsPlayer } from "./expo-haptics-player";
 import { apnsEnvironmentFromEntitlement } from "./native-push";
-import type { ShellRuntimeDeps } from "./shell-runtime";
+import type { ShellRuntimeConfig, ShellRuntimeDeps } from "./shell-runtime";
 import { appleSignIn, unavailableSignIn } from "./sign-in-providers";
 
 /**
- * The runtime's dependencies on a real device. Sign in with Apple on iOS; Google is not wired yet
+ * The runtime's dependencies on a real device: Google Cast (the game's `cast` store), SecureStore,
+ * expo-notifications, expo-haptics. Sign in with Apple on iOS; Google is not wired yet
  * (unavailable on both platforms in v1 of the runtime).
  */
-export function defaultShellDeps(): ShellRuntimeDeps {
+export function defaultShellDeps(config: ShellRuntimeConfig): ShellRuntimeDeps {
   const storage = SecureStore;
   return {
     fetch: (url, init) => fetch(url, init),
@@ -39,5 +43,8 @@ export function defaultShellDeps(): ShellRuntimeDeps {
         : unavailableSignIn("apple"),
       unavailableSignIn("google"),
     ],
+    gameStores: castGameStores(createGoogleCastBackend(), {
+      streamServerUrl: streamServerUrl({}, config.apiBase),
+    }),
   };
 }

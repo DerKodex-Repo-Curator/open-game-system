@@ -49,3 +49,18 @@ describe("readRuntimeConfig (Constants.expoConfig written by the shell plugin)",
     ).toThrow(/gameUrl/);
   });
 });
+
+describe("readRuntimeConfig tvBase", () => {
+  it("takes a TV launcher from extra.ogsShell when set, none otherwise", () => {
+    const base = {
+      name: "X",
+      extra: { ogsShell: { appId: "x", gameUrl: "https://x.example/" } },
+    };
+    expect(readRuntimeConfig(base)).not.toHaveProperty("tvBase");
+    const withTv = {
+      ...base,
+      extra: { ogsShell: { ...base.extra.ogsShell, tvBase: "https://tv.test" } },
+    };
+    expect(readRuntimeConfig(withTv).tvBase).toBe("https://tv.test");
+  });
+});

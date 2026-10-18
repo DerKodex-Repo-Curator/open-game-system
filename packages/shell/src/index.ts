@@ -30,10 +30,11 @@ export * from "./push-registration";
 export * from "./screen-cast";
 
 // --- Single-game app runtime (src/single) ---
+// The WebView, <OgsShell /> and the device defaults (native modules, app-bridge-react-native) are in
+// "@open-game-system/shell/app", so importing this entry loads no WebView.
 export { createAccountStore } from "./single/account-store";
 export { createShellRequest, ShellApiError } from "./single/api-client";
 export { castLauncherUrl } from "./single/cast-launcher-url";
-export { defaultShellDeps } from "./single/default-deps";
 export { createDeviceSource } from "./single/device";
 export { expoHapticsPlayer } from "./single/expo-haptics-player";
 export { createGuestApi, ensureGuestProfile, type ShellDevice } from "./single/guest-profile";
@@ -51,9 +52,7 @@ export {
   type SignInState,
 } from "./single/native-sign-in";
 export { DEFAULT_OFFLINE_THEME, OfflineScreen, type OfflineTheme } from "./single/OfflineScreen";
-export { type LinkingLike, OgsShell, type OgsShellProps } from "./single/OgsShell";
 export { DEFAULT_OGS_API, type OgsShellConfig, readRuntimeConfig } from "./single/runtime-config";
-export { ShellWebView } from "./single/ShellWebView";
 export { SignInSheet } from "./single/SignInSheet";
 export { webViewUrlFor } from "./single/shell-links";
 export {
@@ -63,4 +62,5 @@ export {
   type ShellRuntimeDeps,
 } from "./single/shell-runtime";
 export { appleSignIn, unavailableSignIn } from "./single/sign-in-providers";
+export { createSingleGameCastStore, type SingleGameCastOptions } from "./single/single-cast";
 export { watchForeground, webViewStatus } from "./single/webview-status";

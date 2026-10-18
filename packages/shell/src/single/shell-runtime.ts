@@ -7,7 +7,7 @@ import type {
   Store,
 } from "@open-game-system/app-bridge-types";
 import { createAccountStore } from "./account-store";
-import { createShellRequest, type FetchLike } from "./api-client";
+import { createShellRequest, type FetchLike, type ShellRequest } from "./api-client";
 import { castLauncherUrl } from "./cast-launcher-url";
 import { createGuestApi, ensureGuestProfile, type ShellDevice } from "./guest-profile";
 import { createHapticsStore, type HapticsPlayer } from "./haptics-store";
@@ -35,6 +35,8 @@ export interface ShellRuntimeConfig {
   /** The OGS API, e.g. https://api.opengame.org */
   apiBase: string;
   linkDomains: readonly string[];
+  /** The OGS TV launcher the Chromecast shows (default https://ogs-tv.pages.dev). */
+  tvBase?: string;
   /** The guest profile's name (default "Player"). */
   guestName?: string;
 }
@@ -42,6 +44,8 @@ export interface ShellRuntimeConfig {
 /** What other stores (cast, profile, notifications, ogs…) get from the runtime. */
 export interface ShellContext {
   config: ShellRuntimeConfig;
+  /** The OGS API request (parsed answers, ShellApiError failures). */
+  request: ShellRequest;
   getIdentity(): ShellIdentity | null;
   /** Called with each new identity (the guest once made, then each sign-in). */
   onIdentity(listener: (identity: ShellIdentity | null) => void): () => void;
@@ -136,6 +140,7 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
 
   const ctx: ShellContext = {
     config,
+    request,
     getIdentity: () => identity,
     onIdentity(listener) {
       identityListeners.add(listener);

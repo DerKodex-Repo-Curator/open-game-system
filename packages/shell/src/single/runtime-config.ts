@@ -16,6 +16,10 @@ const ExpoConfigSchema = z.object({
         .string()
         .regex(/^https?:\/\//)
         .optional(),
+      tvBase: z
+        .string()
+        .regex(/^https?:\/\//)
+        .optional(),
     }),
   }),
 });
@@ -34,6 +38,6 @@ export function readRuntimeConfig(expoConfig: unknown): OgsShellConfig {
     );
   }
   const { name, extra } = parsed.data;
-  const { apiBase, ...shell } = extra.ogsShell;
-  return { ...shell, name, apiBase: apiBase ?? DEFAULT_OGS_API };
+  const { apiBase, tvBase, ...shell } = extra.ogsShell;
+  return { ...shell, name, apiBase: apiBase ?? DEFAULT_OGS_API, ...(tvBase ? { tvBase } : {}) };
 }
