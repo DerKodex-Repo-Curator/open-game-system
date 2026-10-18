@@ -138,7 +138,7 @@ export async function playFirstRound(opts: {
     await nameBox.fill(opts.guestName);
     await fixer.getByRole("button", { name: "Join", exact: true }).click();
   }
-  await ready.waitFor({ timeout: 30000 });
+  await ready.waitFor({ timeout: 120000 });
   check("the guest is the Fixer", true);
   await ready.click({ force: true });
   await waitStep("captain-ready");

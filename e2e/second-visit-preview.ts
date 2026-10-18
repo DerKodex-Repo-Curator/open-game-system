@@ -10,15 +10,14 @@
 // rejoins in one tap; Dana presses OK and they play the first round. The API keeps real time (its
 // 12 h sessions and 7-day window are unit-tested).
 //
-// The TV page and the join page are this branch's builds, served here against the preview API:
-//   (cd apps/tv && VITE_OGS_API=<preview API> pnpm build)
-//   (cd apps/web && VITE_OGS_API=<preview API> VITE_OGS_TV=<preview launcher> pnpm build)
+// The TV page and the join page are this branch's builds, made and served here against the preview
+// API (FUNNEL_API, FUNNEL_TV):
 //   pnpm exec tsx e2e/second-visit-preview.ts           (repo root)
 //   env: DETOX_IOS_BINARY (EXPO_PUBLIC_OGS_API=<preview API>, EXPO_PUBLIC_FAKE_CAST=none,
 //        EXPO_PUBLIC_E2E_CLOCK=1), DETOX_SIM_NAME, ROCKET_CREW_DIR, FUNNEL_EVIDENCE.
-import { type ChildProcess, spawn } from "node:child_process";
+import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { type Browser, type BrowserContext, chromium, devices, type Page } from "playwright";
 import { z } from "zod";
@@ -46,12 +45,31 @@ const { check, mark } = report;
 const steps = createStepServer(PORT, mark);
 const rocket = await rocketCrew(process.env.ROCKET_CREW_DIR ?? join(homedir(), "src/rocket-crew"));
 
-/** This branch's TV page and join page, built beforehand, served by vite preview. */
+const API = process.env.FUNNEL_API ?? "https://opengame-api-pr-funnel.jonathanrmumm.workers.dev";
+const LAUNCHER = process.env.FUNNEL_TV ?? "https://funnel.ogs-tv.pages.dev";
+
+/**
+ * This branch's TV page and join page against the preview API, built here into their own folder
+ * (a workspace build elsewhere points the apps' own dist folders at production), then served by vite preview.
+ */
 function serve(dir: string, port: number): ChildProcess {
-  return spawn("pnpm", ["exec", "vite", "preview", "--port", String(port), "--strictPort"], {
+  const out = join(tmpdir(), `ogs-second-visit-${port}`);
+  const env = { ...process.env, VITE_OGS_API: API, VITE_OGS_TV: LAUNCHER };
+  const built = spawnSync("pnpm", ["exec", "vite", "build", "--outDir", out, "--emptyOutDir"], {
     cwd: resolve(dir),
+    env,
     stdio: "ignore",
   });
+  if (built.status !== 0) throw new Error(`building ${dir} failed`);
+  return spawn(
+    "pnpm",
+    ["exec", "vite", "preview", "--outDir", out, "--port", String(port), "--strictPort"],
+    {
+      cwd: resolve(dir),
+      env,
+      stdio: "ignore",
+    },
+  );
 }
 async function until(url: string) {
   for (let i = 0; i < 60; i++) {

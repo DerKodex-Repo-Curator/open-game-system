@@ -60,10 +60,12 @@ on this branch.
 
 ## Measured
 
-2026-10-18, iOS simulator against the preview, the machine at load 100–200 from other sessions.
-Every check of the walk has passed: day 1 in full (four runs); day 2 the same screen, Cast naming the
-TV, a new couch, Rocket Crew first in the TV's row and its first card, Join as Grandma in one tap,
-the TV framing Rocket Crew, Grandma as Fixer and the first round fixed (one run, which then hung on
-reporting Dana's taps; fixed since). One fully green run, with Dana's seconds, is still to do on a
-quieter machine: those runs failed on load (a 5-minute wait for the game, a launch past the first
-problem) and once on the rocket-crew checkout's parser not knowing a line the preview game said.
+2026-10-18, iOS simulator against the preview, the machine at load 100–200 from other sessions all
+afternoon. Every check of the walk has passed in some run: day 1 in full (five runs); day 2 the same
+screen, Cast naming the TV, a new couch, Rocket Crew first in the TV's row and its first card, Join
+as Grandma in one tap, the TV framing Rocket Crew, Grandma as the Fixer and the first round fixed.
+**No single run has passed end to end yet**, and Dana's seconds are unmeasured: the runs fail on load
+(waits of 30 s to 5 min for the game, the launch, the cast), once on the rocket-crew checkout's parser
+not knowing a line the preview game said, and once because a workspace build had pointed the TV
+page at production (the orchestrator now builds its own pages). Run it on a quiet machine:
+`pnpm exec tsx e2e/second-visit-preview.ts` (docs/testing/e2e.md).

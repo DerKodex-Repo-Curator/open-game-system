@@ -110,7 +110,7 @@ describe("The second visit (preview)", () => {
         await element(by.id("onboardingMaybeLaterButton")).tap();
       } catch {}
       await visible("profileNameInput");
-      await element(by.id("profileNameInput")).typeText("Dana");
+      await element(by.id("profileNameInput")).replaceText("Dana");
       await element(by.id("profileNameInput")).tapReturnKey();
       await waitFor(element(by.id("profileHandleStatus")))
         .toHaveText("free")
@@ -134,14 +134,18 @@ describe("The second visit (preview)", () => {
         .scroll(200, "down");
       await element(by.id("browserTvOpen")).tap();
       const code = str((await wait("tv-code")).code, "TV code");
-      await element(by.id("browserTvCode")).typeText(code);
+      await element(by.id("browserTvCode")).replaceText(code);
       await element(by.id("browserTvCode")).tapReturnKey();
       await waitFor(element(by.id("castButton")))
         .toBeVisible()
         .whileElement(by.id("tvNotCast"))
         .scroll(200, "up");
+      // Cast once the claim has added the TV (under load, a tap before it searches and finds none).
+      await waitFor(element(by.id("castTarget")))
+        .toHaveText("Browser TV")
+        .withTimeout(120000);
       await element(by.id("castButton")).tap();
-      await visible("remoteOk", 60000);
+      await visible("remoteOk", 180000);
       await step("cast");
 
       // Grandma joins from the TV's QR; Dana starts Rocket Crew from the Library.
@@ -182,7 +186,7 @@ describe("The second visit (preview)", () => {
       const target = await element(by.id("castTarget")).getAttributes();
       const targetText = "text" in target && typeof target.text === "string" ? target.text : "";
       await tap("castButton");
-      await visible("remoteOk", 60000);
+      await visible("remoteOk", 180000);
       const cast = Date.now() - t0;
       await step("day2-cast", { target: targetText, openedMs: opened });
 
