@@ -1,0 +1,32 @@
+{
+  "name": "@open-game-system/cli",
+  "version": "0.1.0",
+  "description": "ogs: set up a game's white-label app with OGS (login with the game's API key, register the app, upload push credentials, check everything)",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "ogs": "./dist/bin.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "vitest": "^4.1.0"
+  }
+}
