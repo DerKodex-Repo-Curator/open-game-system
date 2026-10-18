@@ -53,7 +53,7 @@ describe("the hosted starter", () => {
       const [a, b] = [tarRead(vendored, entry), tarRead(hosted, entry)];
       // pnpm pack orders package.json's keys differently from run to run: compare it as data.
       const same = entry.endsWith("package.json") ? [JSON.parse(a), JSON.parse(b)] : [a, b];
-      expect(same[0], `${entry}: re-vendor with pnpm kits:update`).toEqual(same[1]);
+      expect(same[0], `${entry} changed: run pnpm --filter @open-game-system/docs starter:kits and commit templates/ogs-starter`).toEqual(same[1]);
     }
   });
 

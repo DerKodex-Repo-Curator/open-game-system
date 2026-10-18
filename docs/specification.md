@@ -75,7 +75,7 @@ a game that answers nothing still runs.
 | game → launcher | `ogs:ready` | none | The page started listening (possibly after load); the launcher re-sends `ogs:start` for the current sitting |
 | launcher → game | `ogs:suspend` | none | Home, or a swap to another game: the frame is **parked**, still loaded |
 | launcher → game | `ogs:resume` | none | Continue of the parked sitting: the same frame comes back, no reload |
-| game → launcher | `ogs:resume-point` | `label` | The sitting's label ("Mission 6") |
+| game → launcher | `ogs:resume-point` | `label` | Older form of the sitting's label; send `ogs:instance` instead (profile-kit does) |
 | game → launcher | `ogs:room` | `room` | The room the TV page shows. Every room-based game (no static `tvUrl`): the couch's other phones follow into this room (§3); `multiCouch` games also let other couches join it |
 | game → launcher | `ogs:instance` | `report` (`InstanceReportSchema`) | Same purpose; the launcher uses `report.title` as the label |
 
@@ -102,7 +102,9 @@ With profile-kit (§4) a game doesn't post these by hand:
 **Parked means silent.** A parked frame stays loaded so Continue is instant, so its audio keeps
 playing unless the game stops it. Suspend the `AudioContext` and pause media on `onOgsPause(true)`; resume
 on `false`, and only what was playing before. Pattern: `createAudioPause` in
-`~/src/night-flight-owls/src/client/audio-pause.ts`.
+[the Quickstart, step 3](https://ogs-docs.pages.dev/quickstart#3-tv-page-hear-the-launcher) (and
+`templates/ogs-starter/src/tv/audio-pause.ts`). A real-time game also stops its simulation while
+parked, or the hidden frame keeps playing without anyone watching.
 
 ## 3. Phones: the game page in the app's WebView
 
@@ -144,9 +146,9 @@ on `false`, and only what was playing before. Pattern: `createAudioPause` in
 - Issued by `POST /api/v1/games/:appId/token` (the app, for a phone) and
   `POST /api/v1/sessions/:sid/game-token` (the launcher, for the TV).
 - On the game's server: `verifyOgsToken(token, { appId })` from `@open-game-system/profile-kit/server`
-  checks signature, `aud` and expiry and returns the claims or `null`. `jwksUrl` overrides the default
-  (`OGS_JWKS_URL`, `https://api.opengame.org/.well-known/jwks.json`, a custom domain not yet confirmed
-  on 2026-10-04); Rocket Crew sets it per environment as a Worker var (`OGS_JWKS_URL` in its
+  checks signature, `aud` and expiry and returns the claims or `null`. Always pass `jwksUrl`: the
+  production key set is `https://opengame-api.jonathanrmumm.workers.dev/.well-known/jwks.json`; the built-in default (`OGS_JWKS_URL`,
+  `https://api.opengame.org/.well-known/jwks.json`) has no DNS record yet (checked 2026-10-18). Rocket Crew sets it per environment as a Worker var (`OGS_JWKS_URL` in its
   `wrangler.toml`), which also lets seam tests use a local key set. Anything that matters (seats, scores) uses the verified
   claims; `readGameToken` in the page only decodes, for display.
 
@@ -164,12 +166,12 @@ on `false`, and only what was playing before. Pattern: `createAudioPause` in
 Self-contained versions of these tests, for games outside this org: [Testing your game](../apps/docs/content/testing.md).
 
 - **TV page:** frame it from a tiny parent page, post the launcher messages to the iframe and assert on
-  the page. Examples (Playwright + vitest seam tests):
-  - `~/src/night-flight-owls/e2e/ogs-pause.seam.test.ts` and `~/src/rocket-crew/e2e/ogs-pause.seam.test.ts`:
-    `ogs:suspend` suspends every `AudioContext`, `ogs:resume` resumes it.
-  - Do the same for `ogs:start` (players named on the TV) and for the `ogs:instance` the page posts back.
-- **Phone page:** `~/src/rocket-crew/e2e/ogs-bridge.seam.test.ts` fakes the app's WebView bridge and signs
-  game tokens with a local JWKS (`--var OGS_JWKS_URL:…`).
+  the page (Playwright + vitest seam tests): `ogs:suspend` suspends every `AudioContext`, `ogs:resume`
+  resumes it; `ogs:start` names the players and hides the join UI; the page posts `ogs:ready`,
+  `ogs:room` and `ogs:instance` back. Public example: `templates/ogs-starter/e2e/tv-launcher.seam.test.ts`.
+- **Phone page:** fake the app's WebView bridge (`profile`, `cast` and `ogs` stores) and sign game
+  tokens with a local JWKS (`--var OGS_JWKS_URL:…`). Public example:
+  `templates/ogs-starter/e2e/phone-webview.seam.test.ts`.
 - **OGS side:** `packages/profile-kit/src/*.test.ts`, `apps/tv/src/launcher/frames.test.ts`,
   `services/api/test/catalogue.test.ts`; cross-surface suites in [testing/e2e.md](testing/e2e.md).
 

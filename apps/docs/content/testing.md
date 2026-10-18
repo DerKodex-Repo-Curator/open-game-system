@@ -14,8 +14,10 @@ pnpm add -D vitest playwright
 pnpm exec playwright install chromium
 ```
 
-Start your game locally (for example `wrangler dev` on port 8787) and point the tests at it with an
-environment variable (`GAME_URL`). Autoplay needs `--autoplay-policy=no-user-gesture-required`,
+Start your game locally (for example `wrangler dev`) and point the tests at it with an environment
+variable (`GAME_URL`). Pick free ports (listen on port 0) for the game and the test key set rather than
+fixed ones: another dev server on the same port would answer in their place. The starter's
+`e2e/global-setup.ts` does this. Autoplay needs `--autoplay-policy=no-user-gesture-required`,
 because the launcher plays without a tap.
 
 ## 1. The TV page in a stand-in launcher
@@ -89,7 +91,24 @@ Add the same shape for the rest of the TV contract:
   `expect(await frame.getByRole("button", { name: /full screen/i }).count()).toBe(0)`. The same page
   opened directly (`page.goto(TV_URL)`) may keep its button.
 - **Test at TV sizes.** Run the framed page at 1280×720 and 1920×1080 and check that nothing important
-  sits outside the 5% safe area or over the focal area.
+  sits outside the 5% safe area or over the focal area:
+
+  ```ts
+  /** Visible elements (except the full-bleed scene) that poke outside the 5% safe area. */
+  const outsideSafeArea = (f: Frame) =>
+    f.evaluate(() => {
+      const w = innerWidth, h = innerHeight, mx = w * 0.05, my = h * 0.05;
+      return [...document.querySelectorAll("body *")]
+        .filter((el) => !(el instanceof HTMLCanvasElement) && el.checkVisibility())
+        .map((el) => ({ el, r: el.getBoundingClientRect() }))
+        .filter(({ r }) => r.width > 0 && (r.left < mx || r.top < my || r.right > w - mx || r.bottom > h - my))
+        .map(({ el }) => el.id || el.tagName);
+    });
+  expect(await outsideSafeArea(frame)).toEqual([]);
+  ```
+- **Hidden is not gone.** Playwright's `getByText` and `getByLabel` also count hidden elements: assert
+  "no room code on the OGS TV" with `isHidden()` or `getByText(code, { exact: true }).filter({ visible: true })`,
+  not `count() === 0`.
 
 ## 2. The phone page in a fake WebView
 
@@ -136,6 +155,11 @@ await expect(page.getByLabel("name")).toHaveCount(0); // no name form inside OGS
   Sign tokens whose claims match [`GameToken`](messages.md#gametoken) with `aud` = your appId.
 - **Assert the server's view**, not just the page: the player is seated under the token's `name`, a
   token for another `appId` or an expired one is not.
+- **A room game's host phone** also needs the `cast` store, or `SET_VIEW_URL` (step 8) is never
+  dispatched. Its state when the app opens your page:
+  `cast: { isAvailable: true, devices: [], session: { status: "disconnected", deviceId: null, deviceName: null, sessionId: null, streamSessionId: null }, error: null, viewUrl: null }`.
+  The declared TV page then arrives in `window.__ogsSent` as
+  `{ type: "EVENT", storeKey: "cast", event: { type: "SET_VIEW_URL", url } }`.
 - **Sitting reports** arrive in `window.__ogsSent` as
   `{ type: "EVENT", storeKey: "ogs", event: { type: "INSTANCE_REPORT", report } }`. Give the fake an
   `ogs` store too (`ogs: { reported: [] }` next to `profile`): profile-kit waits for the store before

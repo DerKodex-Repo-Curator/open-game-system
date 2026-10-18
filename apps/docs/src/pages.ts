@@ -52,6 +52,13 @@ export const PAGES: PageDef[] = [
     source: content("profile-kit.md"),
   },
   {
+    slug: "cast-kit",
+    nav: "cast-kit reference",
+    summary:
+      "How a room game's host phone declares its TV page (SET_VIEW_URL) with cast-kit-core or cast-kit-react, the cast store's shape, and what not to use.",
+    source: content("cast-kit.md"),
+  },
+  {
     slug: "messages",
     nav: "Messages and manifest",
     summary:

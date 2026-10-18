@@ -36,22 +36,47 @@ must still play exactly as before outside OGS. Check that after every step.
 
 ### 0. No server yet? Add one for phone controllers
 
-A one-screen game has nothing that carries a phone's input to the TV. The
-[starter template](starter.md) has a small one you can copy: a Cloudflare Worker with one Durable
-Object per room (`src/worker/`), the messages (`src/shared/protocol.ts`, zod) and a reconnecting
-client (`src/client/socket.ts`). The TV page joins its room as the screen; each phone joins as a
-player and sends its stick; the room forwards sticks to the screen. Your game loop stays on the TV
-page and reads the sticks instead of the keyboard.
+A one-screen game has nothing that carries a phone's input to the TV. First decide the shape:
+
+- **Keep your page as it is** (it is the plain-browser version) and add two pages: a **TV page**
+  (`/tv`, your game drawn big, its loop reading the phones' input) and a **phone page** (the
+  controller; this is the manifest's `startUrl`). Share the game code between your page and `/tv`.
+- **One player becomes one per phone.** A single-player game needs a ship (paddle, car…) per seated
+  phone, plus what happens when phones join and leave. This is usually most of the work; keep it in a
+  pure, tested module (the starter's `src/shared/sim.ts`).
+
+Then the realtime room. Copy it from the [starter template](starter.md):
 
 ```bash
 curl -fsSL https://ogs-docs.pages.dev/starter.tgz | tar xz   # → ./ogs-starter
 ```
 
-Any realtime server works (PartyKit, Colyseus, your own WebSocket server); OGS only needs a room
-code the TV page reports (step 9).
+| Copy | What it is |
+|---|---|
+| `src/worker/index.ts`, `src/worker/room.ts`, `src/worker/tsconfig.json` | The Worker and its Room Durable Object (one per room) |
+| `src/shared/protocol.ts`, `src/shared/room-core.ts` | The messages (zod) and seating; `room-core` imports `Seat` from `src/shared/sim.ts`, so bring that type along |
+| `src/client/socket.ts` | `createRoom()` and a reconnecting `connectRoom()` |
+| `wrangler.jsonc`, `vite.config.ts` | The Worker serves the built pages from `dist/`; Vite builds `index.html` and `tv.html` |
+| `.gitignore` entries | `dist`, `.wrangler`, `.dev.vars` |
 
-**Done when** in a plain browser the TV page shows a room code and a phone that joins it moves
-something on the TV.
+And its dependencies:
+
+```bash
+pnpm add zod qrcode-generator
+pnpm add -D wrangler @cloudflare/workers-types vitest playwright
+```
+
+wrangler needs the `esbuild` and `workerd` install scripts. pnpm 10 blocks them unless listed: add
+`onlyBuiltDependencies: [esbuild, workerd]` to `pnpm-workspace.yaml` (pnpm 9: `"pnpm": {
+"onlyBuiltDependencies": [...] }` in `package.json`), then `pnpm rebuild`.
+
+The TV page joins its room as the screen; each phone joins as a player and sends its stick; the room
+forwards sticks to the screen. Any realtime server works instead (PartyKit, Colyseus, your own
+WebSocket server); OGS only needs a room code the TV page reports (step 9).
+
+**Done when** in a plain browser `/tv` shows a room code, and a phone that joins it moves something on
+the TV. For a canvas game, give the seam tests a read-only hook on the TV page (for example
+`window.__game = () => world`) so they can see the move.
 
 ### 1. Install profile-kit
 
@@ -84,7 +109,9 @@ The launcher loads your TV page in an iframe with `allow="autoplay; fullscreen"`
 
 - Do not send `X-Frame-Options: DENY`/`SAMEORIGIN`, and no `Content-Security-Policy: frame-ancestors`
   that excludes the launcher.
-- Start without a tap: there is no pointer on a TV. Start audio and animation on load.
+- Start without a tap: there is no pointer on a TV. Start audio and animation on load. (In a plain
+  browser the `AudioContext` still starts suspended; resume it on the first `pointerdown` or
+  `keydown`.)
 - Hide any full-screen button when framed (`window.parent !== window`); the launcher already fills the TV.
 
 **Done when** a plain HTML page with `<iframe src="YOUR_TV_URL">` shows your TV page playing.
@@ -133,6 +160,8 @@ function TvPlayers() {
 - `ogs:suspend` → `onOgsPause(true)`: **go silent**. Suspend your `AudioContext`, pause every
   `<audio>`/`<video>`, stop timers that make sound. Keep the game state; the frame stays loaded.
 - `ogs:resume` → `onOgsPause(false)`: resume only what was playing before.
+- A real-time game also **stops its simulation** while parked (skip the update step, keep drawing or
+  not), or rocks keep falling in a frame nobody is watching.
 
 A safe audio gate (suspends the shared context on pause, resumes it on Continue only if it was
 running, and keeps a sound unlocked during the pause silent):
@@ -250,10 +279,12 @@ import { reportOgsSitting } from "@open-game-system/profile-kit";
 reportOgsSitting({ instanceId, appId: "space-bakery", status: "active", title: "Mission 6" });
 ```
 
-Call it whenever the label changes, from the TV page, the phone page, or both: in the app's WebView it
-goes over the app bridge, on the TV to the launcher, in a plain browser nowhere. On the TV use the
-`instanceId` from `ogs:start`. `status` is one of `lobby`, `active`, `suspended`, `waiting`,
-`completed`, `expired`.
+Call it whenever the label changes (not every frame), from the TV page, the phone page, or both: in
+the app's WebView it goes over the app bridge, on the TV to the launcher, in a plain browser nowhere.
+On the TV use the `instanceId` from `ogs:start`. `status` is one of `lobby`, `active`, `suspended`,
+`waiting`, `completed`, `expired`. `title` is the label people see; pick what tells two sittings
+apart: the round or level ("Round 3"), or for a game with neither, the room ("Room KQTP"). `detail`
+is optional extra text.
 
 **Done when** the TV seam test receives an `ogs:instance` message with your title.
 
@@ -303,7 +334,8 @@ function declareTvPage(url: string) {
 declareTvPage(`${location.origin}/tv?room=${code}`);
 ```
 
-No `<CastButton>` and no cast calls: the app ignores a game's own cast actions.
+No `<CastButton>` and no cast calls: the app ignores a game's own cast actions. Reference:
+[cast-kit](cast-kit.md).
 
 ### 9. Rooms: the couch's phones, and other homes
 
@@ -320,7 +352,19 @@ together. Set `multiCouch: true` in the manifest, join `session.room` instead of
 ### 10. Art kit and manifest
 
 Make the four images and write the manifest: see [Art kit and catalogue](art-and-catalogue.md). The
-manifest's fields are in [Messages and manifest](messages.md#manifest).
+manifest's fields are in [Messages and manifest](messages.md#manifest). Three things the schema
+doesn't tell you:
+
+- **`roles`** is optional in the schema, but the catalogue wants at least one role a kid can play
+  (`audience: "kid"` or `"little"`) unless your game is for grown-ups only (say so in the pull request).
+- **`startUrl`** must be a full URL. Until your game is deployed, use a placeholder and replace it
+  before the pull request.
+- **Check it with the real schema:** vendor
+  [ogs-protocol](https://ogs-docs.pages.dev/pkg/ogs-protocol.tgz) like the kits (step 1, as a dev
+  dependency) and test `ManifestSchema.parse(manifest)`.
+
+Keep the images in your repo (for example `art/`) until the pull request copies them to
+`apps/tv/public/art/<appId>/`.
 
 ### 11. Test it
 

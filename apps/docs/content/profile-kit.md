@@ -542,8 +542,8 @@ interface VerifierOptions {
 const OGS_JWKS_URL = "https://api.opengame.org/.well-known/jwks.json"
 ```
 
-The default key set. Set `jwksUrl` explicitly from configuration: it lets seam tests serve a local key
-set, and lets you point at the OGS API you deploy against.
+The built-in default, which has no DNS record yet (checked 2026-10-18). Always set `jwksUrl` from
+configuration: in production `https://opengame-api.jonathanrmumm.workers.dev/.well-known/jwks.json`, in seam tests a local key set.
 
 ### `GameToken`
 

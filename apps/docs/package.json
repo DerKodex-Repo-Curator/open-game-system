@@ -12,7 +12,8 @@
     "test": "vitest run",
     "deploy": "tsx src/cli.ts && CLOUDFLARE_ACCOUNT_ID=ccf4d9a0a3b76ffae0b6ee048de66f07 wrangler pages deploy dist --project-name ogs-docs --branch main",
     "waitlist:migrate": "wrangler d1 migrations apply ogs-docs-waitlist --remote && wrangler d1 migrations apply ogs-docs-waitlist-preview --remote --env preview",
-    "waitlist:stats": "wrangler d1 execute ogs-docs-waitlist --remote --command \"SELECT COALESCE(v.src,'(none)') AS source, v.views, COALESCE(w.signups,0) AS signups FROM (SELECT COALESCE(utm_source,'(none)') AS src, COUNT(*) AS views FROM visits GROUP BY 1) v LEFT JOIN (SELECT COALESCE(utm_source,'(none)') AS src, COUNT(*) AS signups FROM waitlist GROUP BY 1) w ON w.src = v.src ORDER BY signups DESC, views DESC\""
+    "waitlist:stats": "wrangler d1 execute ogs-docs-waitlist --remote --command \"SELECT COALESCE(v.src,'(none)') AS source, v.views, COALESCE(w.signups,0) AS signups FROM (SELECT COALESCE(utm_source,'(none)') AS src, COUNT(*) AS views FROM visits GROUP BY 1) v LEFT JOIN (SELECT COALESCE(utm_source,'(none)') AS src, COUNT(*) AS signups FROM waitlist GROUP BY 1) w ON w.src = v.src ORDER BY signups DESC, views DESC\"",
+    "starter:kits": "tsx src/cli.ts && cp dist/pkg/profile-kit.tgz dist/pkg/cast-kit-core.tgz ../../templates/ogs-starter/vendor/ && pnpm --dir ../../templates/ogs-starter install --force"
   },
   "dependencies": {
     "@open-game-system/ogs-protocol": "workspace:*",

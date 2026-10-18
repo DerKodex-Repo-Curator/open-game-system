@@ -28,7 +28,7 @@ export type LauncherToGame = z.infer<typeof LauncherToGameSchema>;
 export const GameToLauncherSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ogs:ready") }),
   z.object({ type: z.literal("ogs:resume-point"), label: z.string() }),
-  /** The room the TV page shows (multiCouch games): the couch session keeps it on the sitting. */
+  /** The room the TV page shows (every room game: the couch's phones follow into it; multiCouch games also let other couches join). */
   z.object({ type: z.literal("ogs:room"), room: RoomIdSchema }),
   z.object({ type: z.literal("ogs:instance"), report: InstanceReportSchema }),
 ]);

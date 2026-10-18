@@ -83,6 +83,7 @@ Start here. Load deeper docs **only when working on the relevant domain.**
 |---|---|
 | Change a feature's behavior | Product spec + acceptance test `.feature` file |
 | Change profile-kit exports, `ogs-protocol` frame/manifest schemas, or the game contract | `apps/docs/content/` (its tests fail until the reference matches) |
+| Change profile-kit, cast-kit-core or ogs-protocol source | `pnpm --filter @open-game-system/docs starter:kits`, commit `templates/ogs-starter/vendor` + lockfile (a docs test fails until the starter's kits match the hosted ones) |
 | Add a new feature | Product spec + new `.feature` file + `docs/acceptance/index.md` |
 | Add/remove a workspace package | `docs/structure.md` + this file (Source layout) |
 | Change API endpoints or error codes | `docs/architecture.md` (endpoint table + error contract) |

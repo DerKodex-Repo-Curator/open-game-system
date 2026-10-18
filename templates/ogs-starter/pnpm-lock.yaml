@@ -477,7 +477,7 @@ packages:
     version: 0.2.0
 
   '@open-game-system/profile-kit@file:vendor/profile-kit.tgz':
-    resolution: {integrity: sha512-wTIZ4TFsROWMKVv+mbEwa2AcKzoNSLLwERVsXSj3wR6w6OebJB0D0a5W/08CNXANCkC1uZFlFZzOP8kXoOP9Bw==, tarball: file:vendor/profile-kit.tgz}
+    resolution: {integrity: sha512-ZolmkG08fCQa1PQJsGwGBhjp9/WpItjvrconWpZoCWexlPyMWKLHUF5seNKPPNcnNIx8t8gvv0FyQOWVIscvUw==, tarball: file:vendor/profile-kit.tgz}
     version: 0.1.0
     peerDependencies:
       react: '>=18.0.0'
