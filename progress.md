@@ -26,3 +26,9 @@ Updated 2026-10-18.
 - Clip: ~/.claude/usage-burn/rocket-crew-try-30s.mp4 (recorder ROCKET_CLIP=1).
 - Second game: Midnight Museum, branch try/show-hn (pushed), https://midnight-museum-try.jonathanrmumm.workers.dev/?ref=hn, e2e 4/4 on the preview.
 - Jon's real-device checklist: ~/.claude/usage-burn/morning.md, "Waiting on you".
+
+## 2026-10-18, try-kit
+- `packages/try-kit` (@open-game-system/try-kit 0.1.0): room life (claim, recycle, presence, the `opened()` hook), dead-end pages, `/go`, ws probe + banner, QR, play-on-this-computer, device check, `?ref=` + wide events, `runLoad`. 59 unit + 7 seam tests (fixture DO under wrangler dev).
+- Rocket Crew moved onto it: rocket-crew-try `try/show-hn` 2749828, preview redeployed. 1,062 unit tests green.
+- Docs: apps/docs/content/try-kit.md + PAGES entry (docs tests 19/19; the page-count tripwire 9 → 10).
+- Proposal for Jon: docs/research/try-kit-proposal.md (starter adoption in ~20 lines, tarball at ogs-docs.pages.dev/pkg).
