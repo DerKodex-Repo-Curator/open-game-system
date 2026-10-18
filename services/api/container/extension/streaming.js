@@ -110,7 +110,9 @@ function removeConnection(connectionId) {
   console.log(`[CONNECTION] Removing connection: ${connectionId}`);
   const wasPresent = window.activeConnections.has(connectionId);
   window.activeConnections.delete(connectionId);
-  console.log(`[CONNECTION] Was present: ${wasPresent}, Active connections: ${window.activeConnections.size}`);
+  console.log(
+    `[CONNECTION] Was present: ${wasPresent}, Active connections: ${window.activeConnections.size}`,
+  );
   recordDebugEvent("connection_removed", {
     connectionId,
     wasPresent,
@@ -135,7 +137,9 @@ async function INITIALIZE_PUBLISHER({ iceServers = [], maxKbps = 4000 }) {
 
   console.log(`[INITIALIZE_PUBLISHER] ========== STARTING INITIALIZATION ==========`);
   console.log(`[INITIALIZE_PUBLISHER] traceId: ${traceId}`);
-  console.log(`[INITIALIZE_PUBLISHER] iceServers count: ${Array.isArray(iceServers) ? iceServers.length : 0}`);
+  console.log(
+    `[INITIALIZE_PUBLISHER] iceServers count: ${Array.isArray(iceServers) ? iceServers.length : 0}`,
+  );
 
   // Mark that INITIALIZE_PUBLISHER was called
   window.streamingDebug.initializeCalled = true;
@@ -458,7 +462,9 @@ async function INITIALIZE_PUBLISHER({ iceServers = [], maxKbps = 4000 }) {
     }
 
     // Create RTCPeerConnection with ICE servers
-    console.log(`[PUBLISHER] Creating RTCPeerConnection with ${Array.isArray(iceServers) ? iceServers.length : 0} ICE servers`);
+    console.log(
+      `[PUBLISHER] Creating RTCPeerConnection with ${Array.isArray(iceServers) ? iceServers.length : 0} ICE servers`,
+    );
 
     const pc = new RTCPeerConnection({
       iceServers: Array.isArray(iceServers) ? iceServers : [],
@@ -482,12 +488,31 @@ async function INITIALIZE_PUBLISHER({ iceServers = [], maxKbps = 4000 }) {
           if (pc.connectionState !== "connected") return clearInterval(statsTimer);
           const video = {};
           (await pc.getStats()).forEach((r) => {
-            if (r.type === "media-source" && r.kind === "video") Object.assign(video, { captureFps: r.framesPerSecond, captureSize: `${r.width}x${r.height}` });
+            if (r.type === "media-source" && r.kind === "video")
+              Object.assign(video, {
+                captureFps: r.framesPerSecond,
+                captureSize: `${r.width}x${r.height}`,
+              });
             if (r.type === "outbound-rtp" && r.kind === "video")
-              Object.assign(video, { sendFps: r.framesPerSecond, sendSize: `${r.frameWidth}x${r.frameHeight}`, limitedBy: r.qualityLimitationReason, encoder: r.encoderImplementation, targetBitrate: r.targetBitrate,
-                limitedSeconds: r.qualityLimitationDurations, keyFramesEncoded: r.keyFramesEncoded, pliCount: r.pliCount, nackCount: r.nackCount,
-                avgEncodeMs: r.framesEncoded ? Math.round((r.totalEncodeTime / r.framesEncoded) * 10000) / 10 : null });
-            if (r.type === "candidate-pair" && r.nominated && r.state === "succeeded") Object.assign(video, { rttMs: Math.round((r.currentRoundTripTime || 0) * 1000), outgoingKbps: Math.round((r.availableOutgoingBitrate || 0) / 1000) });
+              Object.assign(video, {
+                sendFps: r.framesPerSecond,
+                sendSize: `${r.frameWidth}x${r.frameHeight}`,
+                limitedBy: r.qualityLimitationReason,
+                encoder: r.encoderImplementation,
+                targetBitrate: r.targetBitrate,
+                limitedSeconds: r.qualityLimitationDurations,
+                keyFramesEncoded: r.keyFramesEncoded,
+                pliCount: r.pliCount,
+                nackCount: r.nackCount,
+                avgEncodeMs: r.framesEncoded
+                  ? Math.round((r.totalEncodeTime / r.framesEncoded) * 10000) / 10
+                  : null,
+              });
+            if (r.type === "candidate-pair" && r.nominated && r.state === "succeeded")
+              Object.assign(video, {
+                rttMs: Math.round((r.currentRoundTripTime || 0) * 1000),
+                outgoingKbps: Math.round((r.availableOutgoingBitrate || 0) / 1000),
+              });
           });
           window.streamingDebug.videoStats = video;
         }, 2000);
@@ -529,8 +554,14 @@ async function INITIALIZE_PUBLISHER({ iceServers = [], maxKbps = 4000 }) {
       // Hold 720p when bits run short (drop frames instead): after a dip the quality scaler kept the
       // picture at 640x360 well after the bandwidth came back (measured Oct 3, laptop and cloud alike).
       params.degradationPreference = "maintain-resolution";
-      params.encodings = (params.encodings.length ? params.encodings : [{}]).map((e) => ({ ...e, maxBitrate: maxKbps * 1000, maxFramerate: 30 }));
-      sender.setParameters(params).catch((err) => console.warn("[PUBLISHER] setParameters failed:", err?.message));
+      params.encodings = (params.encodings.length ? params.encodings : [{}]).map((e) => ({
+        ...e,
+        maxBitrate: maxKbps * 1000,
+        maxFramerate: 30,
+      }));
+      sender
+        .setParameters(params)
+        .catch((err) => console.warn("[PUBLISHER] setParameters failed:", err?.message));
       tracks.push({
         location: "local",
         trackName: "cast-video",
@@ -567,10 +598,10 @@ async function INITIALIZE_PUBLISHER({ iceServers = [], maxKbps = 4000 }) {
     const transceivers = pc.getTransceivers();
     for (const track of tracks) {
       const transceiver = transceivers.find(
-        (t) => t.sender.track && (
-          (track.trackName === "cast-video" && t.sender.track.kind === "video") ||
-          (track.trackName === "cast-audio" && t.sender.track.kind === "audio")
-        )
+        (t) =>
+          t.sender.track &&
+          ((track.trackName === "cast-video" && t.sender.track.kind === "video") ||
+            (track.trackName === "cast-audio" && t.sender.track.kind === "audio")),
       );
       if (transceiver && transceiver.mid) {
         track.mid = transceiver.mid;
@@ -643,7 +674,8 @@ function withStartBitrate(sdp, kbps) {
     }
     out.push(line);
     const rtpmap = video ? /^a=rtpmap:(\d+) /.exec(line) : null;
-    if (rtpmap && videoPts.has(rtpmap[1]) && !withFmtp.has(rtpmap[1])) out.push(`a=fmtp:${rtpmap[1]} ${param}`);
+    if (rtpmap && videoPts.has(rtpmap[1]) && !withFmtp.has(rtpmap[1]))
+      out.push(`a=fmtp:${rtpmap[1]} ${param}`);
   }
   return out.join(eol);
 }
@@ -669,7 +701,9 @@ async function APPLY_REMOTE_DESCRIPTION({ sessionDescription }) {
     );
     console.log(`[APPLY_REMOTE_DESCRIPTION] Remote description applied successfully`);
     console.log(`[APPLY_REMOTE_DESCRIPTION] Connection state: ${publisherPc.connectionState}`);
-    console.log(`[APPLY_REMOTE_DESCRIPTION] ICE connection state: ${publisherPc.iceConnectionState}`);
+    console.log(
+      `[APPLY_REMOTE_DESCRIPTION] ICE connection state: ${publisherPc.iceConnectionState}`,
+    );
     recordDebugEvent("apply_remote_description_complete", {
       connectionState: publisherPc.connectionState,
       iceConnectionState: publisherPc.iceConnectionState,
@@ -692,7 +726,9 @@ async function CLOSE_PUBLISHER() {
 
   try {
     if (publisherPc) {
-      console.log(`[CLOSE_PUBLISHER] Closing RTCPeerConnection (state: ${publisherPc.connectionState})`);
+      console.log(
+        `[CLOSE_PUBLISHER] Closing RTCPeerConnection (state: ${publisherPc.connectionState})`,
+      );
       publisherPc.close();
       publisherPc = null;
     }
@@ -723,8 +759,14 @@ async function CLOSE_PUBLISHER() {
 
 // Log when the script finishes loading
 console.log("[INIT] streaming.js script execution complete");
-console.log("[INIT] INITIALIZE_PUBLISHER function available:", typeof INITIALIZE_PUBLISHER === "function");
-console.log("[INIT] APPLY_REMOTE_DESCRIPTION function available:", typeof APPLY_REMOTE_DESCRIPTION === "function");
+console.log(
+  "[INIT] INITIALIZE_PUBLISHER function available:",
+  typeof INITIALIZE_PUBLISHER === "function",
+);
+console.log(
+  "[INIT] APPLY_REMOTE_DESCRIPTION function available:",
+  typeof APPLY_REMOTE_DESCRIPTION === "function",
+);
 console.log("[INIT] CLOSE_PUBLISHER function available:", typeof CLOSE_PUBLISHER === "function");
 console.log("[INIT] Global objects available:", {
   RTCPeerConnection: typeof RTCPeerConnection !== "undefined",

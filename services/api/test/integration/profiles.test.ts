@@ -5,8 +5,8 @@ import { signJwt } from "../../src/lib/jwt";
 import {
   BASE,
   bearer,
-  claimsOf,
   CreatedProfileSchema,
+  claimsOf,
   createProfile,
   createSession,
   device,
@@ -73,12 +73,22 @@ describe("POST /profiles — make your OGS profile on this device", () => {
   it("makes the profile and a token for this device", async () => {
     const handle = unique("jonathan").replace(/-/g, ".");
     const d = device("phone");
-    const res = await postProfile({ name: " Jonathan ", handle: `@${handle}`, sticker: "bear", device: d });
+    const res = await postProfile({
+      name: " Jonathan ",
+      handle: `@${handle}`,
+      sticker: "bear",
+      device: d,
+    });
     expect(res.status).toBe(201);
     const { profile, token } = CreatedProfileSchema.parse(await res.json());
     expect(profile).toEqual({ id: expect.any(String), handle, name: "Jonathan", sticker: "bear" });
     const claims = claimsOf(token);
-    expect(claims).toEqual({ sub: profile.id, did: d.deviceId, kind: "phone", exp: expect.any(Number) });
+    expect(claims).toEqual({
+      sub: profile.id,
+      did: d.deviceId,
+      kind: "phone",
+      exp: expect.any(Number),
+    });
     const days = (claims.exp * 1000 - Date.now()) / 86_400_000;
     expect(days).toBeGreaterThan(364);
     expect(days).toBeLessThan(366);
@@ -99,7 +109,12 @@ describe("POST /profiles — make your OGS profile on this device", () => {
 
   it("refuses a taken handle (409 handle_taken)", async () => {
     const p = await createProfile();
-    const res = await postProfile({ name: "Other", handle: p.profile.handle, sticker: "owl", device: device() });
+    const res = await postProfile({
+      name: "Other",
+      handle: p.profile.handle,
+      sticker: "owl",
+      device: device(),
+    });
     expect(res.status).toBe(409);
     expect(await errorCode(res)).toBe("handle_taken");
   });
@@ -109,7 +124,10 @@ describe("POST /profiles — make your OGS profile on this device", () => {
     ["an empty name", { name: "  ", sticker: "bear", device: device() }],
     ["no sticker", { name: "A", device: device() }],
     ["no device", { name: "A", sticker: "bear" }],
-    ["a launcher device", { name: "A", sticker: "bear", device: { ...device(), kind: "launcher" } }],
+    [
+      "a launcher device",
+      { name: "A", sticker: "bear", device: { ...device(), kind: "launcher" } },
+    ],
     ["a one-letter handle", { name: "A", handle: "a", sticker: "bear", device: device() }],
     ["a handle with spaces", { name: "A", handle: "a b c", sticker: "bear", device: device() }],
   ])("rejects %s (400 invalid_body)", async (_name, body) => {

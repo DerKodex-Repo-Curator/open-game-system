@@ -18,12 +18,14 @@ describe("local start URL overrides (dev / e2e only)", () => {
     expect(games.map((g) => g.appId)).toEqual(CATALOGUE.map((g) => g.appId));
   });
 
-  it.each(["not json", "[1]", '{"rocket-crew":"not a url"}', '{"rocket-crew":3}'])(
-    "ignores a malformed override %j",
-    (raw) => {
-      expect(catalogueFor({ CATALOGUE_START_URLS: raw })).toBe(CATALOGUE);
-    },
-  );
+  it.each([
+    "not json",
+    "[1]",
+    '{"rocket-crew":"not a url"}',
+    '{"rocket-crew":3}',
+  ])("ignores a malformed override %j", (raw) => {
+    expect(catalogueFor({ CATALOGUE_START_URLS: raw })).toBe(CATALOGUE);
+  });
 
   it("an override can't add a game", () => {
     const games = catalogueFor({

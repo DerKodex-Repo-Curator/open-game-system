@@ -75,3 +75,36 @@ export function createLinkHold() {
     },
   };
 }
+
+/**
+ * The app's links (spec §9 and ogs-join), with what it knows now. Before this phone has a profile
+ * (a stranger's first scan of the TV) a link waits in `hold`; the tabs open it with `openHeld`
+ * once onboarding made one. Expo Router opens the app scheme's join links itself
+ * (app/join/[code].tsx, which holds them until there is a profile); an https join link only
+ * reaches here.
+ */
+export function createLinkOpener(deps: {
+  hold: ReturnType<typeof createLinkHold>;
+  hasProfile: () => boolean;
+  startUrls: () => readonly string[];
+  push: (path: string) => void;
+  game: (url: string) => void;
+}) {
+  const open = (url: string, from: LinkFrom) => {
+    if (from === "link" && url.startsWith("opengame") && readJoinLink(url)) return;
+    if (deps.hold.offer(url, from, deps.hasProfile())) return;
+    openLink(url, from, {
+      startUrls: deps.startUrls(),
+      play: (appId, room) => deps.push(`/play/${appId}?room=${encodeURIComponent(room)}`),
+      game: deps.game,
+      join: (code) => deps.push(`/join/${code}`),
+    });
+  };
+  /** A held link, now that there is a profile: it goes where it said. */
+  const openHeld = (url: string, from: LinkFrom) => {
+    const join = readJoinLink(url);
+    if (join) deps.push(`/join/${join.code}`);
+    else open(url, from);
+  };
+  return { open, openHeld };
+}

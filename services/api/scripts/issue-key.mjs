@@ -31,7 +31,14 @@ if (args.includes("--dry")) {
 
 execFileSync(
   "wrangler",
-  ["d1", "execute", "opengame-api-db", args.includes("--remote") ? "--remote" : "--local", "--command", sql],
+  [
+    "d1",
+    "execute",
+    "opengame-api-db",
+    args.includes("--remote") ? "--remote" : "--local",
+    "--command",
+    sql,
+  ],
   { stdio: ["ignore", "ignore", "inherit"] },
 );
 console.error(`Issued a key for ${appId} (${key.slice(0, 12)}…). It is shown once, on stdout.`);

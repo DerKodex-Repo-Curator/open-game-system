@@ -39,7 +39,10 @@ const toJson = (row: Row) => ({
 });
 
 async function readRelease(db: D1Database, platform: string): Promise<Row | null> {
-  const raw = await db.prepare("SELECT * FROM app_releases WHERE platform = ?").bind(platform).first();
+  const raw = await db
+    .prepare("SELECT * FROM app_releases WHERE platform = ?")
+    .bind(platform)
+    .first();
   return raw ? Row.parse(raw) : null;
 }
 

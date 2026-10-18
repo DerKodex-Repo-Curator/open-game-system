@@ -1,4 +1,4 @@
-import { createLinkHold, openLink, routeLink } from "../link-routing";
+import { createLinkHold, createLinkOpener, openLink, routeLink } from "../link-routing";
 
 jest.mock("../deep-links", () => ({
   extractGameUrl: (url: string) =>
@@ -137,5 +137,68 @@ describe("a link that arrives before this phone has a profile", () => {
     const went: string[] = [];
     hold.release((u, f) => went.push(`${u}|${f}`));
     expect(went).toEqual([]);
+  });
+});
+
+describe("the app's link opener", () => {
+  function opener(hasProfile: boolean) {
+    const went: string[] = [];
+    const hold = createLinkHold();
+    let profile = hasProfile;
+    const links = createLinkOpener({
+      hold,
+      hasProfile: () => profile,
+      startUrls: () => startUrls,
+      push: (path) => went.push(`push:${path}`),
+      game: (url) => went.push(`game:${url}`),
+    });
+    return {
+      links,
+      went,
+      hold,
+      makeProfile: () => {
+        profile = true;
+      },
+    };
+  }
+
+  it("leaves the app scheme's join links to the router, which holds them itself", () => {
+    const o = opener(true);
+    o.links.open("opengame://join/NT9WPH", "link");
+    expect(o.went).toEqual([]);
+  });
+
+  it("with a profile: an https join link opens the join screen; a play link the play screen", () => {
+    const o = opener(true);
+    o.links.open("https://opengame.org/join/NT9WPH", "link");
+    o.links.open("https://opengame.org/play/night-flight?room=KQ TP", "link");
+    o.links.open("https://opengame.org/play/night-flight?room=KQTP", "push");
+    o.links.open("https://triviajam.tv/host", "link");
+    expect(o.went).toEqual([
+      "push:/join/NT9WPH",
+      "push:/play/night-flight?room=KQTP",
+      "game:https://triviajam.tv/host",
+    ]);
+  });
+
+  it("a join link from a push isn't left to the router", () => {
+    const o = opener(true);
+    o.links.open("opengame://join/NT9WPH", "push");
+    expect(o.went).toEqual(["push:/join/NT9WPH"]);
+  });
+
+  it("before a profile: holds the link; once there is one, the held link goes where it said", () => {
+    const o = opener(false);
+    o.links.open("https://opengame.org/play/night-flight?room=KQTP", "link");
+    expect(o.went).toEqual([]);
+    o.makeProfile();
+    o.hold.release(o.links.openHeld);
+    expect(o.went).toEqual(["push:/play/night-flight?room=KQTP"]);
+  });
+
+  it("a held join link (from the app scheme too) opens the join screen", () => {
+    const o = opener(true);
+    o.links.openHeld("opengame://join/NT9WPH", "link");
+    expect(o.went).toEqual(["push:/join/NT9WPH"]);
   });
 });

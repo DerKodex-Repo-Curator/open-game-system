@@ -41,13 +41,13 @@ const LoadViewSchema = z.object({ type: z.literal("LOAD_VIEW"), viewUrl: z.strin
 
 /** The launcher token a LOAD_VIEW's view URL carries (`?token=`), or null for any other message. */
 function launcherTokenOf(message: Message): string | null {
+  // Text that isn't JSON stays text and fails the schema.
   let data: unknown = message;
+  // Stryker disable next-line ConditionalExpression: equivalent, an object fails JSON.parse and stays as it was
   if (typeof message === "string") {
     try {
       data = JSON.parse(message);
-    } catch {
-      return null;
-    }
+    } catch {}
   }
   const load = LoadViewSchema.safeParse(data);
   return load.success ? new URL(load.data.viewUrl).searchParams.get("token") : null;
@@ -67,10 +67,14 @@ export function createScreenCastBackend(deps: { api: ScreensApi; storage: Storag
     for (const l of deviceListeners) l(devices);
   };
   const ready = deps.storage.getItem(STORAGE_KEY).then((raw) => {
+    let kept: unknown;
     try {
-      const parsed = SavedSchema.safeParse(JSON.parse(raw ?? "[]"));
-      if (parsed.success && saved.length === 0) saved = parsed.data;
+      // Stryker disable next-line StringLiteral: equivalent, any text that isn't a list reads as none
+      kept = JSON.parse(raw ?? "");
     } catch {}
+    const parsed = SavedSchema.safeParse(kept);
+    // A TV typed in while this loaded wins (the claim already kept the list).
+    if (parsed.success && saved.length === 0) saved = parsed.data;
     publish();
   });
 
@@ -172,7 +176,6 @@ export function createScreenCastBackend(deps: { api: ScreensApi; storage: Storag
  * started and ended on the side that has its TV. Events from both reach the app.
  */
 export function combineCastBackends(primary: CastBackend, screens: CastBackend): CastBackend {
-  let active: CastBackend | null = null;
   // The same array until either side's list changes (useSyncExternalStore reads it).
   let last: { a: CastDevice[]; b: CastDevice[]; all: CastDevice[] } | null = null;
   const getDevices = () => {
@@ -198,17 +201,11 @@ export function combineCastBackends(primary: CastBackend, screens: CastBackend):
         (await primary.sessionManager.getCurrentCastSession())
       );
     },
-    async startSession(deviceId) {
-      const side = owner(deviceId);
-      const started = await side.sessionManager.startSession(deviceId);
-      if (started) active = side;
-      return started;
-    },
+    startSession: (deviceId) => owner(deviceId).sessionManager.startSession(deviceId),
+    /** Ends the side with a session up (a browser TV's, else the Chromecast side's). */
     async endCurrentSession(stopCasting) {
-      const side =
-        active ?? ((await screens.sessionManager.getCurrentCastSession()) ? screens : primary);
+      const side = (await screens.sessionManager.getCurrentCastSession()) ? screens : primary;
       await side.sessionManager.endCurrentSession(stopCasting);
-      if (side === active) active = null;
     },
     onSessionStarting: (fn) => both((sm) => sm.onSessionStarting.bind(sm), fn),
     onSessionStarted: (fn) => both((sm) => sm.onSessionStarted.bind(sm), fn),

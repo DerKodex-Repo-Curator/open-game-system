@@ -22,7 +22,10 @@ async function wrappingKey(secret: string): Promise<CryptoKey> {
 }
 
 async function newPair(): Promise<VapidKeyPair> {
-  const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+  const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+    "sign",
+    "verify",
+  ]);
   if (!("privateKey" in pair)) throw new Error("expected a P-256 key pair");
   const jwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
   if (jwk instanceof ArrayBuffer) throw new Error("expected a JWK");
@@ -49,12 +52,20 @@ export async function vapidKeysFor(
     .bind(appId)
     .first<Row>();
   if (row) {
-    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromB64url(row.iv) }, key, fromB64url(row.private_key_enc));
+    const plain = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: fromB64url(row.iv) },
+      key,
+      fromB64url(row.private_key_enc),
+    );
     return { publicKey: row.public_key, privateKey: new TextDecoder().decode(plain) };
   }
   const pair = await newPair();
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const enc = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(pair.privateKey));
+  const enc = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    new TextEncoder().encode(pair.privateKey),
+  );
   await db
     .prepare(
       `INSERT INTO push_vapid_keys (app_id, public_key, private_key_enc, iv, created_at) VALUES (?, ?, ?, ?, ?)

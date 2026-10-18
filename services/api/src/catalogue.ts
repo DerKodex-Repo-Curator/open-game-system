@@ -202,7 +202,8 @@ const SEED: ManifestInput[] = [
   {
     appId: "bobberbrook",
     name: "Bobberbrook",
-    tagline: "Run around a painted lake together, cast at the swirls and fill the family fish journal.",
+    tagline:
+      "Run around a painted lake together, cast at the swirls and fill the family fish journal.",
     shape: "couch",
     tv: "required",
     startUrl: workers("bobberbrook"),
@@ -262,7 +263,8 @@ const SEED: ManifestInput[] = [
   {
     appId: "midnight-museum",
     name: "Midnight Museum",
-    tagline: "Someone took the Moonstone! Peek in the crates, follow the clues and catch the thief before the doors.",
+    tagline:
+      "Someone took the Moonstone! Peek in the crates, follow the clues and catch the thief before the doors.",
     shape: "couch",
     tv: "required",
     startUrl: workers("midnight-museum"),

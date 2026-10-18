@@ -3,7 +3,13 @@
  * forgotten, that would bill all night. Past maxMs the server ends the stream and refuses
  * heartbeats, so the pings stop and Cloud Run can scale to zero.
  */
-export function createStreamLifetime({ maxMs, now = Date.now }: { maxMs: number; now?: () => number }) {
+export function createStreamLifetime({
+  maxMs,
+  now = Date.now,
+}: {
+  maxMs: number;
+  now?: () => number;
+}) {
   let startedAt: number | null = null;
   return {
     started() {

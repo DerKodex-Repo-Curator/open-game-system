@@ -1,4 +1,8 @@
-import type { OgsPushData, PushDeliveryStatus, WebPushPayload } from "@open-game-system/ogs-protocol";
+import type {
+  OgsPushData,
+  PushDeliveryStatus,
+  WebPushPayload,
+} from "@open-game-system/ogs-protocol";
 import { z } from "zod";
 import type { PushNotification, PushResult } from "../providers/push";
 
@@ -67,7 +71,12 @@ async function granted(db: D1Database, profileId: string, appId: string) {
   return row?.granted === 1;
 }
 
-async function toApp(db: D1Database, profileId: string, m: PushMessage, senders: PushSenders): Promise<SurfaceOutcome> {
+async function toApp(
+  db: D1Database,
+  profileId: string,
+  m: PushMessage,
+  senders: PushSenders,
+): Promise<SurfaceOutcome> {
   if (!(await granted(db, profileId, m.appId))) return "not_permitted";
   const phones = await phonesOf(db, profileId);
   const data: OgsPushData = {
@@ -79,7 +88,11 @@ async function toApp(db: D1Database, profileId: string, m: PushMessage, senders:
   };
   const results = await Promise.all(
     phones.map(async (p) => {
-      const r = await senders.expo(p.platform, p.push_token, { title: m.title, body: m.body, data: { ...data } });
+      const r = await senders.expo(p.platform, p.push_token, {
+        title: m.title,
+        body: m.body,
+        data: { ...data },
+      });
       if (!r.success && !r.deviceActive)
         await db.prepare("DELETE FROM devices WHERE ogs_device_id = ?").bind(p.ogs_device_id).run();
       return r;
@@ -90,20 +103,37 @@ async function toApp(db: D1Database, profileId: string, m: PushMessage, senders:
 }
 
 const WebKeysSchema = z.object({ endpoint: z.string(), p256dh: z.string(), auth: z.string() });
-const WEB_OUTCOME: Record<WebSendResult, SurfaceOutcome> = { ok: "sent", gone: "gone", error: "failed" };
+const WEB_OUTCOME: Record<WebSendResult, SurfaceOutcome> = {
+  ok: "sent",
+  gone: "gone",
+  error: "failed",
+};
 
-async function toWeb(db: D1Database, s: SurfaceRow, m: PushMessage, senders: PushSenders): Promise<SurfaceOutcome> {
+async function toWeb(
+  db: D1Database,
+  s: SurfaceRow,
+  m: PushMessage,
+  senders: PushSenders,
+): Promise<SurfaceOutcome> {
   const sub = WebKeysSchema.safeParse(s);
   if (!sub.success) return "gone";
-  const payload = { title: m.title, body: m.body, url: m.url, whenOpen: m.whenOpen, ...(m.tag ? { tag: m.tag } : {}) };
+  const payload = {
+    title: m.title,
+    body: m.body,
+    url: m.url,
+    whenOpen: m.whenOpen,
+    ...(m.tag ? { tag: m.tag } : {}),
+  };
   const result = await senders.web(m.appId, sub.data, payload);
-  if (result === "gone") await db.prepare("DELETE FROM push_surfaces WHERE id = ?").bind(s.id).run();
+  if (result === "gone")
+    await db.prepare("DELETE FROM push_surfaces WHERE id = ?").bind(s.id).run();
   return WEB_OUTCOME[result];
 }
 
 /** One handle's answer from its surfaces' outcomes: sent beats failed beats gone beats not_permitted. */
 export function combine(outcomes: SurfaceOutcome[]): PushDeliveryStatus {
-  for (const status of ["sent", "failed", "gone"] as const) if (outcomes.includes(status)) return status;
+  for (const status of ["sent", "failed", "gone"] as const)
+    if (outcomes.includes(status)) return status;
   return "not_permitted";
 }
 
@@ -132,7 +162,9 @@ export async function deliver(
   const outcomes: SurfaceOutcome[] = [];
   for (const s of z.array(SurfaceRowSchema).parse(results)) {
     const outcome =
-      s.kind === "ogs" && s.profile_id ? await toApp(db, s.profile_id, m, senders) : await toWeb(db, s, m, senders);
+      s.kind === "ogs" && s.profile_id
+        ? await toApp(db, s.profile_id, m, senders)
+        : await toWeb(db, s, m, senders);
     outcomes.push(outcome);
     if (outcome === "sent") break;
   }

@@ -1,5 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { combine, deliver, type PushMessage, type PushSenders, type WebSendResult } from "../src/lib/push-delivery";
+import {
+  combine,
+  deliver,
+  type PushMessage,
+  type PushSenders,
+  type WebSendResult,
+} from "../src/lib/push-delivery";
 import { grantOgs } from "../src/lib/push-handles";
 import type { PushResult } from "../src/providers/push";
 import { openTestD1, type TestD1 } from "./support/d1";
@@ -39,9 +45,15 @@ beforeEach(async () => {
   expoResult = { success: true, deviceActive: true };
   webResult = "ok";
   await d1.db.batch([
-    d1.db.prepare("INSERT INTO profiles (id, handle, name, sticker) VALUES ('jordan', 'jordan', 'Jordan', 'owl')"),
-    d1.db.prepare("INSERT INTO profile_devices (device_id, profile_id, kind, name) VALUES ('j-phone', 'jordan', 'phone', 'Phone')"),
-    d1.db.prepare("INSERT INTO devices (ogs_device_id, platform, push_token) VALUES ('j-phone', 'android', 'ExponentPushToken[j]')"),
+    d1.db.prepare(
+      "INSERT INTO profiles (id, handle, name, sticker) VALUES ('jordan', 'jordan', 'Jordan', 'owl')",
+    ),
+    d1.db.prepare(
+      "INSERT INTO profile_devices (device_id, profile_id, kind, name) VALUES ('j-phone', 'jordan', 'phone', 'Phone')",
+    ),
+    d1.db.prepare(
+      "INSERT INTO devices (ogs_device_id, platform, push_token) VALUES ('j-phone', 'android', 'ExponentPushToken[j]')",
+    ),
   ]);
 });
 
@@ -77,7 +89,10 @@ describe("which surface gets it", () => {
     const h = await bothSurfaces(100, 200);
     webResult = "gone";
     expect(await deliver(d1.db, h, message, senders)).toBe("sent");
-    expect(sent).toEqual(["web:https://push.example/j:Clue: RIVER 2:deliver:cb-KQTP", "expo:ExponentPushToken[j]"]);
+    expect(sent).toEqual([
+      "web:https://push.example/j:Clue: RIVER 2:deliver:cb-KQTP",
+      "expo:ExponentPushToken[j]",
+    ]);
     expect(await surfaces()).not.toContain("w1");
   });
 
@@ -113,7 +128,9 @@ describe("which surface gets it", () => {
     const h = await grantOgs(d1.db, "jordan", "codebreakers", 1);
     await d1.db.prepare("DELETE FROM push_surfaces").run();
     await d1.db
-      .prepare("INSERT INTO push_surfaces (id, handle_id, kind, endpoint, last_active_at, created_at) VALUES ('w2', ?, 'web', 'https://push.example/x', 1, 1)")
+      .prepare(
+        "INSERT INTO push_surfaces (id, handle_id, kind, endpoint, last_active_at, created_at) VALUES ('w2', ?, 'web', 'https://push.example/x', 1, 1)",
+      )
       .bind(h)
       .run();
     expect(await deliver(d1.db, h, message, senders)).toBe("gone");
@@ -130,7 +147,9 @@ describe("which surface gets it", () => {
     ]) {
       await d1.db.prepare("DELETE FROM push_surfaces").run();
       await d1.db
-        .prepare("INSERT INTO push_surfaces (id, handle_id, kind, endpoint, p256dh, auth, last_active_at, created_at) VALUES ('w3', ?, 'web', ?, ?, ?, 1, 1)")
+        .prepare(
+          "INSERT INTO push_surfaces (id, handle_id, kind, endpoint, p256dh, auth, last_active_at, created_at) VALUES ('w3', ?, 'web', ?, ?, ?, 1, 1)",
+        )
         .bind(h, endpoint, p256dh, auth)
         .run();
       expect(await deliver(d1.db, h, message, senders)).toBe("gone");
@@ -154,7 +173,9 @@ describe("which surface gets it", () => {
 
   it("a handle of another game is not_permitted and nothing is sent", async () => {
     const h = await bothSurfaces(100, 200);
-    expect(await deliver(d1.db, h, { ...message, appId: "rocket-crew" }, senders)).toBe("not_permitted");
+    expect(await deliver(d1.db, h, { ...message, appId: "rocket-crew" }, senders)).toBe(
+      "not_permitted",
+    );
     expect(sent).toEqual([]);
   });
 

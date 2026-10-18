@@ -28,19 +28,19 @@
 import crypto from "node:crypto";
 import http from "node:http";
 import url from "node:url";
-import { ensureExtensionApis } from "./extension-page";
-import { createStreamLifetime, isIdle } from "./stream-lifetime";
-import { streamVariant } from "./stream-variant";
 import type { Browser, Page } from "puppeteer";
 import puppeteer from "puppeteer";
+import { ensureExtensionApis } from "./extension-page";
 import {
   type IceServerConfig,
   type PublisherPrepareResponse,
+  parsePublisherAnswerRequest,
+  parsePublisherPrepareRequest,
   type SessionDescription,
   type TrackInfo,
-  parsePublisherPrepareRequest,
-  parsePublisherAnswerRequest,
 } from "./protocol";
+import { createStreamLifetime, isIdle } from "./stream-lifetime";
+import { streamVariant } from "./stream-variant";
 
 // TypeScript declaration for browser window extensions
 declare global {
@@ -124,7 +124,9 @@ async function collectBrowserState(traceId: string) {
         .then(async (state) => ({
           ...state,
           render: await activePage
-            ?.evaluate(`window.__renderStats ? { seconds: Math.round(performance.now() / 1000), frames: window.__renderStats.frames(), stalls: window.__renderStats.stalls } : null`)
+            ?.evaluate(
+              `window.__renderStats ? { seconds: Math.round(performance.now() / 1000), frames: window.__renderStats.frames(), stalls: window.__renderStats.stalls } : null`,
+            )
             .catch(() => null),
         }))
         .catch((error: Error) => ({ error: error.message }))
@@ -173,14 +175,23 @@ async function collectBrowserState(traceId: string) {
 function renderingFlags(): string[] {
   const gpu = process.env.STREAM_GPU;
   const common = ["--ignore-gpu-blocklist", "--enable-gpu-rasterization", "--enable-zero-copy"];
-  if (gpu === "vulkan") return [...common, "--use-angle=vulkan", "--enable-features=Vulkan", "--disable-vulkan-surface"];
+  if (gpu === "vulkan")
+    return [
+      ...common,
+      "--use-angle=vulkan",
+      "--enable-features=Vulkan",
+      "--disable-vulkan-surface",
+    ];
   if (gpu === "egl") return [...common, "--use-gl=angle", "--use-angle=gl-egl"];
   return ["--disable-gpu", "--enable-unsafe-swiftshader"];
 }
 
 /** Which GL renderer Chrome actually got — proves the GPU path works without casting. */
 async function handleGpuInfo(measureUrl: string | null): Promise<Response> {
-  const browser = await puppeteer.launch({ headless: "new" as any, args: ["--no-sandbox", "--disable-dev-shm-usage", ...renderingFlags()] });
+  const browser = await puppeteer.launch({
+    headless: "new" as any,
+    args: ["--no-sandbox", "--disable-dev-shm-usage", ...renderingFlags()],
+  });
   try {
     const page = await browser.newPage();
     // ?url= also reports how fast that page animates here (requestAnimationFrame per second over 5s).
@@ -204,7 +215,11 @@ async function handleGpuInfo(measureUrl: string | null): Promise<Response> {
       const gl = (document.getElementById("c") as HTMLCanvasElement).getContext("webgl2");
       if (!gl) return { webgl2: false };
       const ext = gl.getExtension("WEBGL_debug_renderer_info");
-      return { webgl2: true, vendor: ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) : null, renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : null };
+      return {
+        webgl2: true,
+        vendor: ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) : null,
+        renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : null,
+      };
     });
     // Does Web Audio actually run here? (No audio device → the context never advances → silent streams.)
     const audio = await page.evaluate(`(async () => {
@@ -214,7 +229,10 @@ async function handleGpuInfo(measureUrl: string | null): Promise<Response> {
       await new Promise((r) => setTimeout(r, 1000));
       return { state: ctx.state, advancedSeconds: ctx.currentTime - t0, sampleRate: ctx.sampleRate };
     })()`);
-    return new Response(JSON.stringify({ mode: process.env.STREAM_GPU ?? "swiftshader", ...info, pageFps, audio }), { headers: { "Content-Type": "application/json" } });
+    return new Response(
+      JSON.stringify({ mode: process.env.STREAM_GPU ?? "swiftshader", ...info, pageFps, audio }),
+      { headers: { "Content-Type": "application/json" } },
+    );
   } finally {
     await browser.close();
   }
@@ -226,7 +244,6 @@ async function handleGpuInfo(measureUrl: string | null): Promise<Response> {
  */
 const [VIEW_W, VIEW_H] = (process.env.STREAM_VIEWPORT ?? "1280x720").split("x").map(Number);
 const STREAM_VIEWPORT = { width: VIEW_W || 1280, height: VIEW_H || 720 };
-
 
 /** Build Puppeteer launch options */
 function buildLaunchOptions() {
@@ -275,7 +292,9 @@ async function launchBrowserWithExtension(): Promise<Browser> {
   // getExtensionStreamingPage waits for the extension's service worker, so no sleep is required.)
   const t0 = Date.now();
   const browserInstance = await puppeteer.launch(buildLaunchOptions());
-  console.log(`Browser launched in ${Date.now() - t0}ms: ${await browserInstance.version().catch(() => "unknown")}`);
+  console.log(
+    `Browser launched in ${Date.now() - t0}ms: ${await browserInstance.version().catch(() => "unknown")}`,
+  );
   return browserInstance;
 }
 
@@ -480,7 +499,11 @@ async function startConnectionMonitoring() {
           hasClosePublisher: typeof window.CLOSE_PUBLISHER === "function",
           windowKeys: Object.keys(window).filter(
             (key) =>
-              key.includes("streaming") || key.includes("active") || key.includes("INITIALIZE") || key.includes("APPLY") || key.includes("CLOSE"),
+              key.includes("streaming") ||
+              key.includes("active") ||
+              key.includes("INITIALIZE") ||
+              key.includes("APPLY") ||
+              key.includes("CLOSE"),
           ),
           location: window.location.href,
           userAgent: navigator.userAgent,
@@ -560,17 +583,25 @@ async function handleHealth(): Promise<Response> {
   });
 }
 
-const streamLifetime = createStreamLifetime({ maxMs: Number(process.env.STREAM_MAX_MS ?? 3 * 60 * 60 * 1000) });
+const streamLifetime = createStreamLifetime({
+  maxMs: Number(process.env.STREAM_MAX_MS ?? 3 * 60 * 60 * 1000),
+});
 
 const STREAM_IDLE_MS = Number(process.env.STREAM_IDLE_MS ?? 20 * 60 * 1000);
 
 async function handlePing(): Promise<Response> {
   // A forgotten cast (TV left on): end it and refuse the heartbeat, so the pings stop and the GPU
   // scales to zero. Either it ran past its maximum lifetime, or the game reports no player activity.
-  const activityAt = activePage ? await activePage.evaluate("window.__ogsActivityAt").catch(() => undefined) : undefined;
+  const activityAt = activePage
+    ? await activePage.evaluate("window.__ogsActivityAt").catch(() => undefined)
+    : undefined;
   const idle = isIdle(activityAt, Date.now(), STREAM_IDLE_MS);
   if (streamLifetime.expired() || idle) {
-    console.log(idle ? "No player activity for too long; shutting down" : "Stream exceeded its maximum lifetime; shutting down");
+    console.log(
+      idle
+        ? "No player activity for too long; shutting down"
+        : "Stream exceeded its maximum lifetime; shutting down",
+    );
     await shutdownBrowser();
     return jsonResponse({ status: "expired", reason: idle ? "idle" : "lifetime" }, { status: 410 });
   }
@@ -730,7 +761,8 @@ async function handlePublisherPrepare(
           hasChrome: typeof (globalThis as Record<string, unknown>).chrome !== "undefined",
           hasTabCapture:
             typeof (globalThis as Record<string, unknown>).chrome !== "undefined" &&
-            typeof ((globalThis as Record<string, unknown>).chrome as Record<string, unknown>)?.tabCapture !== "undefined",
+            typeof ((globalThis as Record<string, unknown>).chrome as Record<string, unknown>)
+              ?.tabCapture !== "undefined",
           windowKeys: Object.keys(window).filter(
             (key) =>
               key.includes("streaming") ||
@@ -804,7 +836,11 @@ async function handlePublisherPrepare(
         };
       });
 
-      logTrace(traceId, "post_initialize_publisher_state", postInitState as Record<string, unknown>);
+      logTrace(
+        traceId,
+        "post_initialize_publisher_state",
+        postInitState as Record<string, unknown>,
+      );
       await new Promise((resolve) => setTimeout(resolve, 1500));
       await collectBrowserState(traceId);
     } catch (error) {
@@ -884,13 +920,16 @@ async function handlePublisherAnswer(
     logTrace(traceId, "extension_apply_remote_description_start");
 
     await Promise.race([
-      streamingPage.evaluate(async (desc: { sessionDescription: { type: string; sdp: string } }) => {
-        console.log("[PUPPETEER] APPLY_REMOTE_DESCRIPTION call starting");
-        const applyFn = window.APPLY_REMOTE_DESCRIPTION;
-        if (!applyFn) throw new Error("APPLY_REMOTE_DESCRIPTION not found on window");
-        await applyFn(desc);
-        console.log("[PUPPETEER] APPLY_REMOTE_DESCRIPTION call completed");
-      }, { sessionDescription }),
+      streamingPage.evaluate(
+        async (desc: { sessionDescription: { type: string; sdp: string } }) => {
+          console.log("[PUPPETEER] APPLY_REMOTE_DESCRIPTION call starting");
+          const applyFn = window.APPLY_REMOTE_DESCRIPTION;
+          if (!applyFn) throw new Error("APPLY_REMOTE_DESCRIPTION not found on window");
+          await applyFn(desc);
+          console.log("[PUPPETEER] APPLY_REMOTE_DESCRIPTION call completed");
+        },
+        { sessionDescription },
+      ),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("APPLY_REMOTE_DESCRIPTION timeout")), 30000),
       ),
@@ -898,10 +937,7 @@ async function handlePublisherAnswer(
 
     logTrace(traceId, "extension_apply_remote_description_complete");
 
-    return jsonResponse(
-      { status: "success", traceId },
-      { headers: buildTraceHeaders(traceId) },
-    );
+    return jsonResponse({ status: "success", traceId }, { headers: buildTraceHeaders(traceId) });
   } catch (err: unknown) {
     const error = err as Error;
     logTrace(traceId, "publisher_answer_error", {

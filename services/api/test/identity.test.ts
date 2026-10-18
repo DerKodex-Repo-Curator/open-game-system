@@ -13,15 +13,24 @@ describe("profile tokens", () => {
       ttlSeconds: 60,
     });
     const claims = await readClaims(token, SECRET, NOW);
-    expect(ClaimsSchema.parse(claims)).toEqual({ sub: "p1", did: "d1", kind: "phone", exp: NOW / 1000 + 60 });
+    expect(ClaimsSchema.parse(claims)).toEqual({
+      sub: "p1",
+      did: "d1",
+      kind: "phone",
+      exp: NOW / 1000 + 60,
+    });
     expect(claims && "sid" in claims).toBe(false);
   });
 
   it("issues a launcher token naming its session", async () => {
-    const token = await issueToken({ sub: "host", did: "l1", kind: "launcher", sid: "s1" }, SECRET, {
-      now: NOW,
-      ttlSeconds: 60,
-    });
+    const token = await issueToken(
+      { sub: "host", did: "l1", kind: "launcher", sid: "s1" },
+      SECRET,
+      {
+        now: NOW,
+        ttlSeconds: 60,
+      },
+    );
     expect(await readClaims(token, SECRET, NOW)).toEqual({
       sub: "host",
       did: "l1",
@@ -49,7 +58,10 @@ describe("profile tokens", () => {
   });
 
   it("rejects a well-signed token whose claims aren't profile claims (an old household token)", async () => {
-    const token = await signJwt({ hid: "h1", did: "d1", kind: "phone", exp: NOW / 1000 + 60 }, SECRET);
+    const token = await signJwt(
+      { hid: "h1", did: "d1", kind: "phone", exp: NOW / 1000 + 60 },
+      SECRET,
+    );
     expect(await readClaims(token, SECRET, NOW)).toBeNull();
   });
 

@@ -12,11 +12,14 @@ export function pushSenders(
   now: number,
 ): PushSenders {
   return {
-    expo: (platform, token, n) => getProviderForPlatform(platform, env.EXPO_ACCESS_TOKEN).send(token, n),
+    expo: (platform, token, n) =>
+      getProviderForPlatform(platform, env.EXPO_ACCESS_TOKEN).send(token, n),
     async web(appId, sub, payload) {
       const vapid = await vapidKeysFor(env.DB, appId, env.PUSH_KEY_SECRET, now);
       if (!vapid) return "error";
-      return sendWebPush(sub, payload, vapid, { subject: env.PUSH_VAPID_SUBJECT || DEFAULT_VAPID_SUBJECT });
+      return sendWebPush(sub, payload, vapid, {
+        subject: env.PUSH_VAPID_SUBJECT || DEFAULT_VAPID_SUBJECT,
+      });
     },
   };
 }

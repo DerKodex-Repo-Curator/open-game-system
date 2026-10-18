@@ -41,7 +41,11 @@ export async function sendWebPush(
   try {
     const request = await buildPushPayload(
       { data: payload, options: await pushOptions(payload.tag) },
-      { endpoint: sub.endpoint, expirationTime: null, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+      {
+        endpoint: sub.endpoint,
+        expirationTime: null,
+        keys: { p256dh: sub.p256dh, auth: sub.auth },
+      },
       { subject: opts.subject, publicKey: vapid.publicKey, privateKey: vapid.privateKey },
     );
     return outcomeOf(await doFetch(sub.endpoint, request));

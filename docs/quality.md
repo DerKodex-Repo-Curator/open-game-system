@@ -57,6 +57,23 @@ misattributes the D1-proxy route tests and reports false survivors):
 
 CRAP: every function in the new modules is under 8 (API max 7, app max 6, notification-kit-web max 6, profile-kit max 4, notification-kit-server max 3). The sw.js listeners have no unit coverage; they are one-line wrappers over tested functions and run in the Chromium e2e (`packages/notification-kit-web/e2e/sw.e2e.ts`).
 
+## First-time funnel (2026-10-18)
+
+New code on `claude/first-time-funnel-0e55ec` (join link and page, browser TVs, browser guests).
+Stryker with `--mutate` on the new files; CRAP from `scripts/crap.mjs` after coverage.
+
+| Scope | Mutation | Max CRAP |
+|-------|----------|----------|
+| ogs-protocol `join.ts`, `join-page.ts`, `guest.ts`, `screens.ts` | 100% | 7 (`joinAsGuest`) |
+| apps/tv `screen/pairing.ts`, `ui/qr.ts` | 100% | 7 (`screenParams`) |
+| services/api `routes/join.ts`, `routes/screens.ts`, `lib/screens.ts` | 100% | 5 |
+| apps/mobile `services/screen-cast.ts`, `services/link-routing.ts` | 99–100% (see progress.md) | 7 (`routeLink`, `openLink`) |
+
+Equivalent mutants are marked in place (`Stryker disable next-line … : equivalent, …`). Not unit
+tested: the React views (`ScreenApp.tsx`, `BrowserTv.tsx`, `pages/Join.tsx`, `pages/join/*`); the
+Detox walks (`first-time-funnel.test.ts`, `browser-tv.test.ts`) and `e2e/first-time-funnel-web.mjs`
+drive them.
+
 ## CRAP (2026-10-04)
 
 Target: CRAP < 8 for every function. Measure from a package dir after `pnpm test:coverage`:

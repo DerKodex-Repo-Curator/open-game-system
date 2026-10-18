@@ -30,7 +30,17 @@ describe("handles (@id)", () => {
     expect(isValidHandle(h)).toBe(true);
   });
 
-  it.each(["j", "", ".jo", "_jo", "jo n", "Jo", "jo-n", "x".repeat(25), "jö"])("refuses %j", (h) => {
+  it.each([
+    "j",
+    "",
+    ".jo",
+    "_jo",
+    "jo n",
+    "Jo",
+    "jo-n",
+    "x".repeat(25),
+    "jö",
+  ])("refuses %j", (h) => {
     expect(isValidHandle(h)).toBe(false);
   });
 

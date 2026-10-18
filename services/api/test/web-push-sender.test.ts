@@ -19,19 +19,36 @@ function browser() {
   return {
     ecdh,
     auth,
-    sub: { endpoint: "https://push.example.net/send/abc", p256dh: b64url(ecdh.getPublicKey()), auth: b64url(auth) },
+    sub: {
+      endpoint: "https://push.example.net/send/abc",
+      p256dh: b64url(ecdh.getPublicKey()),
+      auth: b64url(auth),
+    },
   };
 }
 
 async function vapidPair() {
-  const pair = await webcrypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+  const pair = await webcrypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+    "sign",
+    "verify",
+  ]);
   const jwk = await webcrypto.subtle.exportKey("jwk", pair.privateKey);
   const x = Buffer.from(jwk.x ?? "", "base64url");
   const y = Buffer.from(jwk.y ?? "", "base64url");
-  return { publicKey: b64url(Buffer.concat([Buffer.from([4]), x, y])), privateKey: jwk.d ?? "", jwk };
+  return {
+    publicKey: b64url(Buffer.concat([Buffer.from([4]), x, y])),
+    privateKey: jwk.d ?? "",
+    jwk,
+  };
 }
 
-const payload = { title: "Clue: RIVER 2", body: "Your guess.", url: "https://cb.example/room/KQTP", whenOpen: "deliver" as const, tag: "cb-KQTP" };
+const payload = {
+  title: "Clue: RIVER 2",
+  body: "Your guess.",
+  url: "https://cb.example/room/KQTP",
+  whenOpen: "deliver" as const,
+  tag: "cb-KQTP",
+};
 
 function recorder(status: number) {
   const calls: { url: string; init: RequestInit }[] = [];
@@ -47,7 +64,9 @@ describe("sending a web push", () => {
     const b = browser();
     const vapid = await vapidPair();
     const r = recorder(201);
-    await expect(sendWebPush(b.sub, payload, vapid, { subject: "https://opengame.org", fetch: r.fetch })).resolves.toBe("ok");
+    await expect(
+      sendWebPush(b.sub, payload, vapid, { subject: "https://opengame.org", fetch: r.fetch }),
+    ).resolves.toBe("ok");
     const call = r.calls[0];
     if (!call) throw new Error("nothing sent");
     expect(call.url).toBe(b.sub.endpoint);
@@ -77,15 +96,26 @@ describe("sending a web push", () => {
     const [h, p, s] = m[1].split(".");
     const claims = JSON.parse(Buffer.from(p ?? "", "base64url").toString());
     expect(claims).toMatchObject({ aud: "https://push.example.net", sub: "https://opengame.org" });
-    const key = createPublicKey({ key: { kty: "EC", crv: "P-256", x: vapid.jwk.x, y: vapid.jwk.y }, format: "jwk" });
-    const ok = verify("sha256", Buffer.from(`${h}.${p}`), { key, dsaEncoding: "ieee-p1363" }, Buffer.from(s ?? "", "base64url"));
+    const key = createPublicKey({
+      key: { kty: "EC", crv: "P-256", x: vapid.jwk.x, y: vapid.jwk.y },
+      format: "jwk",
+    });
+    const ok = verify(
+      "sha256",
+      Buffer.from(`${h}.${p}`),
+      { key, dsaEncoding: "ieee-p1363" },
+      Buffer.from(s ?? "", "base64url"),
+    );
     expect(ok).toBe(true);
   });
 
   it("no tag: no topic", async () => {
     const r = recorder(201);
     const { tag: _, ...noTag } = payload;
-    await sendWebPush(browser().sub, noTag, await vapidPair(), { subject: "https://opengame.org", fetch: r.fetch });
+    await sendWebPush(browser().sub, noTag, await vapidPair(), {
+      subject: "https://opengame.org",
+      fetch: r.fetch,
+    });
     expect(new Headers(r.calls[0]?.init.headers).has("topic")).toBe(false);
   });
 
@@ -101,7 +131,13 @@ describe("sending a web push", () => {
       [500, "error"],
     ] as const) {
       const r = recorder(status);
-      expect(await sendWebPush(browser().sub, payload, vapid, { subject: "https://opengame.org", fetch: r.fetch }), String(status)).toBe(want);
+      expect(
+        await sendWebPush(browser().sub, payload, vapid, {
+          subject: "https://opengame.org",
+          fetch: r.fetch,
+        }),
+        String(status),
+      ).toBe(want);
     }
   });
 
@@ -110,9 +146,19 @@ describe("sending a web push", () => {
     const offline = async () => {
       throw new Error("offline");
     };
-    expect(await sendWebPush(browser().sub, payload, vapid, { subject: "https://opengame.org", fetch: offline })).toBe("error");
+    expect(
+      await sendWebPush(browser().sub, payload, vapid, {
+        subject: "https://opengame.org",
+        fetch: offline,
+      }),
+    ).toBe("error");
     const bad = { endpoint: "https://push.example.net/x", p256dh: "nope", auth: "nope" };
-    expect(await sendWebPush(bad, payload, vapid, { subject: "https://opengame.org", fetch: recorder(201).fetch })).toBe("error");
+    expect(
+      await sendWebPush(bad, payload, vapid, {
+        subject: "https://opengame.org",
+        fetch: recorder(201).fetch,
+      }),
+    ).toBe("error");
   });
 });
 

@@ -64,9 +64,16 @@ export async function freeHandle(db: D1Database, handle: string): Promise<string
     )
     .bind(...candidates)
     .all();
-  const taken = new Set(z.array(z.object({ handle: z.string() })).parse(results).map((r) => r.handle));
+  const taken = new Set(
+    z
+      .array(z.object({ handle: z.string() }))
+      .parse(results)
+      .map((r) => r.handle),
+  );
   const free = candidates.find((c) => !taken.has(c));
-  return free ?? `${handle.slice(0, 18)}${crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000}`;
+  return (
+    free ?? `${handle.slice(0, 18)}${crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000}`
+  );
 }
 
 /** Puts the device on the profile (one profile per device: signing in elsewhere moves it). */

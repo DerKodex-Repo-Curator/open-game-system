@@ -11,7 +11,8 @@ afterAll(() => d1.dispose());
 beforeEach(() => d1.reset());
 
 const SECRET = "push-key-secret-for-tests";
-const b64urlToBytes = (s: string) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+const b64urlToBytes = (s: string) =>
+  Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
 
 describe("a game's VAPID keys", () => {
   it("are made on first use: a 65-byte uncompressed P-256 public key and a 32-byte private key", async () => {
@@ -34,9 +35,15 @@ describe("a game's VAPID keys", () => {
 
   it("store the private key encrypted, never in the clear", async () => {
     const keys = await vapidKeysFor(d1.db, "codebreakers", SECRET, 1);
-    const row = await d1.db.prepare("SELECT * FROM push_vapid_keys WHERE app_id = 'codebreakers'").first();
+    const row = await d1.db
+      .prepare("SELECT * FROM push_vapid_keys WHERE app_id = 'codebreakers'")
+      .first();
     expect(JSON.stringify(row)).not.toContain(keys?.privateKey);
-    expect(row).toMatchObject({ app_id: "codebreakers", public_key: keys?.publicKey, created_at: 1 });
+    expect(row).toMatchObject({
+      app_id: "codebreakers",
+      public_key: keys?.publicKey,
+      created_at: 1,
+    });
   });
 
   it("can't be read with another secret", async () => {

@@ -53,6 +53,7 @@ export async function createScreen(db: D1Database, now: number) {
         .run();
       return { screenId, code, secret };
     } catch (e) {
+      // Stryker disable next-line StringLiteral: equivalent, the only unique column a fresh insert can hit is code
       if (attempt >= 4 || !isUniqueViolation(e, "code")) throw e;
     }
   }

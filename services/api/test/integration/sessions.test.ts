@@ -153,7 +153,12 @@ describe("the launcher reads the host's games", () => {
     await SELF.fetch(`${BASE}/me/instances`, {
       method: "POST",
       headers: bearer(host.token),
-      body: JSON.stringify({ instanceId: "rc-1", appId: "rocket-crew", status: "active", source: "visit" }),
+      body: JSON.stringify({
+        instanceId: "rc-1",
+        appId: "rocket-crew",
+        status: "active",
+        source: "visit",
+      }),
     });
     const s = await createSession(host);
     const res = await SELF.fetch(`${BASE}/me/instances`, { headers: bearer(s.token) });

@@ -7,7 +7,10 @@ export const EMULATED = {
   apple: "http://localhost:4204",
 } as const;
 
-export const TEST_CLIENTS = { apple: "org.opengame.app", google: "ogs-test.apps.googleusercontent.com" };
+export const TEST_CLIENTS = {
+  apple: "org.opengame.app",
+  google: "ogs-test.apps.googleusercontent.com",
+};
 
 /** Seeded in both Apple and Google; each test uses its own so logins don't collide. */
 export const PEOPLE = [

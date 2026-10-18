@@ -13,7 +13,8 @@ export async function gameKeyAuth(c: Context<GameKeyEnv>, next: Next) {
   const header = c.req.header("Authorization");
   if (!header) return apiError(c, 401, "missing_auth", "Authorization header is required");
   const match = header.match(/^Bearer\s+(.+)$/i);
-  if (!match) return apiError(c, 401, "invalid_auth", "Authorization header must use Bearer scheme");
+  if (!match)
+    return apiError(c, 401, "invalid_auth", "Authorization header must use Bearer scheme");
   const row = await c.env.DB.prepare(
     `SELECT id, app_id FROM game_api_keys
      WHERE key_hash = ? AND revoked_at IS NULL AND scope = ?`,

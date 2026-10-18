@@ -4,11 +4,16 @@ import {
   ScreenCreatedSchema,
   ScreenStateSchema,
 } from "@open-game-system/ogs-protocol";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import app from "../src/index";
 import { issueToken } from "../src/lib/identity";
-import { SCREEN_PAIR_TTL_MS } from "../src/lib/screens";
+import {
+  isLive,
+  SCREEN_CLAIM_TTL_MS,
+  SCREEN_PAIR_TTL_MS,
+  type ScreenRow,
+} from "../src/lib/screens";
 import { openTestD1, type TestD1 } from "./support/d1";
 
 // Acceptance: 2026-10-17-browser-tv.feature. A browser on the TV (a laptop on HDMI, a smart TV's
@@ -177,5 +182,153 @@ describe("a browser screen", () => {
     // A claimed screen keeps its code while it lives: the phone can claim it again.
     const again = await call("POST", "/claim", { auth: dana, body: { code: s.code } });
     expect(again.status).toBe(200);
+  });
+});
+
+// Every refusal in the error contract, word for word (what the TV page and the app show or log).
+const refusal = (status: number, code: string, message: string) => ({
+  status,
+  body: { error: { code, message, status } },
+});
+
+describe("a browser screen's refusals", () => {
+  it("names each one", async () => {
+    const s = await newScreen();
+    const dana = await phone("dana");
+    expect(await call("GET", `/${s.screenId}`)).toEqual(
+      refusal(401, "missing_secret", "X-Screen-Secret header is required"),
+    );
+    expect(await call("GET", `/${s.screenId}`, { secret: "x".repeat(43) })).toEqual(
+      refusal(403, "wrong_secret", "That isn't this screen's secret"),
+    );
+    expect(await call("GET", "/nope", { secret: s.secret })).toEqual(
+      refusal(404, "screen_not_found", "Screen not found"),
+    );
+    expect(await call("POST", "/claim", { auth: dana, body: {} })).toEqual(
+      refusal(400, "invalid_body", "code (the 6 characters on the screen) is required"),
+    );
+    expect(await call("POST", "/claim", { auth: dana, body: { code: "QQQQQQ" } })).toEqual(
+      refusal(404, "screen_not_found", "No screen shows that code"),
+    );
+    expect(await call("POST", `/${s.screenId}/show`, { auth: dana, body: { token: "t" } })).toEqual(
+      refusal(403, "not_your_screen", "Claim this screen with its code first"),
+    );
+    expect(await call("POST", "/nope/show", { auth: dana, body: { token: "t" } })).toEqual(
+      refusal(404, "screen_not_found", "Screen not found"),
+    );
+    await call("POST", "/claim", { auth: dana, body: { code: s.code } });
+    expect(await call("POST", `/${s.screenId}/show`, { auth: dana, body: {} })).toEqual(
+      refusal(400, "invalid_body", "token (the launcher token) is required"),
+    );
+    for (const shown of [
+      "not-a-token",
+      await phone("dana"),
+      await token({ sub: "dana", did: "d-phone", kind: "phone", sid: "s1" }),
+    ])
+      expect(
+        await call("POST", `/${s.screenId}/show`, { auth: dana, body: { token: shown } }),
+      ).toEqual(refusal(400, "invalid_body", "token must be a launcher token"));
+    expect(
+      await call("POST", `/${s.screenId}/show`, {
+        auth: dana,
+        body: { token: await launcher("dana", "gone") },
+      }),
+    ).toEqual(refusal(403, "not_your_couch", "Only the couch's host shows it on a screen"));
+  });
+});
+
+describe("how long a screen lives", () => {
+  const now = 1_800_000_000_000;
+  const row = (over: Partial<ScreenRow>): ScreenRow => ({
+    id: "sc",
+    code: "NT9WPH",
+    secret_hash: "h",
+    owner_profile_id: null,
+    token: null,
+    created_at: now,
+    last_used_at: now,
+    ...over,
+  });
+
+  it("unclaimed: an hour from when it was made", () => {
+    expect(SCREEN_PAIR_TTL_MS).toBe(60 * 60 * 1000);
+    expect(isLive(row({ created_at: now - SCREEN_PAIR_TTL_MS + 1 }), now)).toBe(true);
+    expect(isLive(row({ created_at: now - SCREEN_PAIR_TTL_MS }), now)).toBe(false);
+  });
+
+  it("claimed: 30 days from its last cast", () => {
+    expect(SCREEN_CLAIM_TTL_MS).toBe(30 * 24 * 60 * 60 * 1000);
+    const claimed = { owner_profile_id: "dana", created_at: 0 };
+    expect(isLive(row({ ...claimed, last_used_at: now - SCREEN_CLAIM_TTL_MS + 1 }), now)).toBe(
+      true,
+    );
+    expect(isLive(row({ ...claimed, last_used_at: now - SCREEN_CLAIM_TTL_MS }), now)).toBe(false);
+  });
+});
+
+/** Makes newCode() spell each given 6-letter code in turn (index into its alphabet = byte). */
+function nextCodes(...codes: string[]) {
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const queue = [...codes];
+  const real = crypto.getRandomValues.bind(crypto);
+  vi.spyOn(crypto, "getRandomValues").mockImplementation((array) => {
+    if (array instanceof Uint8Array && array.length === 6 && queue.length > 0) {
+      const code = queue.length > 1 ? queue.shift() : queue[0];
+      array.set([...(code ?? "")].map((ch) => alphabet.indexOf(ch)));
+      return array;
+    }
+    return real(array);
+  });
+}
+
+describe("a screen's code", () => {
+  afterEach(() => vi.restoreAllMocks());
+  const insertScreen = (
+    id: string,
+    code: string,
+    owner: string | null,
+    created: number,
+    used: number,
+  ) =>
+    d1.db
+      .prepare(
+        "INSERT INTO screens (id, code, secret_hash, owner_profile_id, created_at, last_used_at) VALUES (?, ?, 'h', ?, ?, ?)",
+      )
+      .bind(id, code, owner, created, used)
+      .run();
+
+  it("draws again while a live screen holds the code", async () => {
+    await insertScreen("live", "AAAAAA", null, Date.now(), Date.now());
+    nextCodes("AAAAAA", "AAAAAA", "BBBBBB");
+    expect((await newScreen()).code).toBe("BBBBBB");
+  });
+
+  it("gives up after five codes in use", async () => {
+    await insertScreen("live", "AAAAAA", null, Date.now(), Date.now());
+    nextCodes("AAAAAA", "AAAAAA", "AAAAAA", "AAAAAA", "AAAAAA", "BBBBBB");
+    expect((await call("POST", "")).status).toBe(500);
+  });
+
+  it("takes a dead screen's code: unclaimed over an hour, or claimed and unused 30 days", async () => {
+    const now = Date.now();
+    await insertScreen("old", "AAAAAA", null, now - SCREEN_PAIR_TTL_MS - 1000, now);
+    await insertScreen("idle", "BBBBBB", "dana", 0, now - SCREEN_CLAIM_TTL_MS - 1000);
+    nextCodes("AAAAAA");
+    expect((await newScreen()).code).toBe("AAAAAA");
+    vi.restoreAllMocks();
+    nextCodes("BBBBBB");
+    expect((await newScreen()).code).toBe("BBBBBB");
+  });
+
+  it("never takes a live screen's code, claimed or not", async () => {
+    const now = Date.now();
+    await insertScreen("fresh", "AAAAAA", null, now - SCREEN_PAIR_TTL_MS + 60_000, now);
+    await insertScreen("used", "BBBBBB", "dana", 0, now - SCREEN_CLAIM_TTL_MS + 60_000);
+    nextCodes("AAAAAA", "BBBBBB", "CCCCCC");
+    expect((await newScreen()).code).toBe("CCCCCC");
+    const kept = await d1.db
+      .prepare("SELECT id FROM screens WHERE code IN ('AAAAAA', 'BBBBBB') ORDER BY id")
+      .all();
+    expect(kept.results).toEqual([{ id: "fresh" }, { id: "used" }]);
   });
 });

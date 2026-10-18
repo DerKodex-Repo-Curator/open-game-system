@@ -12,7 +12,10 @@ const peers = [
 
 describe("couch outbound routing", () => {
   it("sends state to every socket", () => {
-    const out: Outbound = { to: "all", msg: { type: "state", state: initialSession("s-1", "host") } };
+    const out: Outbound = {
+      to: "all",
+      msg: { type: "state", state: initialSession("s-1", "host") },
+    };
     expect(recipients(out, peers)).toEqual([0, 1, 2, 3]);
   });
 

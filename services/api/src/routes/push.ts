@@ -1,17 +1,17 @@
 import {
   GameNotificationRequestSchema,
   type GameNotificationResult,
-  PushSubscriptionRequestSchema,
   PushConsentRequestSchema,
   type PushConsentResult,
+  PushSubscriptionRequestSchema,
 } from "@open-game-system/ogs-protocol";
 import { type Context, Hono } from "hono";
 import { catalogueFor } from "../catalogue";
 import { apiError, invalidBody, parseBody } from "../lib/http";
 import { deliver, type PushMessage } from "../lib/push-delivery";
 import { grantOgs, grantWeb } from "../lib/push-handles";
-import { vapidKeysFor } from "../lib/vapid-keys";
 import { pushSenders } from "../lib/push-senders";
+import { vapidKeysFor } from "../lib/vapid-keys";
 import { gameKeyAuth } from "../middleware/game-key-auth";
 import { anyToken, deviceOnly, type ProfileEnv } from "../middleware/profile-auth";
 
@@ -61,17 +61,26 @@ push.post("/:appId/push-subscriptions", async (c) => {
   if (c.req.header("Origin") !== new URL(game.startUrl).origin)
     return apiError(c, 403, "wrong_origin", "Subscriptions come from the game's own site");
   const body = await parseBody(c, PushSubscriptionRequestSchema);
-  if (!body) return invalidBody(c, "subscription (https endpoint, keys.p256dh, keys.auth) is required");
+  if (!body)
+    return invalidBody(c, "subscription (https endpoint, keys.p256dh, keys.auth) is required");
   const keys = await vapidKeysFor(c.env.DB, appId, c.env.PUSH_KEY_SECRET, Date.now());
   if (!keys) return apiError(c, 503, "web_push_unavailable", "Web push is not configured");
   const { endpoint, keys: k } = body.subscription;
-  const handle = await grantWeb(c.env.DB, appId, { endpoint, p256dh: k.p256dh, auth: k.auth }, keys.publicKey, Date.now(), body.handle);
+  const handle = await grantWeb(
+    c.env.DB,
+    appId,
+    { endpoint, p256dh: k.p256dh, auth: k.auth },
+    keys.publicKey,
+    Date.now(),
+    body.handle,
+  );
   const granted: PushConsentResult = { status: "granted", handle };
   return c.json(granted);
 });
 
 /** True when `url` is on the game's origin (the origin of its startUrl). */
-const sameOrigin = (url: string, startUrl: string) => new URL(url).origin === new URL(startUrl).origin;
+const sameOrigin = (url: string, startUrl: string) =>
+  new URL(url).origin === new URL(startUrl).origin;
 
 /** The request body as JSON, or undefined when it isn't JSON. */
 const jsonBody = (c: Context): Promise<{ raw: unknown } | null> =>
@@ -90,7 +99,12 @@ async function readSend(
   if (!body) return invalidBody(c, "Request body must be valid JSON");
   const parsed = GameNotificationRequestSchema.safeParse(body.raw);
   if (!parsed.success)
-    return apiError(c, 400, "missing_fields", "to (1-100 push handles), title (≤ 60) and body (≤ 180) are required");
+    return apiError(
+      c,
+      400,
+      "missing_fields",
+      "to (1-100 push handles), title (≤ 60) and body (≤ 180) are required",
+    );
   const { title, body: text, tag, whenOpen } = parsed.data;
   const url = parsed.data.url ?? startUrl;
   if (!sameOrigin(url, startUrl)) return invalidBody(c, "url must be on the game's origin");
@@ -109,7 +123,8 @@ push.post("/:appId/notifications", gameKeyAuth, async (c) => {
   if (send instanceof Response) return send;
   const senders = pushSenders(c.env, Date.now());
   const results: GameNotificationResult["results"] = [];
-  for (const to of send.to) results.push({ to, status: await deliver(c.env.DB, to, send.message, senders) });
+  for (const to of send.to)
+    results.push({ to, status: await deliver(c.env.DB, to, send.message, senders) });
   const result: GameNotificationResult = { results };
   return c.json(result);
 });

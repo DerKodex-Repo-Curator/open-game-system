@@ -25,6 +25,8 @@ describe("game API keys", () => {
   });
 
   it("hashes deterministically (SHA-256 hex)", async () => {
-    expect(await hashApiKey("abc")).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+    expect(await hashApiKey("abc")).toBe(
+      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    );
   });
 });

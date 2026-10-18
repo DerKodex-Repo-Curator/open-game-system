@@ -61,7 +61,8 @@ export async function grantOgs(
     .bind(profileId, appId, now)
     .run();
   const joinable = join && (await handleIsFor(db, join, appId)) ? join : null;
-  const handle = joinable ?? (await ogsHandleOf(db, profileId, appId)) ?? (await createHandle(db, appId, now));
+  const handle =
+    joinable ?? (await ogsHandleOf(db, profileId, appId)) ?? (await createHandle(db, appId, now));
   await db
     .prepare(
       `INSERT INTO push_surfaces (id, handle_id, kind, profile_id, last_active_at, created_at)
@@ -79,7 +80,10 @@ export async function grantedGames(db: D1Database, profileId: string): Promise<s
     .prepare("SELECT app_id FROM push_grants WHERE profile_id = ? AND granted = 1 ORDER BY app_id")
     .bind(profileId)
     .all();
-  return z.array(z.object({ app_id: z.string() })).parse(results).map((r) => r.app_id);
+  return z
+    .array(z.object({ app_id: z.string() }))
+    .parse(results)
+    .map((r) => r.app_id);
 }
 
 /** Settings: the profile turned the game off. */
@@ -141,8 +145,16 @@ export async function grantWeb(
            p256dh = excluded.p256dh, auth = excluded.auth, vapid_kid = excluded.vapid_kid,
            last_active_at = excluded.last_active_at`,
       )
-      .bind(crypto.randomUUID(), handle, sub.endpoint, sub.p256dh, sub.auth, vapidPublicKey, now, now),
+      .bind(
+        crypto.randomUUID(),
+        handle,
+        sub.endpoint,
+        sub.p256dh,
+        sub.auth,
+        vapidPublicKey,
+        now,
+        now,
+      ),
   ]);
   return handle;
 }
-

@@ -89,7 +89,11 @@ describe("Devices & Notifications — D1 Integration", () => {
       SELF.fetch("https://api.test/api/v1/games/codebreakers/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(auth ? { Authorization: auth } : {}) },
-        body: JSON.stringify({ to: ["ph_doesnotexist000000"], title: "Your clue", body: "Moon is up." }),
+        body: JSON.stringify({
+          to: ["ph_doesnotexist000000"],
+          title: "Your clue",
+          body: "Moon is up.",
+        }),
       });
 
     it("rejects without auth", async () => {
@@ -106,7 +110,9 @@ describe("Devices & Notifications — D1 Integration", () => {
     it("answers per handle with the game's key", async () => {
       const res = await send(`Bearer ${TEST_GAME_API_KEY}`);
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ results: [{ to: "ph_doesnotexist000000", status: "not_permitted" }] });
+      expect(await res.json()).toEqual({
+        results: [{ to: "ph_doesnotexist000000", status: "not_permitted" }],
+      });
     });
   });
 

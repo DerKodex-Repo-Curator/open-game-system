@@ -39,6 +39,7 @@ const ClaimSchema = z.object({
 const screens = new Hono<ProfileEnv>();
 
 /** POST /screens — a browser opens the TV page: no token, it gets an id, a code and its secret. */
+// Stryker disable next-line StringLiteral: equivalent, Hono matches "" and "/" alike under the mount
 screens.post("/", async (c) =>
   c.json(ScreenCreatedSchema.parse(await createScreen(c.env.DB, Date.now())), 201),
 );
@@ -76,11 +77,9 @@ screens.post("/:id/show", anyToken, deviceOnly, async (c) => {
   if (row instanceof Response) return row;
   const body = await parseBody(c, ScreenShowSchema);
   if (!body) return invalidBody(c, "token (the launcher token) is required");
-  const claims = await readClaims(body.token, c.env.OGS_JWT_SECRET, Date.now());
-  if (claims?.kind !== "launcher" || !claims.sid)
-    return invalidBody(c, "token must be a launcher token");
-  const session = await getSession(c.env.DB, claims.sid);
-  if (session?.host_profile_id !== c.get("claims").sub)
+  const whose = await launcherHost(c, body.token);
+  if (whose === null) return invalidBody(c, "token must be a launcher token");
+  if (whose !== c.get("claims").sub)
     return apiError(c, 403, "not_your_couch", "Only the couch's host shows it on a screen");
   await c.env.DB.prepare("UPDATE screens SET token = ?, last_used_at = ? WHERE id = ?")
     .bind(body.token, Date.now(), row.id)
@@ -96,6 +95,13 @@ screens.post("/:id/stop", anyToken, deviceOnly, async (c) => {
   return c.body(null, 204);
 });
 
+/** The host of the couch a launcher token is for (undefined: no such couch); null: not one. */
+async function launcherHost(c: Context<ProfileEnv>, token: string) {
+  const claims = await readClaims(token, c.env.OGS_JWT_SECRET, Date.now());
+  if (claims?.kind !== "launcher" || !claims.sid) return null;
+  return (await getSession(c.env.DB, claims.sid))?.host_profile_id;
+}
+
 async function liveScreen(c: Context<ProfileEnv>, id: string): Promise<ScreenRow | Response> {
   const row = await getScreen(c.env.DB, id);
   if (!row || !isLive(row, Date.now()))
@@ -104,6 +110,7 @@ async function liveScreen(c: Context<ProfileEnv>, id: string): Promise<ScreenRow
 }
 
 async function ownedScreen(c: Context<ProfileEnv>): Promise<ScreenRow | Response> {
+  // Stryker disable next-line StringLiteral: equivalent, the route always has an :id
   const row = await liveScreen(c, c.req.param("id") ?? "");
   if (row instanceof Response) return row;
   if (row.owner_profile_id !== c.get("claims").sub)
