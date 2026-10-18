@@ -58,3 +58,4 @@ When requirements change:
 | 2026-10-18 | [white-label-native-sign-in.feature](2026-10-18-white-label-native-sign-in.feature) | BUILT (not deployed): POST /api/v1/auth/native backs a guest up with Apple/Google (audiences: registered apps); the guest is proven by its token; an existing account takes the device |
 | 2026-10-18 | [cast-chrome-none.feature](2026-10-18-cast-chrome-none.feature) | BUILT (not deployed): the launcher with chrome=none&app=<appId> shows the game's manifest tvUrl full screen, no launcher chrome, couch still delivered |
 | 2026-10-18 | [ogs-cli.feature](2026-10-18-ogs-cli.feature) | BUILT (not deployed): ogs login (the game's API key), apps register, push credentials, doctor |
+| 2026-10-18 | [ogs-developer-tool.feature](2026-10-18-ogs-developer-tool.feature) | PLANNED: ogs manifest check, publish (reviewed), init, dev (no device), try (register a try path), push send |

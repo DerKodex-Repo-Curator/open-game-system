@@ -49,12 +49,19 @@ describe("ogs login", () => {
   it("checks the key with the API and saves it (mode 0600)", async () => {
     expect(await login()).toBe(0);
     const file = join(dir, "credentials.json");
-    expect(JSON.parse(readFileSync(file, "utf8"))).toEqual({ currentApp: "rocket-crew", apps: { "rocket-crew": { key: KEY } } });
+    expect(JSON.parse(readFileSync(file, "utf8"))).toEqual({
+      currentApp: "rocket-crew",
+      apps: { "rocket-crew": { key: KEY } },
+    });
     expect(statSync(file).mode & 0o777).toBe(0o600);
-    expect(requests[0]).toMatchObject({ url: `${API}/api/v1/apps/rocket-crew/native`, auth: `Bearer ${KEY}` });
+    expect(requests[0]).toMatchObject({
+      url: `${API}/api/v1/apps/rocket-crew/native`,
+      auth: `Bearer ${KEY}`,
+    });
   });
   it("a key the API refuses is not saved", async () => {
-    routes[`GET ${API}/api/v1/apps/rocket-crew/native`] = () => Response.json({ error: { code: "invalid_api_key" } }, { status: 401 });
+    routes[`GET ${API}/api/v1/apps/rocket-crew/native`] = () =>
+      Response.json({ error: { code: "invalid_api_key" } }, { status: 401 });
     expect(await login()).toBe(1);
     expect(() => statSync(join(dir, "credentials.json"))).toThrow();
     expect(err.join("\n")).toContain("invalid_api_key");
@@ -67,27 +74,76 @@ describe("ogs login", () => {
 describe("ogs apps register", () => {
   it("registers the iOS app with the saved key", async () => {
     await login();
-    routes[`PUT ${API}/api/v1/apps/rocket-crew/native/ios`] = (b) => Response.json({ appId: "rocket-crew", platform: "ios", ...(b as object) }, { status: 201 });
-    expect(await run(["apps", "register", "--ios", "tv.rocketcrew.app", "--team-id", "34S957HD77"], io())).toBe(0);
-    expect(requests.at(-1)).toMatchObject({ method: "PUT", auth: `Bearer ${KEY}`, body: { bundleId: "tv.rocketcrew.app", teamId: "34S957HD77" } });
+    routes[`PUT ${API}/api/v1/apps/rocket-crew/native/ios`] = (b) =>
+      Response.json({ appId: "rocket-crew", platform: "ios", ...(b as object) }, { status: 201 });
+    expect(
+      await run(
+        ["apps", "register", "--ios", "tv.rocketcrew.app", "--team-id", "34S957HD77"],
+        io(),
+      ),
+    ).toBe(0);
+    expect(requests.at(-1)).toMatchObject({
+      method: "PUT",
+      auth: `Bearer ${KEY}`,
+      body: { bundleId: "tv.rocketcrew.app", teamId: "34S957HD77" },
+    });
     expect(out.join("\n")).toContain("Registered ios app tv.rocketcrew.app for rocket-crew");
   });
   it("registers the Android app with fingerprints and Google client ids", async () => {
     await login();
-    routes[`PUT ${API}/api/v1/apps/rocket-crew/native/android`] = (b) => Response.json({ appId: "rocket-crew", platform: "android", ...(b as object) }, { status: 201 });
+    routes[`PUT ${API}/api/v1/apps/rocket-crew/native/android`] = (b) =>
+      Response.json(
+        { appId: "rocket-crew", platform: "android", ...(b as object) },
+        { status: 201 },
+      );
     expect(
-      await run(["apps", "register", "--android", "tv.rocketcrew.app", "--sha256", "AB:CD,EF:01", "--google-client-id", "123-abc.apps.googleusercontent.com"], io()),
+      await run(
+        [
+          "apps",
+          "register",
+          "--android",
+          "tv.rocketcrew.app",
+          "--sha256",
+          "AB:CD,EF:01",
+          "--google-client-id",
+          "123-abc.apps.googleusercontent.com",
+        ],
+        io(),
+      ),
     ).toBe(0);
-    expect(requests.at(-1)?.body).toEqual({ package: "tv.rocketcrew.app", sha256CertFingerprints: ["AB:CD", "EF:01"], googleClientIds: ["123-abc.apps.googleusercontent.com"] });
+    expect(requests.at(-1)?.body).toEqual({
+      package: "tv.rocketcrew.app",
+      sha256CertFingerprints: ["AB:CD", "EF:01"],
+      googleClientIds: ["123-abc.apps.googleusercontent.com"],
+    });
   });
   it("without a login it says how to log in", async () => {
-    expect(await run(["apps", "register", "--ios", "tv.rocketcrew.app", "--team-id", "34S957HD77"], io())).toBe(1);
+    expect(
+      await run(
+        ["apps", "register", "--ios", "tv.rocketcrew.app", "--team-id", "34S957HD77"],
+        io(),
+      ),
+    ).toBe(1);
     expect(err.join("\n")).toContain("ogs login --app");
   });
   it("shows the API's error", async () => {
     await login();
-    routes[`PUT ${API}/api/v1/apps/rocket-crew/native/ios`] = () => Response.json({ error: { code: "app_id_taken", message: "That bundle id / package is registered to another game" } }, { status: 409 });
-    expect(await run(["apps", "register", "--ios", "tv.rocketcrew.app", "--team-id", "34S957HD77"], io())).toBe(1);
+    routes[`PUT ${API}/api/v1/apps/rocket-crew/native/ios`] = () =>
+      Response.json(
+        {
+          error: {
+            code: "app_id_taken",
+            message: "That bundle id / package is registered to another game",
+          },
+        },
+        { status: 409 },
+      );
+    expect(
+      await run(
+        ["apps", "register", "--ios", "tv.rocketcrew.app", "--team-id", "34S957HD77"],
+        io(),
+      ),
+    ).toBe(1);
     expect(err.join("\n")).toContain("app_id_taken");
   });
 });
@@ -97,33 +153,100 @@ describe("ogs push credentials", () => {
     await login();
     const p8 = join(dir, "AuthKey_ABC123DEFG.p8");
     writeFileSync(p8, "-----BEGIN PRIVATE KEY-----\nSECRETSECRET\n-----END PRIVATE KEY-----\n");
-    routes[`PUT ${API}/api/v1/apps/rocket-crew/push-credentials`] = () => new Response(null, { status: 204 });
+    routes[`PUT ${API}/api/v1/apps/rocket-crew/push-credentials`] = () =>
+      new Response(null, { status: 204 });
     routes[`GET ${API}/api/v1/apps/rocket-crew/push-credentials`] = () =>
-      Response.json({ ios: { configured: true, keyId: "ABC123DEFG", teamId: "34S957HD77", bundleId: "tv.rocketcrew.app" }, android: { configured: false } });
-    expect(await run(["push", "credentials", "--ios", p8, "--key-id", "ABC123DEFG", "--team-id", "34S957HD77"], io())).toBe(0);
-    expect(requests.find((r) => r.method === "PUT")?.body).toEqual({ ios: { p8: readFileSync(p8, "utf8"), keyId: "ABC123DEFG", teamId: "34S957HD77" } });
-    expect(out.join("\n")).toContain("ios: configured (key ABC123DEFG, team 34S957HD77, tv.rocketcrew.app)");
+      Response.json({
+        ios: {
+          configured: true,
+          keyId: "ABC123DEFG",
+          teamId: "34S957HD77",
+          bundleId: "tv.rocketcrew.app",
+        },
+        android: { configured: false },
+      });
+    expect(
+      await run(
+        ["push", "credentials", "--ios", p8, "--key-id", "ABC123DEFG", "--team-id", "34S957HD77"],
+        io(),
+      ),
+    ).toBe(0);
+    expect(requests.find((r) => r.method === "PUT")?.body).toEqual({
+      ios: { p8: readFileSync(p8, "utf8"), keyId: "ABC123DEFG", teamId: "34S957HD77" },
+    });
+    expect(out.join("\n")).toContain(
+      "ios: configured (key ABC123DEFG, team 34S957HD77, tv.rocketcrew.app)",
+    );
     expect(out.join("\n")).not.toContain("SECRET");
   });
   it("uploads the service account JSON", async () => {
     await login();
     const sa = join(dir, "service-account.json");
-    writeFileSync(sa, JSON.stringify({ type: "service_account", project_id: "p", private_key: "k", client_email: "e@p.iam.gserviceaccount.com" }));
-    routes[`PUT ${API}/api/v1/apps/rocket-crew/push-credentials`] = () => new Response(null, { status: 204 });
-    routes[`GET ${API}/api/v1/apps/rocket-crew/push-credentials`] = () => Response.json({ ios: { configured: false }, android: { configured: true, projectId: "p", clientEmail: "e@p.iam.gserviceaccount.com", package: "tv.rocketcrew.app" } });
+    writeFileSync(
+      sa,
+      JSON.stringify({
+        type: "service_account",
+        project_id: "p",
+        private_key: "k",
+        client_email: "e@p.iam.gserviceaccount.com",
+      }),
+    );
+    routes[`PUT ${API}/api/v1/apps/rocket-crew/push-credentials`] = () =>
+      new Response(null, { status: 204 });
+    routes[`GET ${API}/api/v1/apps/rocket-crew/push-credentials`] = () =>
+      Response.json({
+        ios: { configured: false },
+        android: {
+          configured: true,
+          projectId: "p",
+          clientEmail: "e@p.iam.gserviceaccount.com",
+          package: "tv.rocketcrew.app",
+        },
+      });
     expect(await run(["push", "credentials", "--android", sa], io())).toBe(0);
-    expect(requests.find((r) => r.method === "PUT")?.body).toMatchObject({ android: { serviceAccount: { project_id: "p" } } });
+    expect(requests.find((r) => r.method === "PUT")?.body).toMatchObject({
+      android: { serviceAccount: { project_id: "p" } },
+    });
   });
 });
 
 describe("ogs doctor", () => {
   const healthy = () => {
     routes[`GET ${API}/api/v1/apps/rocket-crew/native`] = () =>
-      Response.json({ apps: [{ appId: "rocket-crew", platform: "ios", bundleId: "tv.rocketcrew.app", teamId: "34S957HD77" }] });
-    routes[`GET ${API}/api/v1/apps/rocket-crew/push-credentials`] = () => Response.json({ ios: { configured: true, keyId: "ABC123DEFG", teamId: "34S957HD77", bundleId: "tv.rocketcrew.app" }, android: { configured: false } });
+      Response.json({
+        apps: [
+          {
+            appId: "rocket-crew",
+            platform: "ios",
+            bundleId: "tv.rocketcrew.app",
+            teamId: "34S957HD77",
+          },
+        ],
+      });
+    routes[`GET ${API}/api/v1/apps/rocket-crew/push-credentials`] = () =>
+      Response.json({
+        ios: {
+          configured: true,
+          keyId: "ABC123DEFG",
+          teamId: "34S957HD77",
+          bundleId: "tv.rocketcrew.app",
+        },
+        android: { configured: false },
+      });
     routes[`GET https://opengame.org/.well-known/apple-app-site-association`] = () =>
-      Response.json({ applinks: { apps: [], details: [{ appID: "34S957HD77.tv.rocketcrew.app", paths: ["/play/rocket-crew", "/play/rocket-crew/*"] }] } });
-    routes[`GET ${API}/api/v1/catalogue`] = () => Response.json([{ appId: "rocket-crew", tvUrl: "https://rocket-crew.example/tv" }]);
+      Response.json({
+        applinks: {
+          apps: [],
+          details: [
+            {
+              appID: "34S957HD77.tv.rocketcrew.app",
+              paths: ["/play/rocket-crew", "/play/rocket-crew/*"],
+            },
+          ],
+        },
+      });
+    routes[`GET ${API}/api/v1/catalogue`] = () =>
+      Response.json([{ appId: "rocket-crew", tvUrl: "https://rocket-crew.example/tv" }]);
     routes[`GET https://rocket-crew.example/tv`] = () => new Response("<html>", { status: 200 });
   };
 
@@ -134,22 +257,28 @@ describe("ogs doctor", () => {
     const text = out.join("\n");
     expect(text).toContain("ok   ios app registered: tv.rocketcrew.app (team 34S957HD77)");
     expect(text).toContain("ok   ios push credentials: key ABC123DEFG");
-    expect(text).toContain("ok   opengame.org apple-app-site-association lists 34S957HD77.tv.rocketcrew.app for /play/rocket-crew/*");
+    expect(text).toContain(
+      "ok   opengame.org apple-app-site-association lists 34S957HD77.tv.rocketcrew.app for /play/rocket-crew/*",
+    );
     expect(text).toContain("ok   tvUrl answers: https://rocket-crew.example/tv");
   });
 
   it("a failing check: exit 1 and what to do", async () => {
     await login();
     healthy();
-    routes[`GET ${API}/api/v1/apps/rocket-crew/push-credentials`] = () => Response.json({ ios: { configured: false }, android: { configured: false } });
+    routes[`GET ${API}/api/v1/apps/rocket-crew/push-credentials`] = () =>
+      Response.json({ ios: { configured: false }, android: { configured: false } });
     expect(await run(["doctor"], io())).toBe(1);
-    expect(out.join("\n")).toContain("FAIL ios push credentials: none uploaded. Run: ogs push credentials --ios AuthKey_XXXXXXXXXX.p8 --key-id XXXXXXXXXX --team-id 34S957HD77");
+    expect(out.join("\n")).toContain(
+      "FAIL ios push credentials: none uploaded. Run: ogs push credentials --ios AuthKey_XXXXXXXXXX.p8 --key-id XXXXXXXXXX --team-id 34S957HD77",
+    );
   });
 
   it("checks the developer's own domain when given", async () => {
     await login();
     healthy();
-    routes[`GET https://rocketcrew.example/.well-known/apple-app-site-association`] = () => new Response("not found", { status: 404 });
+    routes[`GET https://rocketcrew.example/.well-known/apple-app-site-association`] = () =>
+      new Response("not found", { status: 404 });
     expect(await run(["doctor", "--domain", "rocketcrew.example"], io())).toBe(1);
     expect(out.join("\n")).toContain("FAIL rocketcrew.example apple-app-site-association");
   });
@@ -157,7 +286,10 @@ describe("ogs doctor", () => {
 
 describe("the API base", () => {
   it("OGS_API points every command at a preview", async () => {
-    await run(["login", "--app", "rocket-crew", "--key", KEY], io({ OGS_API: "https://preview.test" }));
+    await run(
+      ["login", "--app", "rocket-crew", "--key", KEY],
+      io({ OGS_API: "https://preview.test" }),
+    );
     expect(requests[0]?.url).toBe("https://preview.test/api/v1/apps/rocket-crew/native");
   });
   it("help lists the commands", async () => {

@@ -1,0 +1,35 @@
+{
+  "name": "@open-game-system/try-kit",
+  "version": "0.2.0",
+  "description": "A no-app try path for room-based web games: room codes that recycle, clear dead-end pages, presence, a WebSocket-blocked message, the play-on-this-computer fallback, ?ref= wide events and a load-test runner",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": { "import": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" } },
+    "./worker": { "import": { "types": "./dist/worker.d.mts", "default": "./dist/worker.mjs" } },
+    "./browser": { "import": { "types": "./dist/browser.d.mts", "default": "./dist/browser.mjs" } },
+    "./load": { "import": { "types": "./dist/load.d.mts", "default": "./dist/load.mjs" } }
+  },
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test/fixture",
+    "lint": "biome lint src test",
+    "test": "vitest run",
+    "test:seam": "vitest run --config vitest.seam.config.ts"
+  },
+  "dependencies": {
+    "qrcode-generator": "^2.0.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261004.1",
+    "@types/node": "^25.5.0",
+    "jsdom": "^28.1.0",
+    "tsdown": "^0.16.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.147.0"
+  }
+}
