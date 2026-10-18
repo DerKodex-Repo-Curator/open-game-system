@@ -32,9 +32,14 @@ link instead of pushing.
 
 ## The second visit now (e2e, `e2e/second-visit-preview.ts`)
 
-Dana's path, the next day: open OGS → TV tab → Cast (the TV is named, no code) → OK on the TV's Play
-again → Ready. 4 taps. Grandma: scan the QR → Join from this browser → Join as Grandma.
-Measured numbers: see "Measured" below.
+Dana's path, the next day: open OGS → TV tab → Cast (the TV is named, no code) → OK on the TV's first
+card → Ready: 4 taps when that card is Play again (the ring starts on it), 5 when it is yesterday's
+sitting still within the game's TTL (Rocket Crew's "Mission 1": the ring starts on the icon, so
+Down first). Grandma: scan the QR → Join from this browser → Join as Grandma.
+
+**Decision for Jon:** start the ring on the first card when it is the latest sitting too (one press
+fewer). It changes the TV home's first focus for every household with a paused game, so it isn't
+on this branch.
 
 ## Not done (follow-ups)
 
@@ -43,7 +48,22 @@ Measured numbers: see "Measured" below.
   during a game's lobby (the spec's `inviteCorner`) would make the 3-tap path work for everyone.
 - **Chromecast's last TV** is remembered only through the same `lastTv` (its id), not a native
   "resume last session" on launch.
-- **The API's clock** isn't moved in the e2e; its time rules (12 h sessions, the 7-day window) are
-  unit-tested.
+- **The API's clock** isn't moved in the e2e; its time rules (12 h sessions, the 7-day window, an
+  expired launcher on a browser TV) are unit-tested.
+
+## Found by the e2e and fixed
+
+- A browser TV whose cast was never stopped booted yesterday's (expired) launcher the next day: the
+  API now shows a launcher only while its token is valid, else the code (`screen-routes.test.ts`).
+- The phone reopened the next day reattached to yesterday's couch: a kept couch is stamped with the
+  phone's clock and dropped after 12 h (`app-state.test.ts`).
 
 ## Measured
+
+2026-10-18, iOS simulator against the preview, the machine at load 100–200 from other sessions.
+Every check of the walk has passed: day 1 in full (four runs); day 2 the same screen, Cast naming the
+TV, a new couch, Rocket Crew first in the TV's row and its first card, Join as Grandma in one tap,
+the TV framing Rocket Crew, Grandma as Fixer and the first round fixed (one run, which then hung on
+reporting Dana's taps; fixed since). One fully green run, with Dana's seconds, is still to do on a
+quieter machine: those runs failed on load (a 5-minute wait for the game, a launch past the first
+problem) and once on the rocket-crew checkout's parser not knowing a line the preview game said.
