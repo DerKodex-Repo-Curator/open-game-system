@@ -50,6 +50,25 @@ A co-op whodunit (2–4 detectives plus an optional little one): push your luck 
 
 Suggested use: mention it in the post's last line or the first comment ("got 3–4 people? try this one"), so the main link stays the two-player game.
 
+## A third try path: Trivia Jam (adults, 2–10 players)
+
+**https://trivia-jam-try.jonathanrmumm.workers.dev/?ref=hn** (QR: [show-hn-try-qr-trivia.svg](show-hn-try-qr-trivia.svg))
+
+Numeric trivia for adults: everyone guesses a number on their phone, and the closest wins. It fits HN's audience better than Midnight Museum (a kids' whodunit), so it's the one to offer groups of 3–4: "Got a few people? Try Trivia Jam."
+
+- **Laptop:** opening the link makes a game and becomes the TV. Because the laptop made the game, it also hosts: the TV loads a built-in pack of 8 questions on its own, so nobody has to write or paste questions. One host button (or the Space bar) runs it: Start once a phone is in, then Next question, then Final scores, then Play again.
+- **Phones:** players join by scanning the QR, or by typing the TV's 4-letter code on the front page. The production game has no code join at all (the home page's code box only logs to the console), so this is new.
+- **Opened on a phone first:** the page says to open the address on a laptop, offers the share sheet to send the link, and has a code box.
+
+Code: branch `try/show-hn` in `~/src/trivia-jam` (worktree `~/src/trivia-jam-try`), Worker `trivia-jam-try` with its own KV namespace (`pnpm deploy:try`). Production triviajam.tv is untouched.
+
+**Tested:**
+- 4/4 e2e tests against the live preview: a Chrome laptop TV hosts while three WebKit iPhones join and answer and the TV reveals; code entry; the phone landing; an unknown code.
+- Load test, 250/250 games across three runs (50 at once, then 2 × 100 in waves of 50). Each game is a TV, three phones, question 1 and its reveal, over real HTTP sessions and WebSockets. The TV page took about 1.0 s, a phone's join page about 0.5 s, and the reveal came about 80 ms after the last answer.
+- iOS 26 Simulator Safari: opened the link (the landing), typed the TV's code, joined as "Robin", answered on the number pad, and the Chrome TV revealed 88.
+
+**Not done:** the `ref` tag is kept on the TV's URL but isn't in a wide event yet.
+
 ## Clip
 
 A 30 s draft of a laptop TV and two phones joining and fixing a problem (demo names, no family names): `~/.claude/usage-burn/rocket-crew-try-30s.mp4`. Recorded against the preview with `ROCKET_CLIP=1 pnpm record` (Chrome with phone emulation, not real phones), cut to the joins plus launch → first fix. The phone panels are grey until each phone opens the link.
