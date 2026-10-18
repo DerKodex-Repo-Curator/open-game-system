@@ -26,6 +26,7 @@ export * from "./fake-cast";
 export * from "./game-loading";
 export * from "./game-notifications";
 export * from "./game-profile";
+export * from "./game-stores";
 export * from "./game-url-store";
 export * from "./google-cast-backend";
 export * from "./guest-profile";

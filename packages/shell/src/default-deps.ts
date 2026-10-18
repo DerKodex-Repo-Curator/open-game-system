@@ -6,8 +6,10 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { castGameStores } from "./cast-stores";
 import { streamServerUrl } from "./cast-view";
+import { askToNotify } from "./consent-sheet";
 import { createDeviceSource } from "./device";
 import { expoHapticsPlayer } from "./expo-haptics-player";
+import { ogsGameStores } from "./game-stores";
 import { createGoogleCastBackend } from "./google-cast-backend";
 import { apnsEnvironmentFromEntitlement } from "./native-push";
 import type { ShellRuntimeConfig, ShellRuntimeDeps } from "./shell-runtime";
@@ -54,9 +56,11 @@ export function defaultShellDeps(
       unavailableSignIn("google"),
     ],
     // The Google Cast backend is made when the runtime asks for the stores, not here.
-    gameStores: (ctx) =>
-      castGameStores(createGoogleCastBackend(), {
+    gameStores: (ctx) => ({
+      ...castGameStores(createGoogleCastBackend(), {
         streamServerUrl: streamServerUrl({}, config.apiBase),
       })(ctx),
+      ...ogsGameStores({ askPlayer: askToNotify })(ctx),
+    }),
   };
 }
