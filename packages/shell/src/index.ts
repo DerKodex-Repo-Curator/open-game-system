@@ -12,6 +12,7 @@ export * from "./cast-sync";
 export * from "./cast-trace";
 export * from "./cast-view";
 export * from "./client-log";
+export * from "./consent-sheet";
 export * from "./fake-cast";
 export * from "./game-loading";
 export * from "./game-url-store";
