@@ -231,3 +231,11 @@ CREATE TABLE IF NOT EXISTS screens (
   created_at INTEGER NOT NULL,
   last_used_at INTEGER NOT NULL
 );
+
+-- Guests from the browser (spec ogs-join, "Guests from the browser"): a profile made for one couch
+-- session, with no device, login or friends. The couch's members table lists it like any member.
+CREATE TABLE IF NOT EXISTS guest_profiles (
+  profile_id TEXT PRIMARY KEY REFERENCES profiles(id),
+  session_id TEXT NOT NULL REFERENCES couch_sessions(id),
+  created_at INTEGER NOT NULL
+);

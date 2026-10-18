@@ -71,3 +71,10 @@ export function whoIsPlaying(labels: readonly string[]): string {
   const names = `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`;
   return `${names} are playing`;
 }
+
+/** The start page of a joining couch: `ogsRoom=<room>` tells the game to join, not make, a room. */
+export function roomStartUrl(startUrl: string, room: string): string {
+  const [beforeHash, hash] = startUrl.split("#", 2);
+  const sep = beforeHash.includes("?") ? "&" : "?";
+  return `${beforeHash}${sep}ogsRoom=${encodeURIComponent(room)}${hash === undefined ? "" : `#${hash}`}`;
+}

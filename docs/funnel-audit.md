@@ -49,7 +49,7 @@ Loss figures are estimates (stated assumptions), not measurements.
 | 7 | **Cloud GPU stream on the first cast**: Cloud Run L4 scales to zero with `maxScale 1`. The phone waits 8 s (`CAST_WAIT_MS`) for the launcher; a cold GPU start is likely longer (unmeasured), so the first cast may say "didn't answer". One instance may also cap concurrent households (unverified). | Chromecast hosts | unknown | Unverified; browser TV (#2) avoids the GPU entirely |
 | 8 | **Android doesn't claim `opengame.org/join/`** (needs an intent filter, a native build that forces every tester to update). iOS gets it from the AASA file. | Android guests | Android share | Follow-up |
 | 9 | **The join page can't link to the app** until #1 exists: it says "It's in beta: ask <host> to send you an invite". `VITE_OGS_GET_APP` turns on a real link. | Guests | (part of #1) | Waits on #1 |
-| 10 | "No TV found" leads with Chromecast troubleshooting; "Use a browser TV" sits below it. A household that has no Chromecast reads three wrong causes first. | Hosts without Chromecast | est. 5–10% of them | Follow-up: lead with "No Chromecast? Any TV with a browser works" |
+| 10 | "No TV found" leads with Chromecast troubleshooting; "Use a browser TV" sits below it. A household that has no Chromecast reads three wrong causes first. | Hosts without Chromecast | est. 5–10% of them | **Fixed**: "No Chromecast? Any TV with a browser works" and the button come first |
 | 11 | Onboarding asks about notifications before any value, and for an @id. Measured 5 taps + a name, ~20 s. | Everyone | est. <5% | Leave |
 
 ## Owner actions (only Jon can do these)

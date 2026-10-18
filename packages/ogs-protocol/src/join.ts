@@ -39,3 +39,15 @@ export const JoinPreviewSchema = z.object({
   couch: z.array(JoinSitterSchema),
 });
 export type JoinPreview = z.infer<typeof JoinPreviewSchema>;
+
+/**
+ * POST /api/v1/join/:code/guest `{ name, sticker }` — a guest from the browser (spec ogs-join,
+ * "Guests from the browser"): the couch it is on and a phone token for its browser.
+ */
+export const GuestJoinedSchema = z.object({
+  token: z.string().min(1),
+  sessionId: z.string().min(1),
+  code: TvCodeSchema,
+  tvName: z.string(),
+});
+export type GuestJoined = z.infer<typeof GuestJoinedSchema>;

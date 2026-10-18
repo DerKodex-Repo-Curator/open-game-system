@@ -144,7 +144,10 @@ function CastPromptSheet({ request }: { request: CastPromptRequest }) {
           ) : (
             <View testID="castPromptNoTv" style={styles.noTv}>
               <Text style={styles.noTvTitle}>No TV found</Text>
-              <Text style={styles.lead}>Usually it's one of these:</Text>
+              {/* Most households have no Chromecast: the way that works for them comes first. */}
+              <Text style={styles.lead}>No Chromecast? Any TV with a browser works.</Text>
+              <BrowserTv onPaired={setPicked} />
+              <Text style={styles.lead}>Have a Chromecast? Usually it's one of these:</Text>
               {NO_TV_CAUSES.map(([title, body]) => (
                 <View key={title} style={styles.cause}>
                   <Text style={styles.causeTitle}>{title}</Text>
@@ -165,7 +168,6 @@ function CastPromptSheet({ request }: { request: CastPromptRequest }) {
                   style={styles.flex}
                 />
               </View>
-              <BrowserTv onPaired={setPicked} />
             </View>
           )}
           {error ? (

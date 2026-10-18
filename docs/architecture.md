@@ -149,6 +149,7 @@ route → 403 `profile_token_required`.
 | GET | `/api/v1/sessions/:sid` | its launcher, host or a member | → `{ sessionId, code, tvName, host }`; 403 `not_a_member`, 404 `session_not_found` |
 | POST | `/api/v1/sessions/join` | phone/tablet | `{ code }` (TV code; case, spaces, dashes ignored) → session view; 404 `session_not_found` |
 | GET | `/api/v1/join/:code` | none | The join page's look at a couch (opengame.org/join/<code>): `{ code, tvName, host: {name, sticker}, couch: [{name, sticker}] }`, host first then join order; no ids or @ids. 404 `session_not_found` (expired/unknown), 400 `invalid_code` |
+| POST | `/api/v1/join/:code/guest` | none | A guest from the browser: `{ name (1-30), sticker (a sticker id) }` → 201 `{ token, sessionId, code, tvName }`; a profile for this couch only (`guest_profiles`), a member of it, and a phone token (12 h) for the couch WebSocket. 404 `session_not_found`, 400 |
 | POST | `/api/v1/screens` | none | A browser on the TV becomes a screen: `{ screenId, code, secret }` (201); the secret is kept only as a SHA-256 hash |
 | GET | `/api/v1/screens/:id` | `X-Screen-Secret` | `{ code, show: { token } \| null }`: the launcher token to show; 401 `missing_secret`, 403 `wrong_secret`, 404 `screen_not_found` (unclaimed > 1 h, claimed and unused > 30 days) |
 | POST | `/api/v1/screens/claim` | phone/tablet | `{ code }` → `{ screenId, name: "Browser TV" }`; the caller owns it; 404 `screen_not_found` |

@@ -1,7 +1,8 @@
-import { JoinPreviewSchema } from "@open-game-system/ogs-protocol";
+import { GuestJoinedSchema, JoinPreviewSchema } from "@open-game-system/ogs-protocol";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import app from "../src/index";
+import { readClaims } from "../src/lib/identity";
 import { SESSION_TTL_MS } from "../src/lib/sessions";
 import { openTestD1, type TestD1 } from "./support/d1";
 
@@ -86,5 +87,56 @@ describe("GET /api/v1/join/:code", () => {
   it("refuses something that can't be a TV code", async () => {
     const r = await get("NT9");
     expect(r.status).toBe(400);
+  });
+});
+
+// "A guest joins from the browser without the app": a name and a sticker, no install, no account.
+describe("POST /api/v1/join/:code/guest", () => {
+  async function guest(code: string, body: unknown) {
+    const res = await app.request(
+      `/api/v1/join/${code}/guest`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      { DB: d1.db, OGS_JWT_SECRET: "s" },
+    );
+    return { status: res.status, body: Body.parse(await res.json()) };
+  }
+
+  it("puts a guest on the couch with a name and a sticker, and gives the browser a phone token", async () => {
+    const r = await guest("nt9wph", { name: "Grandma", sticker: "owl" });
+    expect(r.status).toBe(201);
+    const joined = GuestJoinedSchema.parse(r.body);
+    expect(joined).toMatchObject({ sessionId: "s1", code: "NT9WPH", tvName: "Living room TV" });
+    const claims = await readClaims(joined.token, "s", Date.now());
+    expect(claims).toMatchObject({ kind: "phone" });
+    expect(claims?.did).toMatch(/^guest-/);
+    expect((await get("NT9WPH")).body.couch).toEqual([
+      { name: "Mom", sticker: "sun" },
+      { name: "Sam", sticker: "rocket" },
+      { name: "Grandma", sticker: "owl" },
+    ]);
+    const marked = await d1.db
+      .prepare("SELECT session_id FROM guest_profiles WHERE profile_id = ?")
+      .bind(claims?.sub ?? "")
+      .first();
+    expect(marked).toEqual({ session_id: "s1" });
+  });
+
+  it("asks for a name (1-30 characters) and a sticker", async () => {
+    for (const body of [
+      { sticker: "owl" },
+      { name: " ", sticker: "owl" },
+      { name: "x".repeat(31), sticker: "owl" },
+      { name: "Gran" },
+      { name: "Gran", sticker: "../x" },
+    ])
+      expect((await guest("NT9WPH", body)).status).toBe(400);
+  });
+
+  it("can't join a couch that isn't on any more", async () => {
+    expect((await guest("ZZZZZZ", { name: "Gran", sticker: "owl" })).status).toBe(404);
   });
 });

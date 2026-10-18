@@ -98,7 +98,11 @@ export const NotificationsBridgeStateSchema = z.object({
 export type NotificationsBridgeState = z.infer<typeof NotificationsBridgeStateSchema>;
 
 export const NotificationsBridgeEventSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("REQUEST"), id: z.string().min(1), handle: PushHandleSchema.optional() }),
+  z.object({
+    type: z.literal("REQUEST"),
+    id: z.string().min(1),
+    handle: PushHandleSchema.optional(),
+  }),
   z.object({ type: z.literal("LISTENING"), on: z.boolean() }),
 ]);
 export type NotificationsBridgeEvent = z.infer<typeof NotificationsBridgeEventSchema>;
@@ -108,4 +112,6 @@ export const ServiceWorkerNotificationMessageSchema = z.object({
   type: z.literal("ogs:notification"),
   notification: OgsNotificationSchema,
 });
-export type ServiceWorkerNotificationMessage = z.infer<typeof ServiceWorkerNotificationMessageSchema>;
+export type ServiceWorkerNotificationMessage = z.infer<
+  typeof ServiceWorkerNotificationMessageSchema
+>;

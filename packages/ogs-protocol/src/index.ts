@@ -1,6 +1,7 @@
 export * from "./frame";
 export * from "./friends";
 export * from "./game-token";
+export * from "./guest";
 export * from "./instance";
 export * from "./join";
 export * from "./join-page";

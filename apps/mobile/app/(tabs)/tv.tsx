@@ -244,7 +244,14 @@ function NotCast({ connecting }: { connecting: boolean }) {
     return (
       <Screen title="TV" testID="tvNoTv">
         <Text style={styles.headline}>No TV found</Text>
-        <Text style={styles.lead}>Usually it's one of these:</Text>
+        <Text style={styles.lead}>No Chromecast? Any TV with a browser works.</Text>
+        <BrowserTv
+          onPaired={(paired) => {
+            setPicked(paired);
+            setPhase("idle");
+          }}
+        />
+        <Text style={styles.lead}>Have a Chromecast? Usually it's one of these:</Text>
         {NO_TV_CAUSES.map(([title, body]) => (
           <View key={title} style={styles.cause}>
             <Text style={styles.causeTitle}>{title}</Text>
@@ -272,12 +279,6 @@ function NotCast({ connecting }: { connecting: boolean }) {
           <Text style={styles.otherText}>Play on this phone: games that don't need a TV</Text>
           <Text style={styles.chevron}>›</Text>
         </Pressable>
-        <BrowserTv
-          onPaired={(paired) => {
-            setPicked(paired);
-            setPhase("idle");
-          }}
-        />
       </Screen>
     );
 

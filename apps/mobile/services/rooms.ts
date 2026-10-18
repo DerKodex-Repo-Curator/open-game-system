@@ -3,6 +3,7 @@ import {
   type FriendRoom,
   type Manifest,
   type PublicProfile,
+  roomStartUrl,
   type SessionState,
   whoIsPlaying,
 } from "@open-game-system/ogs-protocol";
@@ -14,12 +15,8 @@ import {
 
 type GameStart = Extract<ClientMessage, { type: "game.start" }>;
 
-/** The start page of a joining couch: `ogsRoom=<room>` tells the game to join, not make, a room. */
-export function roomStartUrl(startUrl: string, room: string): string {
-  const [beforeHash, hash] = startUrl.split("#", 2);
-  const sep = beforeHash.includes("?") ? "&" : "?";
-  return `${beforeHash}${sep}ogsRoom=${encodeURIComponent(room)}${hash === undefined ? "" : `#${hash}`}`;
-}
+/** The start page of a joining couch (ogs-protocol, shared with the browser guest page). */
+export { roomStartUrl };
 
 export type RoomJoinPlan =
   | { kind: "tv"; start: GameStart; url: string }
