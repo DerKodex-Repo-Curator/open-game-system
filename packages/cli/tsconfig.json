@@ -3,9 +3,10 @@
   "compilerOptions": {
     "composite": false,
     "outDir": "./dist",
+    "moduleResolution": "bundler",
     "lib": ["ES2022", "DOM"],
     "types": ["node"]
   },
-  "include": ["src"],
+  "include": ["src", "test"],
   "exclude": ["node_modules", "dist"]
 }

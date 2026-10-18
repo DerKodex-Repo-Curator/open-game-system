@@ -1,5 +1,6 @@
 import type { Io } from "../io";
 import { register } from "./apps";
+import { dev } from "./dev";
 import { doctor } from "./doctor";
 import { login } from "./login";
 import { credentials } from "./push";
@@ -41,4 +42,11 @@ export const COMMANDS: Command[] = [
     run: tryPath,
   },
   { words: ["push", "send"], usage: [PUSH_SEND_USAGE], run: send },
+  {
+    words: ["dev"],
+    usage: [
+      "ogs dev [--manifest <file>] [--start-url <url>] [--tv-url <url>] [--port 4747] [--phones 2] [--lan <ip>]",
+    ],
+    run: dev,
+  },
 ];
