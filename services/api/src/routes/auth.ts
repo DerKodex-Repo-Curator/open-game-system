@@ -4,6 +4,7 @@ import { z } from "zod";
 import { CODE_TTL_MS, checkCode, codeEmail, hashCode, newEmailCode } from "../lib/email-code";
 import { cloudflareEmailSender } from "../lib/email-sender";
 import { apiError, invalidBody, parseBody } from "../lib/http";
+import { signInAudiences } from "../lib/native-apps";
 import { type OidcProvider, type VerifiedLogin, verifyIdToken } from "../lib/oidc";
 import {
   type Device,
@@ -14,7 +15,6 @@ import {
   type Provider,
   upsertDevice,
 } from "../lib/profiles";
-import { signInAudiences } from "../lib/native-apps";
 import { recordError } from "../lib/wide-event";
 import { claimsFromHeader, type ProfileEnv } from "../middleware/profile-auth";
 import type { Env } from "../types";
@@ -167,32 +167,90 @@ const NativeBodySchema = z.object({
 auth.post("/native", async (c) => {
   const body = await parseBody(c, NativeBodySchema);
   if (!body) return invalidBody(c, "provider (apple | google) and identityToken are required");
-  let guest: Claims | null = null;
-  if (body.deviceProfileId) {
-    const result = c.req.header("Authorization") ? await claimsFromHeader(c) : null;
-    if (!result || "error" in result || result.claims.sub !== body.deviceProfileId || result.claims.kind === "launcher")
-      return apiError(c, 403, "not_your_profile", "Send the guest profile's own device token with deviceProfileId");
-    guest = result.claims;
-  } else if (!body.device) return invalidBody(c, "deviceProfileId (with its token) or device is required");
-  const base = oidcProvider(c.env, body.provider);
-  const provider = { ...base, clientIds: [...base.clientIds, ...(await signInAudiences(c.env.DB, body.provider))] };
-  const login = await verifyIdToken(body.identityToken, provider, { now: Date.now(), nonce: body.nonce });
-  if (!login) return apiError(c, 401, "invalid_id_token", `Not a valid ${body.provider} identity token for a registered app`);
+  const w = await nativeWho(c, body);
+  if ("error" in w) return w.error;
+  const login = await verifyIdToken(
+    body.identityToken,
+    await nativeProvider(c.env, body.provider),
+    {
+      now: Date.now(),
+      nonce: body.nonce,
+    },
+  );
+  if (!login)
+    return apiError(
+      c,
+      401,
+      "invalid_id_token",
+      `Not a valid ${body.provider} identity token for a registered app`,
+    );
   const ownerId = await loginOwner(c.env.DB, body.provider, login.subject);
-  if (!guest) return signIn(c, ownerId, body.device ?? { deviceId: "", kind: "phone", name: "Phone" });
-  const named = await c.env.DB.prepare("SELECT name FROM profile_devices WHERE device_id = ?").bind(guest.did).first<{ name: string }>();
-  const device: Device = { deviceId: guest.did, kind: guest.kind === "tablet" ? "tablet" : "phone", name: named?.name ?? "Phone" };
-  if (!ownerId || ownerId === guest.sub) {
-    const linked = await link(c, guest.sub, ownerId, body.provider, login);
-    if (linked.status !== 200) return linked;
-    return withToken(c, guest.sub, device);
-  }
-  // The login backs another profile: this device signs in to it (the guest profile stays as it was).
-  return signIn(c, ownerId, device);
+  if ("device" in w) return signIn(c, ownerId, w.device);
+  const device = await guestDevice(c.env.DB, w.guest);
+  if (ownerId && ownerId !== w.guest.sub)
+    // The login backs another profile: this device signs in to it (the guest profile stays as it was).
+    return signIn(c, ownerId, device);
+  const linked = await link(c, w.guest.sub, ownerId, body.provider, login);
+  // Stryker disable next-line ConditionalExpression: equivalent, link() fails here only with 404 profile_not_found, which withToken() answers too
+  if (linked.status !== 200) return linked;
+  return withToken(c, w.guest.sub, device);
 });
+
+type NativeWho = { guest: Claims } | { device: Device };
+
+/** A guest proven by its own device token (deviceProfileId), or a sign-in on a new device. */
+async function nativeWho(
+  c: Context<ProfileEnv>,
+  body: z.infer<typeof NativeBodySchema>,
+): Promise<NativeWho | { error: Response }> {
+  if (!body.deviceProfileId) {
+    if (!body.device)
+      return { error: invalidBody(c, "deviceProfileId (with its token) or device is required") };
+    return { device: body.device };
+  }
+  const claims = await guestClaims(c, body.deviceProfileId);
+  if (!claims)
+    return {
+      error: apiError(
+        c,
+        403,
+        "not_your_profile",
+        "Send the guest profile's own device token with deviceProfileId",
+      ),
+    };
+  return { guest: claims };
+}
+
+/** The Bearer token's claims when they are that guest profile's own phone or tablet. */
+async function guestClaims(c: Context<ProfileEnv>, profileId: string): Promise<Claims | null> {
+  const result = await claimsFromHeader(c);
+  if ("error" in result) return null;
+  const { claims } = result;
+  return claims.sub === profileId && claims.kind !== "launcher" ? claims : null;
+}
+
+/** Apple / Google audiences: the OGS app's plus every registered app's. */
+async function nativeProvider(env: Env, provider: "apple" | "google"): Promise<OidcProvider> {
+  const base = oidcProvider(env, provider);
+  return { ...base, clientIds: [...base.clientIds, ...(await signInAudiences(env.DB, provider))] };
+}
+
+/** The guest's device as it is known (its name kept), for the token it gets back. */
+async function guestDevice(db: D1Database, guest: Claims): Promise<Device> {
+  const named = await db
+    .prepare("SELECT name FROM profile_devices WHERE device_id = ?")
+    .bind(guest.did)
+    .first<{ name: string }>();
+  return {
+    deviceId: guest.did,
+    kind: guest.kind === "tablet" ? "tablet" : "phone",
+    name: named?.name ?? "Phone",
+  };
+}
 
 async function withToken(c: Context<ProfileEnv>, profileId: string, device: Device) {
   const view = await getMe(c.env.DB, profileId);
+  // Stryker disable next-line ConditionalExpression,StringLiteral: equivalent, only called after link() answered 200, which read the profile (null needs it deleted in between)
   if (!view) return apiError(c, 404, "profile_not_found", "Profile not found");
   return c.json({ ...view, token: await deviceToken(profileId, device, c.env.OGS_JWT_SECRET) });
 }

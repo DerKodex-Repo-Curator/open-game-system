@@ -57,9 +57,11 @@ async function sendNative(
     ]);
     if (!cred || registered?.platform !== "ios")
       return { success: false, deviceActive: true, error: "no_apns_credentials" };
+    // Stryker disable next-line StringLiteral: equivalent, sendApns sends anything but "sandbox" to APNs production
     const apnsEnvironment = device.apns_environment ?? "production";
     return sendApns(
       cred,
+      // Stryker disable next-line StringLiteral: equivalent, sendApns reads the token, environment and bundle id, not the platform
       { platform: "ios", token: device.token, apnsEnvironment, bundleId: registered.bundleId },
       n,
       now,
@@ -68,5 +70,6 @@ async function sendNative(
   }
   const cred = await fcmCredential(env.DB, appId, secret);
   if (!cred) return { success: false, deviceActive: true, error: "no_fcm_credentials" };
+  // Stryker disable next-line StringLiteral: equivalent, sendFcm reads only the device's token
   return sendFcm(cred, { platform: "android", token: device.token }, n, now, fetch);
 }
