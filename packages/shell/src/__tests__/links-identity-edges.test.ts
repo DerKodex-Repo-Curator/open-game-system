@@ -92,7 +92,7 @@ describe("incoming links, edges", () => {
     });
     listener(tap("n-1", null));
     listener(tap("n-2", undefined));
-    expect(opened).toEqual([]);
+    expect(opened).toHaveLength(0);
   });
 
   it("pushes without an identifier each open", async () => {

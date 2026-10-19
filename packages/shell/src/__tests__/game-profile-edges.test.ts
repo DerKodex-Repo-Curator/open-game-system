@@ -85,3 +85,21 @@ describe("LoginSchema", () => {
     expect(LoginSchema.safeParse({ provider: "facebook", email: null }).success).toBe(false);
   });
 });
+
+describe("game profile, a failure after close", () => {
+  it("is not reported", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    let fail: (e: Error) => void = () => {};
+    const profile = createGameProfile({
+      fetchToken: () =>
+        new Promise((_resolve, reject) => {
+          fail = reject;
+        }),
+    });
+    profile.open("rocket-crew");
+    profile.close();
+    fail(new Error("offline"));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(warn).not.toHaveBeenCalled();
+  });
+});

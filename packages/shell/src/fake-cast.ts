@@ -183,6 +183,7 @@ export function createFakeCastBackend(opts: {
       if (devices.length < 2 || discovered.length === devices.length) return publish(devices);
       publish(devices.slice(0, 1));
       // A search while the second TV is on its way keeps its arrival (a restart would put it off).
+      // Stryker disable next-line ConditionalExpression: equivalent, the first timer still fires at its time and publishes the same list
       if (trickle) return;
       trickle = setTimeout(() => {
         trickle = null;

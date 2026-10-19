@@ -75,10 +75,10 @@ function mergeInfoPlist(
 function mergeIos(ios: IosConfig | undefined, part: IosPart): IosConfig {
   const out: IosConfig = { ...ios };
   if (part.associatedDomains) {
-    out.associatedDomains = union(ios?.associatedDomains ?? [], part.associatedDomains, same);
+    out.associatedDomains = union(out.associatedDomains ?? [], part.associatedDomains, same);
   }
   if (part.usesAppleSignIn) out.usesAppleSignIn = true;
-  if (part.infoPlist) out.infoPlist = mergeInfoPlist(ios?.infoPlist ?? {}, part.infoPlist);
+  if (part.infoPlist) out.infoPlist = mergeInfoPlist(out.infoPlist ?? {}, part.infoPlist);
   return out;
 }
 
