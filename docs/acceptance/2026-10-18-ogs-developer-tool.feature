@@ -1,4 +1,4 @@
-# Status: BUILT (branch claude/shell-platform, unmerged; end to end on the preview API: packages/cli/scripts/e2e-preview.sh; contract docs/design-docs/ogs-cli.md).
+# Status: SHIPPED 2026-10-19 (main d2897aca: API + schema by CI; opengame.org, ogs-tv, ogs-docs deployed); the CLI isn't on npm yet (CI's NPM_TOKEN can't publish to @open-game-system: E404).
 # ADR: docs/adrs/2026-10-18-ogs-developer-api.md. The shell commands are in 2026-10-18-ogs-cli.feature.
 
 Feature: ogs is the OGS developer tool

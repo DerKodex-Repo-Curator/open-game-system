@@ -5,7 +5,7 @@
 the game's own App Store / Play Store app, and sends test pushes. Every command that needs OGS calls the
 public developer API below, so a coding agent can do the same with plain HTTP.
 
-> **Status: preview.** `ogs` is not on npm yet. Build it from the monorepo
+> **Status:** the developer API below is live. `ogs` itself is not on npm yet. Build it from the monorepo
 > (`pnpm --filter @open-game-system/cli build`) and run `node packages/cli/dist/bin.mjs`, or link it
 > (`pnpm --filter @open-game-system/cli exec pnpm link --global`) to get `ogs` on your PATH.
 

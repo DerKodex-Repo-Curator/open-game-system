@@ -309,3 +309,10 @@ fetches arbitrary developer URLs needs it.
 - **Detox web on Android hangs while a game runs.** Espresso Web performs each script through `onView(webView)`, which waits for the app to be idle, and a running game never is (live connection, animated overlays): every `runScript` timed out at 30 s. Turn Detox's synchronization off around in-game steps that poll for themselves (`device.disableSynchronization()`), and look up one element (`.captain`, the page through `ownerDocument`).
 - **A page point is not a screen point on Android.** `getBoundingClientRect()` is relative to the WebView, which starts below the status bar: tap the WebView element at that point (`element(by.id("gameWebView")).tap(point)`), not `device.tap`.
 - **Don't poll for a phase that lasts a moment.** Under load Playwright missed Rocket Crew's brief `.tv.phase-success`; a MutationObserver installed before the action records it. Functions passed to `evaluate` from tsx must not contain named inner functions (tsx wraps them in a `__name` helper the page lacks).
+
+## The package publish job hides npm failures (2026-10-19)
+
+`publish-packages.yml` ends each publish with `npm publish --access public || true`, so every job is
+green whatever npm says. The org's `NPM_TOKEN` gets `E404 Not Found - PUT …/@open-game-system%2fcli`
+(npm's answer to a token that can't publish to the scope): nothing has reached npm since April
+(cast-kit-core 0.1.1). Check `npm view <package> version` after a release, not the job's colour.
