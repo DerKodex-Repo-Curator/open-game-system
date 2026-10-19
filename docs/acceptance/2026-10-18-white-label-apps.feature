@@ -94,6 +94,25 @@ Feature: A game ships as its own app, and OGS hosts its push and links
     When Rocket Crew sends Sam a push and Sam has only the Rocket Crew app
     Then nothing is sent to it and the result is "failed"
 
+  # --- Push credentials are secret (services/api/test/push-credentials-security.test.ts) ---
+
+  Scenario: Credentials are sealed at rest and bound to their app
+    Given Rocket Crew uploaded its APNs key
+    Then its row in app_push_credentials holds no fragment of the key (AES-GCM under PUSH_KEY_SECRET)
+    And the sealed value is bound to "rocket-crew:ios", so copied into another app's row it won't open
+    And a send with a key that won't open calls no push service and answers "push_credentials_unreadable"
+
+  Scenario: Only the app's own game key reads or writes its credentials
+    When Codebreakers' key uploads or reads Rocket Crew's push credentials
+    Then it is refused 403 "wrong_game" and nothing is stored; with no key it is 401
+    And Rocket Crew's own read shows key ids and team ids, never the key
+
+  Scenario: No key material in answers or logs
+    When an upload is refused (not a key, or a bad body)
+    Then the error body doesn't echo the key
+    And no log line while uploading, refusing or reading holds a key fragment or the game's API key
+    And logged error text has private-key blocks and ogsk_ keys scrubbed
+
   # --- Links ---
 
   Scenario: opengame.org's link files list every registered app first

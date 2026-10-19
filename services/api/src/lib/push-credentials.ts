@@ -27,6 +27,9 @@ export type ServiceAccount = z.infer<typeof ServiceAccountSchema>;
 export type ApnsCredential = { keyId: string; teamId: string; p8: string };
 export type FcmCredential = ServiceAccount;
 
+/** What each sealed value is bound to: its app and platform (secret-box's context). */
+const owner = (appId: string, platform: "ios" | "android") => `${appId}:${platform}`;
+
 const PEM = /-----BEGIN PRIVATE KEY-----([\s\S]+?)-----END PRIVATE KEY-----/;
 
 /** The DER bytes of a PKCS#8 PEM, or null. */
@@ -34,6 +37,7 @@ export function pemBody(pem: string): Uint8Array | null {
   const m = PEM.exec(pem);
   if (!m?.[1]) return null;
   try {
+    // Stryker disable next-line Regex: equivalent, /\s/g and /\s+/g both remove every whitespace character
     return Uint8Array.from(atob(m[1].replace(/\s+/g, "")), (c) => c.charCodeAt(0));
   } catch {
     return null;
@@ -42,9 +46,16 @@ export function pemBody(pem: string): Uint8Array | null {
 
 export async function apnsSigningKey(p8: string): Promise<CryptoKey | null> {
   const der = pemBody(p8);
+  // Stryker disable next-line ConditionalExpression: equivalent, importKey(null) throws and the catch answers null
   if (!der) return null;
   try {
-    return await crypto.subtle.importKey("pkcs8", der, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+    return await crypto.subtle.importKey(
+      "pkcs8",
+      der,
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["sign"],
+    );
   } catch {
     return null;
   }
@@ -52,9 +63,16 @@ export async function apnsSigningKey(p8: string): Promise<CryptoKey | null> {
 
 export async function serviceAccountKey(pem: string): Promise<CryptoKey | null> {
   const der = pemBody(pem);
+  // Stryker disable next-line ConditionalExpression: equivalent, importKey(null) throws and the catch answers null
   if (!der) return null;
   try {
-    return await crypto.subtle.importKey("pkcs8", der, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
+    return await crypto.subtle.importKey(
+      "pkcs8",
+      der,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
   } catch {
     return null;
   }
@@ -70,7 +88,7 @@ export async function storeCredentials(
 ): Promise<boolean> {
   if ("ios" in upload) {
     if (!(await apnsSigningKey(upload.ios.p8))) return false;
-    const sealed = await seal(upload.ios.p8, secret);
+    const sealed = await seal(upload.ios.p8, secret, owner(appId, "ios"));
     await db
       .prepare(
         `INSERT INTO app_push_credentials (app_id, platform, key_id, team_id, project_id, client_email, secret_enc, iv, updated_at)
@@ -84,7 +102,7 @@ export async function storeCredentials(
   }
   const sa = upload.android.serviceAccount;
   if (!(await serviceAccountKey(sa.private_key))) return false;
-  const sealed = await seal(JSON.stringify(sa), secret);
+  const sealed = await seal(JSON.stringify(sa), secret, owner(appId, "android"));
   await db
     .prepare(
       `INSERT INTO app_push_credentials (app_id, platform, key_id, team_id, project_id, client_email, secret_enc, iv, updated_at)
@@ -110,29 +128,63 @@ const Row = z.object({
 /** What's configured for an app, never a secret. */
 export async function credentialSummary(db: D1Database, appId: string) {
   const { results } = await db
-    .prepare("SELECT platform, key_id, team_id, project_id, client_email, secret_enc, iv FROM app_push_credentials WHERE app_id = ?")
+    .prepare(
+      "SELECT platform, key_id, team_id, project_id, client_email, secret_enc, iv FROM app_push_credentials WHERE app_id = ?",
+    )
     .bind(appId)
     .all();
   const rows = results.map((r) => Row.parse(r));
   const ios = rows.find((r) => r.platform === "ios");
   const android = rows.find((r) => r.platform === "android");
   return {
-    ios: ios ? { configured: true as const, keyId: ios.key_id, teamId: ios.team_id } : { configured: false as const },
-    android: android ? { configured: true as const, projectId: android.project_id, clientEmail: android.client_email } : { configured: false as const },
+    ios: ios
+      ? { configured: true as const, keyId: ios.key_id, teamId: ios.team_id }
+      : { configured: false as const },
+    android: android
+      ? {
+          configured: true as const,
+          projectId: android.project_id,
+          clientEmail: android.client_email,
+        }
+      : { configured: false as const },
   };
 }
 
-/** The app's credential for sending, opened. Null: none uploaded. */
-export async function apnsCredential(db: D1Database, appId: string, secret: string): Promise<ApnsCredential | null> {
-  const raw = await db.prepare("SELECT platform, key_id, team_id, project_id, client_email, secret_enc, iv FROM app_push_credentials WHERE app_id = ? AND platform = 'ios'").bind(appId).first();
+/** The app's credential for sending, opened. Null: none uploaded. Throws when it won't open (another secret, another app's row). */
+export async function apnsCredential(
+  db: D1Database,
+  appId: string,
+  secret: string,
+): Promise<ApnsCredential | null> {
+  const raw = await db
+    .prepare(
+      "SELECT platform, key_id, team_id, project_id, client_email, secret_enc, iv FROM app_push_credentials WHERE app_id = ? AND platform = 'ios'",
+    )
+    .bind(appId)
+    .first();
   if (!raw) return null;
   const r = Row.parse(raw);
-  return { keyId: r.key_id ?? "", teamId: r.team_id ?? "", p8: await open({ secretEnc: r.secret_enc, iv: r.iv }, secret) };
+  return {
+    keyId: r.key_id ?? "",
+    teamId: r.team_id ?? "",
+    p8: await open({ secretEnc: r.secret_enc, iv: r.iv }, secret, owner(appId, "ios")),
+  };
 }
 
-export async function fcmCredential(db: D1Database, appId: string, secret: string): Promise<FcmCredential | null> {
-  const raw = await db.prepare("SELECT platform, key_id, team_id, project_id, client_email, secret_enc, iv FROM app_push_credentials WHERE app_id = ? AND platform = 'android'").bind(appId).first();
+export async function fcmCredential(
+  db: D1Database,
+  appId: string,
+  secret: string,
+): Promise<FcmCredential | null> {
+  const raw = await db
+    .prepare(
+      "SELECT platform, key_id, team_id, project_id, client_email, secret_enc, iv FROM app_push_credentials WHERE app_id = ? AND platform = 'android'",
+    )
+    .bind(appId)
+    .first();
   if (!raw) return null;
   const r = Row.parse(raw);
-  return ServiceAccountSchema.parse(JSON.parse(await open({ secretEnc: r.secret_enc, iv: r.iv }, secret)));
+  return ServiceAccountSchema.parse(
+    JSON.parse(await open({ secretEnc: r.secret_enc, iv: r.iv }, secret, owner(appId, "android"))),
+  );
 }

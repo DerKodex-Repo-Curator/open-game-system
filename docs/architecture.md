@@ -310,7 +310,7 @@ someone drops it deliberately.
 | `push_grants` | `(profile_id, app_id)` | granted (0/1), updated_at (ms) | Consent in the app; 0 = turned off in Settings |
 | `instances` | `(profile_id, instance_id)` | app_id, status, title, detail, your_turn, starts_at, resume_url, source, updated_at (ms) | ogs-protocol `InstanceSchema` |
 | `native_apps` | `(app_id, platform)` | store_id (bundle id / package, unique per platform), team_id (ios), sha256_fingerprints, google_client_ids (JSON, android), created_at, updated_at (ms) | A game's own App Store / Play Store app (ADR 2026-10-18-multi-tenant-push) |
-| `app_push_credentials` | `(app_id, platform)` | key_id, team_id (ios) · project_id, client_email (android) · secret_enc, iv (AES-GCM, PUSH_KEY_SECRET), updated_at (ms) | The app's APNs .p8 / FCM service account, sealed |
+| `app_push_credentials` | `(app_id, platform)` | key_id, team_id (ios) · project_id, client_email (android) · secret_enc, iv (AES-GCM, PUSH_KEY_SECRET, bound to `appId:platform` as additional data), updated_at (ms) | The app's APNs .p8 / FCM service account, sealed; a value that won't open (rotated secret, copied row) sends nothing: `push_credentials_unreadable` |
 | `app_devices` | `(device_id, app_id)` | platform, token (native APNs / FCM), apns_environment, updated_at (ms) | A device running a game's own app; dead tokens removed on send |
 | `catalogue_entries` | `app_id` | status (pending/live/rejected), manifest_json (live), pending_json, submitted_at, reviewed_at (ms), note | `ogs publish`; live entries join the seed in GET /catalogue |
 | `try_paths` | `app_id` | url, checked_at (ms) | `ogs try`; the catalogue's tryUrl |
