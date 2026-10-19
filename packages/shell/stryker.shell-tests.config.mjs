@@ -29,7 +29,7 @@ export default {
   concurrency: 4,
   dryRunTimeoutMinutes: 10,
   timeoutMS: 20000,
-  jsonReporter: { fileName: "reports/mutation-shell/mutation.json" },
-  htmlReporter: { fileName: "reports/mutation-shell/index.html" },
-  incrementalFile: "reports/stryker-shell-incremental.json",
+  jsonReporter: { fileName: "reports/mutation/shell/mutation.json" },
+  htmlReporter: { fileName: "reports/mutation/shell/index.html" },
+  incrementalFile: "reports/mutation/shell/incremental.json",
 };

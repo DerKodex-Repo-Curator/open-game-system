@@ -103,9 +103,9 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
   // Before anything that may tell the page (the sign-in flow reports at once on subscribe).
   const account = createAccountStore({ requestSignIn: () => void track(openSignIn()) });
 
-  const setIdentity = (next: ShellIdentity | null) => {
+  const setIdentity = (next: ShellIdentity) => {
     identity = next;
-    account.setLogin(next ? next.login : "none");
+    account.setLogin(next.login);
     for (const l of identityListeners) l(next);
   };
 
