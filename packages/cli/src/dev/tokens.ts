@@ -1,5 +1,6 @@
 import { randomUUID, webcrypto } from "node:crypto";
 import type { GameToken } from "@open-game-system/ogs-protocol";
+import { z } from "zod";
 
 /** One public key as `/.well-known/jwks.json` lists it (the shape the OGS API serves). */
 export type PublicJwk = {
@@ -17,6 +18,14 @@ export type DevSigner = {
   sign(claims: GameToken): Promise<string>;
 };
 
+/** WebCrypto's export of a P-256 public key: only the fields the JWKS publishes. */
+const EcPublicJwkSchema = z.object({
+  kty: z.literal("EC"),
+  crv: z.literal("P-256"),
+  x: z.string(),
+  y: z.string(),
+});
+
 const b64url = (bytes: Uint8Array) => Buffer.from(bytes).toString("base64url");
 const b64urlJson = (v: unknown) => b64url(new TextEncoder().encode(JSON.stringify(v)));
 
@@ -26,20 +35,13 @@ const b64urlJson = (v: unknown) => b64url(new TextEncoder().encode(JSON.stringif
  */
 export async function createDevSigner(): Promise<DevSigner> {
   const kid = `ogs-dev-${randomUUID().slice(0, 8)}`;
+  // Stryker disable next-line BooleanLiteral: equivalent, a public key exports whether or not the pair is extractable
   const pair = await webcrypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
     "sign",
     "verify",
   ]);
-  const jwk = await webcrypto.subtle.exportKey("jwk", pair.publicKey);
-  const publicJwk: PublicJwk = {
-    kty: jwk.kty ?? "EC",
-    crv: jwk.crv ?? "P-256",
-    x: jwk.x ?? "",
-    y: jwk.y ?? "",
-    kid,
-    alg: "ES256",
-    use: "sig",
-  };
+  const jwk = EcPublicJwkSchema.parse(await webcrypto.subtle.exportKey("jwk", pair.publicKey));
+  const publicJwk: PublicJwk = { ...jwk, kid, alg: "ES256", use: "sig" };
   return {
     jwks: () => ({ keys: [publicJwk] }),
     async sign(claims) {

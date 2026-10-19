@@ -2,8 +2,16 @@ import http, { type Server } from "node:http";
 import { networkInterfaces } from "node:os";
 import type { Manifest } from "@open-game-system/ogs-protocol";
 import qrcode from "qrcode-generator";
+import { z } from "zod";
 import { bridgeScript, type PhoneBridge } from "./bridge-script";
-import { fakeCouch, phoneClaims, profileState, startMessage, tvClaims } from "./couch";
+import {
+  type DevCouch,
+  fakeCouch,
+  phoneClaims,
+  profileState,
+  startMessage,
+  tvClaims,
+} from "./couch";
 import { type HarnessPhone, harnessHtml } from "./harness";
 import { createPhoneProxy } from "./proxy";
 import { createDevSigner } from "./tokens";
@@ -34,6 +42,7 @@ export type DevServer = {
 /** The first IPv4 LAN address (Wi-Fi or Ethernet), or null. */
 export function lanAddress(): string | null {
   for (const addrs of Object.values(networkInterfaces())) {
+    // Stryker disable next-line ArrayDeclaration: equivalent, a stand-in entry has no IPv4 family either
     for (const a of addrs ?? []) if (a.family === "IPv4" && !a.internal) return a.address;
   }
   return null;
@@ -53,13 +62,16 @@ export function qrDataUrl(text: string): string {
   return qr.createDataURL(6, 2);
 }
 
+/** A listening TCP server's address: the port it took (port 0 picks one). */
+const ListeningSchema = z.object({ port: z.number() });
+
 const listen = (server: Server, port: number, host: string) =>
   new Promise<number>((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, () => {
+      // Stryker disable next-line StringLiteral: equivalent, a later error would only call reject on a settled promise
       server.off("error", reject);
-      const addr = server.address();
-      resolve(typeof addr === "object" && addr ? addr.port : port);
+      resolve(ListeningSchema.parse(server.address()).port);
     });
   });
 
@@ -72,12 +84,45 @@ const close = (server: Server) =>
 /** The phone page's path and query on a phone proxy's origin. */
 const phonePath = (startUrl: URL) => startUrl.pathname + startUrl.search + startUrl.hash;
 
+/** The harness page for this run: the TV's ogs:start (with its token), each phone, the QR codes. */
+function harnessPage(
+  opts: DevOptions,
+  run: {
+    couch: DevCouch;
+    token: string;
+    iss: string;
+    phoneUrls: string[];
+    lanPhoneUrls: string[];
+  },
+): string {
+  const phones: HarnessPhone[] = run.couch.players.map((p, i) => ({
+    phone: i + 1,
+    name: p.name,
+    avatar: p.avatar,
+    url: run.phoneUrls[i],
+    lanUrl: run.lanPhoneUrls[i] ?? null,
+    lanQr: run.lanPhoneUrls[i] ? qrDataUrl(run.lanPhoneUrls[i]) : null,
+  }));
+  const startLanUrl = opts.lan ? onLan(opts.startUrl, opts.lan) : null;
+  return harnessHtml({
+    appId: opts.manifest.appId,
+    name: opts.manifest.name,
+    tvUrl: opts.tvUrl ?? null,
+    start: startMessage(run.couch, run.token),
+    phones,
+    startLanUrl,
+    startLanQr: startLanUrl ? qrDataUrl(startLanUrl) : null,
+    jwksUrl: `${run.iss}/.well-known/jwks.json`,
+  });
+}
+
 /**
  * `ogs dev`: the harness on `port`, one bridge proxy per phone on the ports after it, and
  * `/.well-known/jwks.json` with this run's key. Tokens are signed fresh on every page load.
  */
 export async function startDevServer(opts: DevOptions): Promise<DevServer> {
   const { manifest } = opts;
+  // Stryker disable next-line StringLiteral: equivalent, listening on "" is the unspecified address too (every interface)
   const host = opts.host ?? "0.0.0.0";
   const signer = await createDevSigner();
   const couch = fakeCouch(manifest, opts.phones);
@@ -85,10 +130,12 @@ export async function startDevServer(opts: DevOptions): Promise<DevServer> {
   const servers: Server[] = [];
 
   // Bind the harness first: its port fixes the issuer, the JWKS URL and the phone ports.
+  // Stryker disable next-line StringLiteral: equivalent, set once the harness listens, before any request
   let iss = "";
   const phoneUrls: string[] = [];
   const lanPhoneUrls: string[] = [];
   const harness = http.createServer(async (req, res) => {
+    // Stryker disable next-line StringLiteral: equivalent, a server's request always has its url
     const path = new URL(req.url ?? "/", "http://x").pathname;
     if (path === "/.well-known/jwks.json") {
       res.writeHead(200, {
@@ -101,31 +148,11 @@ export async function startDevServer(opts: DevOptions): Promise<DevServer> {
     }
     if (path === "/" || path === "/index.html") {
       const token = await signer.sign(tvClaims(couch, manifest.appId, iss, Date.now()));
-      const phones: HarnessPhone[] = couch.players.map((p, i) => ({
-        phone: i + 1,
-        name: p.name,
-        avatar: p.avatar,
-        url: phoneUrls[i],
-        lanUrl: lanPhoneUrls[i] ?? null,
-        lanQr: lanPhoneUrls[i] ? qrDataUrl(lanPhoneUrls[i]) : null,
-      }));
-      const startLanUrl = opts.lan ? onLan(opts.startUrl, opts.lan) : null;
       res.writeHead(200, {
         "content-type": "text/html; charset=utf-8",
         "cache-control": "no-store",
       });
-      res.end(
-        harnessHtml({
-          appId: manifest.appId,
-          name: manifest.name,
-          tvUrl: opts.tvUrl ?? null,
-          start: startMessage(couch, token),
-          phones,
-          startLanUrl,
-          startLanQr: startLanUrl ? qrDataUrl(startLanUrl) : null,
-          jwksUrl: `${iss}/.well-known/jwks.json`,
-        }),
-      );
+      res.end(harnessPage(opts, { couch, token, iss, phoneUrls, lanPhoneUrls }));
       return;
     }
     res.writeHead(404, { "content-type": "text/plain" });
@@ -158,7 +185,8 @@ export async function startDevServer(opts: DevOptions): Promise<DevServer> {
               viewUrl: opts.tvUrl ?? null,
             },
           },
-          pushHandle: `ph_dev${couch.players[i].id.replace(/[^A-Za-z0-9_-]/g, "")}`,
+          // Player ids (dev-<run>-<n>) are already letters, digits and hyphens.
+          pushHandle: `ph_dev${couch.players[i].id}`,
         }));
       const proxy = createPhoneProxy({
         upstream: start,

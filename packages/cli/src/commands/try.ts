@@ -15,10 +15,9 @@ const LOCKFILES: [string, string][] = [
   ["yarn.lock", "yarn"],
   ["bun.lock", "bun"],
   ["bun.lockb", "bun"],
-  ["package-lock.json", "npm"],
 ];
 
-/** The repo's package manager, from its lockfile (npm when there is none). */
+/** The repo's package manager, from its lockfile: npm with package-lock.json, or with none. */
 export function packageManager(exists: (file: string) => boolean): string {
   return LOCKFILES.find(([file]) => exists(file))?.[1] ?? "npm";
 }
@@ -41,20 +40,22 @@ function readOr(io: Io, path: string): string | null {
   }
 }
 
+/** `<package manager> run deploy:try`, or a CliError saying what to add. */
+function deployTryScript(io: Io, cwd: string): string {
+  const raw = readOr(io, join(cwd, "package.json"));
+  const pkg = PackageJsonSchema.safeParse(raw ? JSON.parse(raw) : {});
+  if (!pkg.success || !pkg.data.scripts["deploy:try"])
+    throw new CliError(
+      `No "deploy:try" script in ${join(cwd, "package.json")}. Add one that deploys your try-kit Worker (e.g. "deploy:try": "wrangler deploy -c wrangler.try.jsonc"), or pass --command "...".`,
+    );
+  return `${packageManager((f) => readOr(io, join(cwd, f)) !== null)} run deploy:try`;
+}
+
 /** Runs the deploy and returns the URL it printed (or --url). */
 async function deploy(io: Io, cwd: string, command: string | undefined, url: string | undefined) {
   if (!io.exec)
     throw new CliError("This ogs can't run commands; use: ogs try --check-only --url <url>");
-  let run = command;
-  if (!run) {
-    const raw = readOr(io, join(cwd, "package.json"));
-    const pkg = PackageJsonSchema.safeParse(raw ? JSON.parse(raw) : {});
-    if (!pkg.success || !pkg.data.scripts["deploy:try"])
-      throw new CliError(
-        `No "deploy:try" script in ${join(cwd, "package.json")}. Add one that deploys your try-kit Worker (e.g. "deploy:try": "wrangler deploy -c wrangler.try.jsonc"), or pass --command "...".`,
-      );
-    run = `${packageManager((f) => readOr(io, join(cwd, f)) !== null)} run deploy:try`;
-  }
+  const run = command || deployTryScript(io, cwd);
   io.stdout(`Deploying: ${run}`);
   const result = await io.exec(run, { cwd });
   if (result.code !== 0) throw new CliError(`${run} failed (exit ${result.code})`);

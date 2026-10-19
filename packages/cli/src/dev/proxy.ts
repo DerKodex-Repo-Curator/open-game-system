@@ -36,6 +36,23 @@ function rewriteLocation(location: string, upstream: URL, self: string): string 
   }
 }
 
+/** The game's response headers as the phone gets them: without DROPPED, redirects kept on this proxy. */
+function downstreamHeaders(
+  upHeaders: IncomingHttpHeaders,
+  upstream: URL,
+  self: string,
+): Record<string, string | string[]> {
+  const headers: Record<string, string | string[]> = {};
+  for (const [k, v] of Object.entries(upHeaders)) {
+    if (DROPPED.has(k)) continue;
+    // Stryker disable next-line ConditionalExpression: equivalent, Node never gives a header as undefined
+    if (v === undefined) continue;
+    // Node gives Location as one string.
+    headers[k] = k === "location" ? rewriteLocation(String(v), upstream, self) : v;
+  }
+  return headers;
+}
+
 /**
  * One fake phone: a proxy of the game's start URL origin on its own port (so each phone has its
  * own origin, storage and profile, like a separate device), with the fake app bridge injected into
@@ -43,23 +60,18 @@ function rewriteLocation(location: string, upstream: URL, self: string): string 
  */
 export function createPhoneProxy(opts: { upstream: URL; script: () => Promise<string> }): {
   server: Server;
-  listen(port: number, host: string): Promise<void>;
 } {
   const { upstream, script } = opts;
   const server = http.createServer((req, res) => {
     const self = `http://${req.headers.host ?? "localhost"}`;
+    // Stryker disable next-line StringLiteral: equivalent, a server's request always has its url
     const target = new URL(req.url ?? "/", upstream);
     const up = clientFor(upstream).request(
       target.href,
       { method: req.method, headers: upstreamHeaders(req, upstream, self) },
       (upRes) => {
-        const headers: Record<string, string | string[]> = {};
-        for (const [k, v] of Object.entries(upRes.headers)) {
-          if (v === undefined || DROPPED.has(k)) continue;
-          headers[k] =
-            k === "location" && typeof v === "string" ? rewriteLocation(v, upstream, self) : v;
-        }
-        const isHtml = (upRes.headers["content-type"] ?? "").includes("text/html");
+        const headers = downstreamHeaders(upRes.headers, upstream, self);
+        const isHtml = upRes.headers["content-type"]?.includes("text/html") ?? false;
         if (!isHtml) {
           res.writeHead(upRes.statusCode ?? 502, headers);
           upRes.pipe(res);
@@ -89,6 +101,7 @@ export function createPhoneProxy(opts: { upstream: URL; script: () => Promise<st
 
   server.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     const self = `http://${req.headers.host ?? "localhost"}`;
+    // Stryker disable next-line LogicalOperator,StringLiteral: equivalent, a server's request always has its url
     const up = clientFor(upstream).request(new URL(req.url ?? "/", upstream).href, {
       method: req.method,
       headers: upstreamHeaders(req, upstream, self),
@@ -98,8 +111,9 @@ export function createPhoneProxy(opts: { upstream: URL; script: () => Promise<st
       for (let i = 0; i < upRes.rawHeaders.length; i += 2)
         lines.push(`${upRes.rawHeaders[i]}: ${upRes.rawHeaders[i + 1]}`);
       socket.write(`${lines.join("\r\n")}\r\n\r\n`);
-      if (upHead.length) socket.write(upHead);
-      if (head.length) upSocket.write(head);
+      // What either side sent after its headers (often nothing: writing nothing is fine).
+      socket.write(upHead);
+      upSocket.write(head);
       upSocket.pipe(socket).pipe(upSocket);
       upSocket.on("error", () => socket.destroy());
       socket.on("error", () => upSocket.destroy());
@@ -111,15 +125,5 @@ export function createPhoneProxy(opts: { upstream: URL; script: () => Promise<st
     up.end();
   });
 
-  return {
-    server,
-    listen: (port, host) =>
-      new Promise((resolve, reject) => {
-        server.once("error", reject);
-        server.listen(port, host, () => {
-          server.off("error", reject);
-          resolve();
-        });
-      }),
-  };
+  return { server };
 }
