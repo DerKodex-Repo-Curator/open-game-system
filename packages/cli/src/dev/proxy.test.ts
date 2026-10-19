@@ -319,26 +319,24 @@ describe("the phone proxy", { timeout: 20_000 }, () => {
     const { socket } = await raw(proxy, upgradeRequest("/ws"), (t) => t.includes("\r\n\r\n"));
     socket.resetAndDestroy();
     await gameClosed;
-    expect(true).toBe(true);
   });
 
-  it("listen() serves on the port and host it's given", async () => {
+  it("speaks TLS to an https game (here, a plain one: so it fails)", async () => {
     const g = await game({
       "/": (res) => {
         res.writeHead(200, { "content-type": "text/plain" });
         res.end("ok");
       },
     });
-    const proxy = createPhoneProxy({ upstream: new URL(g.origin), script: async () => "" });
-    servers.push(proxy.server);
-    await proxy.listen(0, "127.0.0.1");
-    expect(await (await fetch(`http://127.0.0.1:${portOf(proxy.server)}/`)).text()).toBe("ok");
-  });
-
-  it("listen() rejects when the port is taken", async () => {
-    const g = await game();
-    const taken = portOf(servers[0]);
-    const proxy = createPhoneProxy({ upstream: new URL(g.origin), script: async () => "" });
-    await expect(proxy.listen(taken, "127.0.0.1")).rejects.toMatchObject({ code: "EADDRINUSE" });
+    const plain = await proxyOf(g);
+    expect(await (await fetch(plain)).text()).toBe("ok");
+    const tls = createPhoneProxy({
+      upstream: new URL(g.origin.replace("http:", "https:")),
+      script: async () => "",
+    });
+    const port = await listening(tls.server);
+    expect((await fetch(`http://127.0.0.1:${port}/`)).status).toBe(502);
+    const { text } = await raw(`http://127.0.0.1:${port}`, upgradeRequest("/ws"), () => false);
+    expect(text).toBe("");
   });
 });

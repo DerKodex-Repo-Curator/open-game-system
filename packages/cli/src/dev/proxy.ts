@@ -57,7 +57,6 @@ function downstreamHeaders(
  */
 export function createPhoneProxy(opts: { upstream: URL; script: () => Promise<string> }): {
   server: Server;
-  listen(port: number, host: string): Promise<void>;
 } {
   const { upstream, script } = opts;
   const server = http.createServer((req, res) => {
@@ -120,15 +119,5 @@ export function createPhoneProxy(opts: { upstream: URL; script: () => Promise<st
     up.end();
   });
 
-  return {
-    server,
-    listen: (port, host) =>
-      new Promise((resolve, reject) => {
-        server.once("error", reject);
-        server.listen(port, host, () => {
-          server.off("error", reject);
-          resolve();
-        });
-      }),
-  };
+  return { server };
 }

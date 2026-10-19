@@ -8,7 +8,7 @@ const USAGE =
   "Usage: ogs dev [--manifest ogs.manifest.json] [--start-url <url>] [--tv-url <url>] [--port 4747] [--phones 2] [--lan <ip>]";
 
 /** Until Ctrl-C (or SIGTERM). */
-const untilInterrupted = () =>
+export const untilInterrupted = () =>
   new Promise<void>((resolve) => {
     process.once("SIGINT", () => resolve());
     process.once("SIGTERM", () => resolve());
@@ -49,10 +49,13 @@ const validOptions = (port: number, phones: number, urls: string[]) =>
   phones <= MAX_PHONES &&
   urls.every(isUrl);
 
+/** What starts the dev server (tests pass a stand-in). */
+type Serve = (opts: DevOptions) => Promise<DevServer>;
+
 /** The dev server; a port in use is said plainly. */
-async function start(opts: DevOptions): Promise<DevServer> {
+async function start(opts: DevOptions, serve: Serve): Promise<DevServer> {
   try {
-    return await startDevServer(opts);
+    return await serve(opts);
   } catch (e) {
     if (e instanceof Error && "code" in e && e.code === "EADDRINUSE")
       throw new CliError(
@@ -86,6 +89,7 @@ export async function runDev(
   io: Io,
   args: string[],
   waitForStop: (server: DevServer) => Promise<void> = untilInterrupted,
+  serve: Serve = startDevServer,
 ): Promise<number> {
   const { values } = parseArgs({
     args,
@@ -109,7 +113,7 @@ export async function runDev(
   const startUrl = values["start-url"] ?? manifest.startUrl;
   const tvUrl = values["tv-url"] ?? manifest.tvUrl;
   const lan = values.lan ?? lanAddress();
-  const server = await start({ manifest, startUrl, tvUrl, port, phones, lan });
+  const server = await start({ manifest, startUrl, tvUrl, port, phones, lan }, serve);
   io.stdout(banner(manifest, server, phones, tvUrl));
   await waitForStop(server);
   await server.close();
