@@ -1,4 +1,4 @@
-# Status: BUILT on claude/shell-platform (packages/cli; not published).
+# Status: SHIPPED 2026-10-19 (main d2897aca: API + schema by CI; opengame.org, ogs-tv, ogs-docs deployed); the CLI isn't on npm yet (CI's NPM_TOKEN can't publish to @open-game-system: E404).
 # Design: docs/design-docs/white-label-shell.md (decision 15). Package @open-game-system/cli, bin `ogs`.
 
 Feature: The ogs CLI sets up a game's white-label app

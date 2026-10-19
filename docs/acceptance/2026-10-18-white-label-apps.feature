@@ -1,4 +1,4 @@
-# Status: BUILT on claude/shell-platform (API preview opengame-api-pr-shell); opengame.org functions not deployed.
+# Status: SHIPPED 2026-10-19 (main d2897aca: API + schema by CI; opengame.org, ogs-tv, ogs-docs deployed).
 # Design: docs/design-docs/white-label-shell.md. ADR: docs/adrs/2026-10-18-multi-tenant-push.md.
 # The platform half: apps are registered, their push credentials stored, pushes sent with the right
 # app's credentials, and opengame.org's link files list every registered app.
