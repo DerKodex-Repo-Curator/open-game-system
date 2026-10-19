@@ -52,10 +52,11 @@ function pageScripts(fs: Files, root: string, page: string): string[] {
   const path = join(root, page);
   if (!fs.exists(path)) return [];
   const scripts: string[] = [];
-  for (const [, attrs = ""] of fs.read(path).matchAll(/<script\b([^>]*)>/g)) {
+  // The group always takes part (it matches the empty string too), so attrs is always a string.
+  for (const [, attrs] of fs.read(path).matchAll(/<script\b([^>]*)>/g)) {
     const src = localModuleSrc(attrs);
     if (!src) continue;
-    const file = src.startsWith("/") ? join(root, src.slice(1)) : join(dirname(path), src);
+    const file = join(src.startsWith("/") ? root : dirname(path), src);
     if (fs.exists(file)) scripts.push(toPosix(relative(root, file)));
   }
   return scripts;
@@ -99,11 +100,15 @@ export function insertAfterImports(source: string, snippet: string): string | nu
   return [...lines.slice(0, at), snippet, ...lines.slice(at)].join("\n");
 }
 
-/** A trimmed line before the code: blank, an import (whole, or the start of one), or a preamble line. */
-function classify(text: string): "blank" | "import" | "import-start" | "preamble" | "code" {
-  if (text === "") return "blank";
-  if (/^import[\s{*"']/.test(text)) return IMPORT_END.test(text) ? "import" : "import-start";
-  if (/^(#!|\/\/|\/\*|\*)/.test(text) || /^["']use [\w ]+["'];?$/.test(text)) return "preamble";
+/**
+ * What a trimmed line does to the file's header: "end" (it ends an import, or is a shebang, comment
+ * or directive: the snippet can go after it), "open" (an import goes on to the next line), "code"
+ * (the header is over), or nothing (a blank line).
+ */
+function step(text: string, inImport: boolean): "end" | "open" | "code" | undefined {
+  if (inImport || /^import[\s{*"']/.test(text)) return IMPORT_END.test(text) ? "end" : "open";
+  if (text === "") return undefined;
+  if (/^(#!|\/\/|\/\*|\*)/.test(text) || /^["']use [\w ]+["'];?$/.test(text)) return "end";
   return "code";
 }
 
@@ -112,16 +117,10 @@ function afterImports(lines: string[]): number {
   let at = 0;
   let inImport = false;
   for (const [i, line] of lines.entries()) {
-    const text = line.trim();
-    if (inImport) {
-      inImport = !IMPORT_END.test(text);
-      if (!inImport) at = i + 1;
-      continue;
-    }
-    const kind = classify(text);
+    const kind = step(line.trim(), inImport);
     if (kind === "code") break;
-    if (kind === "import-start") inImport = true;
-    else if (kind !== "blank") at = i + 1;
+    inImport = kind === "open";
+    if (kind === "end") at = i + 1;
   }
   return at;
 }

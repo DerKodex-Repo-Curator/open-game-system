@@ -330,4 +330,19 @@ describe("ogs init's plan", () => {
       tv: "none",
     });
   });
+
+  it("a blank --shape or --tv is no flag: the defaults", async () => {
+    const s = setup({});
+    expect(await s.init([...FLAGS, "--shape", "  ", "--tv", " "])).toBe(0);
+    expect(JSON.parse(s.written["ogs.manifest.json"] ?? "{}")).toMatchObject({
+      shape: "couch",
+      tv: "optional",
+    });
+  });
+
+  it("OGS.md lists the kits it vendored", async () => {
+    const s = setup({});
+    await s.init(FLAGS);
+    expect(s.written["OGS.md"]).toContain("- Kits in `vendor/`: `@open-game-system/profile-kit`\n");
+  });
 });

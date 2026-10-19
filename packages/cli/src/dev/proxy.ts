@@ -44,8 +44,11 @@ function downstreamHeaders(
 ): Record<string, string | string[]> {
   const headers: Record<string, string | string[]> = {};
   for (const [k, v] of Object.entries(upHeaders)) {
-    if (v === undefined || DROPPED.has(k)) continue;
-    headers[k] = k === "location" && typeof v === "string" ? rewriteLocation(v, upstream, self) : v;
+    if (DROPPED.has(k)) continue;
+    // Stryker disable next-line ConditionalExpression: equivalent, Node never gives a header as undefined
+    if (v === undefined) continue;
+    // Node gives Location as one string.
+    headers[k] = k === "location" ? rewriteLocation(String(v), upstream, self) : v;
   }
   return headers;
 }
@@ -61,13 +64,14 @@ export function createPhoneProxy(opts: { upstream: URL; script: () => Promise<st
   const { upstream, script } = opts;
   const server = http.createServer((req, res) => {
     const self = `http://${req.headers.host ?? "localhost"}`;
+    // Stryker disable next-line StringLiteral: equivalent, a server's request always has its url
     const target = new URL(req.url ?? "/", upstream);
     const up = clientFor(upstream).request(
       target.href,
       { method: req.method, headers: upstreamHeaders(req, upstream, self) },
       (upRes) => {
         const headers = downstreamHeaders(upRes.headers, upstream, self);
-        const isHtml = (upRes.headers["content-type"] ?? "").includes("text/html");
+        const isHtml = upRes.headers["content-type"]?.includes("text/html") ?? false;
         if (!isHtml) {
           res.writeHead(upRes.statusCode ?? 502, headers);
           upRes.pipe(res);
@@ -97,6 +101,7 @@ export function createPhoneProxy(opts: { upstream: URL; script: () => Promise<st
 
   server.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     const self = `http://${req.headers.host ?? "localhost"}`;
+    // Stryker disable next-line LogicalOperator,StringLiteral: equivalent, a server's request always has its url
     const up = clientFor(upstream).request(new URL(req.url ?? "/", upstream).href, {
       method: req.method,
       headers: upstreamHeaders(req, upstream, self),
@@ -106,8 +111,9 @@ export function createPhoneProxy(opts: { upstream: URL; script: () => Promise<st
       for (let i = 0; i < upRes.rawHeaders.length; i += 2)
         lines.push(`${upRes.rawHeaders[i]}: ${upRes.rawHeaders[i + 1]}`);
       socket.write(`${lines.join("\r\n")}\r\n\r\n`);
-      if (upHead.length) socket.write(upHead);
-      if (head.length) upSocket.write(head);
+      // What either side sent after its headers (often nothing: writing nothing is fine).
+      socket.write(upHead);
+      upSocket.write(head);
       upSocket.pipe(socket).pipe(upSocket);
       upSocket.on("error", () => socket.destroy());
       socket.on("error", () => upSocket.destroy());

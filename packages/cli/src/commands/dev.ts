@@ -14,6 +14,7 @@ export const untilInterrupted = () =>
     process.once("SIGTERM", () => resolve());
   });
 
+// Stryker disable next-line Regex: equivalent, a URL's protocol always ends at its colon
 const isUrl = (v: string) => URL.canParse(v) && /^https?:$/.test(new URL(v).protocol);
 
 function readManifest(io: Io, path: string) {

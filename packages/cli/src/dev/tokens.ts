@@ -35,6 +35,7 @@ const b64urlJson = (v: unknown) => b64url(new TextEncoder().encode(JSON.stringif
  */
 export async function createDevSigner(): Promise<DevSigner> {
   const kid = `ogs-dev-${randomUUID().slice(0, 8)}`;
+  // Stryker disable next-line BooleanLiteral: equivalent, a public key exports whether or not the pair is extractable
   const pair = await webcrypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
     "sign",
     "verify",

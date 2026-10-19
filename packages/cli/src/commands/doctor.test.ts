@@ -225,6 +225,20 @@ describe("ogs doctor", () => {
     expect(out.at(-1)).toBe("FAIL catalogue: HTTP 500");
   });
 
+  it("a catalogue of the wrong shape fails", async () => {
+    for (const games of [[{ appId: 5 }], [{ appId: "rocket-crew", tvUrl: 5 }]]) {
+      out = [];
+      routes[`${API}/api/v1/catalogue`] = catalogue(games);
+      expect(await doctor()).toBe(1);
+      expect(out.at(-1)).toMatch(/^FAIL catalogue: /);
+    }
+  });
+
+  it("--domain loses only a leading scheme", async () => {
+    await doctor(["--domain", "rocketcrew.example/http://x"]);
+    expect(fetched).toContain(`https://rocketcrew.example/http://x${AASA}`);
+  });
+
   it("--app checks another logged-in app", async () => {
     saveCredentials(io(), {
       currentApp: "rocket-crew",

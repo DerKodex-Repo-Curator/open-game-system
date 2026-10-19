@@ -30,6 +30,7 @@ const PackageJsonSchema = z.looseObject({
 /** package.json at `root`, or null when there is none or it isn't JSON of that shape. */
 export function readPackageJson(fs: Files, root: string) {
   const path = join(root, "package.json");
+  // Stryker disable next-line ConditionalExpression: equivalent, reading a missing file throws, and the catch gives null too
   if (!fs.exists(path)) return null;
   try {
     const parsed = PackageJsonSchema.safeParse(JSON.parse(fs.read(path)));

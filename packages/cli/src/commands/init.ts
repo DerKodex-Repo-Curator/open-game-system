@@ -112,8 +112,9 @@ function whereItGoes(side: "tv" | "phone", framework: Framework, candidates: str
     return `add this in client-only code (inside useEffect) of your ${page}`;
   if (framework === "plain")
     return `add this to your ${page}'s module script once a bundler or an import map can load the kits (OGS.md)`;
-  if (candidates.length > 1) return `add this to one of ${candidates.join(", ")}`;
-  return `add this at the top of the module that boots your ${page}`;
+  // None or several here: on Vite, the one candidate is patched or already hooked before this.
+  if (candidates.length === 0) return `add this at the top of the module that boots your ${page}`;
+  return `add this to one of ${candidates.join(", ")}`;
 }
 
 /** The repo's ogs.manifest.json (kept as it is), else one from the flags / prompts; an exit code when neither works. */
@@ -155,9 +156,11 @@ async function planManifest(
   return checked.manifest;
 }
 
+/** The text's JSON; undefined (which checkManifest refuses) when it isn't JSON. */
 function parseOrUndefined(text: string): unknown {
   try {
     return JSON.parse(text);
+    // Stryker disable next-line BlockStatement: equivalent, an empty catch returns undefined too
   } catch {
     return undefined;
   }
@@ -236,7 +239,7 @@ function planOnly(
 /** The snippet to place by hand, and where it goes. */
 function placeByHand(side: Side, framework: Framework, candidates: string[]) {
   const hookup = HOOKUP[side];
-  return `${hookup[0]?.toUpperCase()}${hookup.slice(1)}: ${whereItGoes(side, framework, candidates)}:\n${SNIPPET[side]}`;
+  return `${hookup.charAt(0).toUpperCase()}${hookup.slice(1)}: ${whereItGoes(side, framework, candidates)}:\n${SNIPPET[side]}`;
 }
 
 /**
@@ -257,7 +260,7 @@ function planEntry(
   }
   if (opts.codemod) plan.diffs.push(placeByHand(side, opts.framework, candidates));
   if (only) return { status: "found", file: only };
-  return candidates.length > 1 ? { status: "ambiguous", files: candidates } : { status: "none" };
+  return candidates.length === 0 ? { status: "none" } : { status: "ambiguous", files: candidates };
 }
 
 function printPlan(

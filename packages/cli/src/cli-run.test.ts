@@ -3,7 +3,7 @@ import { z } from "zod";
 import { type Io, run } from "./cli";
 import { COMMANDS } from "./commands";
 import { CliError } from "./io";
-import { printIssues, readManifestJson } from "./manifest";
+import { postPublic, printIssues, readManifestJson, validate } from "./manifest";
 
 /** `run`: help, finding the command, and which failures are the user's (exit 1). */
 function setup(over: Partial<Io> = {}) {
@@ -92,6 +92,42 @@ describe("ogs", () => {
     }
   });
 
+  it("the longer command wins wherever it's listed", async () => {
+    const s = setup();
+    const original = COMMANDS.slice();
+    const ran: string[] = [];
+    const command = (words: string[]) => ({
+      words,
+      usage: [],
+      run: async () => {
+        ran.push(words.join(" "));
+        return 0;
+      },
+    });
+    COMMANDS.splice(
+      0,
+      COMMANDS.length,
+      command(["a"]),
+      command(["a", "b"]),
+      command(["a", "b", "c"]),
+    );
+    try {
+      await run(["a", "b", "c"], s.io);
+      await run(["a", "b"], s.io);
+      await run(["a", "x"], s.io);
+      expect(ran).toEqual(["a b c", "a b", "a"]);
+    } finally {
+      COMMANDS.splice(0, COMMANDS.length, ...original);
+    }
+  });
+
+  it("running a command doesn't reorder the help", async () => {
+    const s = setup();
+    await run(["login"], s.io);
+    await run(["--help"], s.io);
+    expect(s.out).toEqual([HELP]);
+  });
+
   it.each([
     ["a CliError", new CliError("our message"), "our message"],
     ["a TypeError (a bad flag)", new TypeError("bad flag"), "bad flag"],
@@ -153,6 +189,35 @@ describe("the manifest file", () => {
     );
     const t = setup({ readFile: () => "{" });
     expect(() => readManifestJson(t.io, "m.json")).toThrow(new CliError("m.json isn't JSON"));
+  });
+
+  it("validate names a nested issue by its dotted path", () => {
+    const result = validate({
+      appId: "comet",
+      name: "Comet",
+      shape: "couch",
+      tv: "optional",
+      startUrl: "https://comet.example/",
+      art: { tile: 1 },
+    });
+    expect("issues" in result && result.issues.map((i) => i.path)).toEqual(["art.tile"]);
+  });
+
+  it("postPublic sends JSON, without a key", async () => {
+    let init: RequestInit | undefined;
+    const s = setup({
+      env: { OGS_API: "https://api.test" },
+      fetch: async (_input, i) => {
+        init = i;
+        return Response.json({ ok: true });
+      },
+    });
+    expect(await postPublic(s.io, "/x", { a: 1 })).toEqual({ ok: true });
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBe('{"a":1}');
+    const headers = new Headers(init?.headers);
+    expect(headers.get("content-type")).toBe("application/json");
+    expect(headers.get("authorization")).toBeNull();
   });
 
   it("issues: one per line, then the count", () => {

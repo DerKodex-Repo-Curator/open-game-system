@@ -41,6 +41,7 @@ export type DevServer = {
 /** The first IPv4 LAN address (Wi-Fi or Ethernet), or null. */
 export function lanAddress(): string | null {
   for (const addrs of Object.values(networkInterfaces())) {
+    // Stryker disable next-line ArrayDeclaration: equivalent, a stand-in entry has no IPv4 family either
     for (const a of addrs ?? []) if (a.family === "IPv4" && !a.internal) return a.address;
   }
   return null;
@@ -64,8 +65,10 @@ const listen = (server: Server, port: number, host: string) =>
   new Promise<number>((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, () => {
+      // Stryker disable next-line StringLiteral: equivalent, a later error would only call reject on a settled promise
       server.off("error", reject);
       const addr = server.address();
+      // Stryker disable next-line ConditionalExpression,LogicalOperator: equivalent, a listening TCP server's address is always an object
       resolve(typeof addr === "object" && addr ? addr.port : port);
     });
   });
@@ -117,6 +120,7 @@ function harnessPage(
  */
 export async function startDevServer(opts: DevOptions): Promise<DevServer> {
   const { manifest } = opts;
+  // Stryker disable next-line StringLiteral: equivalent, listening on "" is the unspecified address too (every interface)
   const host = opts.host ?? "0.0.0.0";
   const signer = await createDevSigner();
   const couch = fakeCouch(manifest, opts.phones);
@@ -124,10 +128,12 @@ export async function startDevServer(opts: DevOptions): Promise<DevServer> {
   const servers: Server[] = [];
 
   // Bind the harness first: its port fixes the issuer, the JWKS URL and the phone ports.
+  // Stryker disable next-line StringLiteral: equivalent, set once the harness listens, before any request
   let iss = "";
   const phoneUrls: string[] = [];
   const lanPhoneUrls: string[] = [];
   const harness = http.createServer(async (req, res) => {
+    // Stryker disable next-line StringLiteral: equivalent, a server's request always has its url
     const path = new URL(req.url ?? "/", "http://x").pathname;
     if (path === "/.well-known/jwks.json") {
       res.writeHead(200, {
@@ -177,7 +183,8 @@ export async function startDevServer(opts: DevOptions): Promise<DevServer> {
               viewUrl: opts.tvUrl ?? null,
             },
           },
-          pushHandle: `ph_dev${couch.players[i].id.replace(/[^A-Za-z0-9_-]/g, "")}`,
+          // Player ids (dev-<run>-<n>) are already letters, digits and hyphens.
+          pushHandle: `ph_dev${couch.players[i].id}`,
         }));
       const proxy = createPhoneProxy({
         upstream: start,

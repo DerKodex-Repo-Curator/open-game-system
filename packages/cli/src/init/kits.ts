@@ -24,6 +24,7 @@ const ErrorBodySchema = z.object({
 export async function fetchKits(io: Io): Promise<Kits> {
   const res = await io.fetch(`${api(io)}/api/v1/dev/kits`);
   if (!res.ok) {
+    // Stryker disable next-line ArrowFunction: equivalent, undefined fails ErrorBodySchema as null does
     const parsed = ErrorBodySchema.safeParse(await res.json().catch(() => null));
     throw new CliError(
       parsed.success

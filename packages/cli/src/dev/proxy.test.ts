@@ -194,6 +194,58 @@ describe("the phone proxy", { timeout: 20_000 }, () => {
     });
   });
 
+  it("drops the game's length, encoding and connection headers from what it passes through", async () => {
+    const g = await game({
+      "/a.json": (res) => {
+        res.writeHead(200, {
+          "content-type": "application/json",
+          "content-encoding": "br",
+          connection: "close",
+        });
+        res.end('{"a":1}');
+      },
+    });
+    const proxy = await proxyOf(g);
+    const { text } = await raw(
+      proxy,
+      `GET /a.json HTTP/1.1\r\nHost: ${new URL(proxy).host}\r\n\r\n`,
+      (t) => t.includes('{"a":1}'),
+    );
+    const head = text.split("\r\n\r\n")[0].toLowerCase();
+    expect(head).not.toContain("content-length:");
+    expect(head).not.toContain("content-encoding:");
+    expect(head).toContain("\r\nconnection: keep-alive");
+  });
+
+  it("an upgrade sends the game its own host and origin; another site's referer as it is", async () => {
+    const g = await game();
+    const proxy = await proxyOf(g);
+    const host = new URL(proxy).host;
+    const { socket } = await raw(
+      proxy,
+      `GET /ws HTTP/1.1\r\nHost: ${host}\r\nOrigin: http://${host}\r\nReferer: https://elsewhere.test/x\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n`,
+      (t) => t.includes("\r\n\r\n"),
+    );
+    socket.destroy();
+    expect(g.seen.at(-1)).toMatchObject({
+      host: new URL(g.origin).host,
+      origin: g.origin,
+      referer: "https://elsewhere.test/x",
+    });
+  });
+
+  it("an upgrade without a Host header: the proxy is localhost", async () => {
+    const g = await game();
+    const proxy = await proxyOf(g);
+    const { socket } = await raw(
+      proxy,
+      "GET /ws HTTP/1.1\r\nOrigin: http://localhost\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n",
+      (t) => t.includes("\r\n\r\n"),
+    );
+    socket.destroy();
+    expect(g.seen.at(-1)?.origin).toBe(g.origin);
+  });
+
   it("without a Host header it calls itself localhost", async () => {
     const g = await game({
       "/": (res) => {

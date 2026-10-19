@@ -15,10 +15,9 @@ const LOCKFILES: [string, string][] = [
   ["yarn.lock", "yarn"],
   ["bun.lock", "bun"],
   ["bun.lockb", "bun"],
-  ["package-lock.json", "npm"],
 ];
 
-/** The repo's package manager, from its lockfile (npm when there is none). */
+/** The repo's package manager, from its lockfile: npm with package-lock.json, or with none. */
 export function packageManager(exists: (file: string) => boolean): string {
   return LOCKFILES.find(([file]) => exists(file))?.[1] ?? "npm";
 }

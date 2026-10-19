@@ -75,9 +75,30 @@ describe("finding entries", () => {
       ].join(""),
       "src/classic.ts": "",
       "src/tv-entry.ts": "",
-      "cdn.test/x.ts": "",
+      // Where each other-site src would land if it were taken as a path: it isn't.
+      "https:/cdn.test/x.ts": "",
+      "cdn.test/y.ts": "",
+      "HTTP:/cdn.test/z.ts": "",
     });
     expect(findEntries(fs, "/r").tv).toEqual(["src/tv-entry.ts"]);
+  });
+
+  it("a local src with a double slash in it is still local", () => {
+    const fs = repo({ "tv.html": module("/src//tv-entry.ts"), "src/tv-entry.ts": "" });
+    expect(findEntries(fs, "/r").tv).toEqual(["src/tv-entry.ts"]);
+  });
+
+  it("an absolute src in a page in a folder is from the repo's root", () => {
+    const fs = repo({
+      "phone/index.html": module("/src/p.ts"),
+      "src/p.ts": "",
+      "phone/src/p.ts": "",
+    });
+    expect(findEntries(fs, "/r").phone).toEqual(["src/p.ts"]);
+  });
+
+  it("a script that isn't there isn't an entry", () => {
+    expect(findEntries(repo({ "tv.html": module("/src/gone.ts") }), "/r").tv).toEqual([]);
   });
 
   it("a src that's only a slash-free name next to the page", () => {
@@ -182,6 +203,36 @@ describe("inserting the hookup", () => {
       "a comment after the imports, then code",
       'import a from "a";\n// c\nrun();',
       'import a from "a";\n// c\nSNIPPET\nrun();',
+    ],
+    [
+      "a comment inside a multi-line import that mentions an import",
+      'import {\n  a, // like import "b"\n} from "a";\nrun();',
+      'import {\n  a, // like import "b"\n} from "a";\nSNIPPET\nrun();',
+    ],
+    [
+      "spaces after an import's semicolon",
+      'import a from "a";  \nrun();',
+      'import a from "a";  \nSNIPPET\nrun();',
+    ],
+    [
+      "code that mentions an import is code",
+      'log("import x");\nimport a from "a";\nrun();',
+      'SNIPPET\nlog("import x");\nimport a from "a";\nrun();',
+    ],
+    [
+      "code with a comment after it is code",
+      "run(); // go\nmore();",
+      "SNIPPET\nrun(); // go\nmore();",
+    ],
+    [
+      "code that ends with a directive-like string is code",
+      'const a = "use client";\nrun();',
+      'SNIPPET\nconst a = "use client";\nrun();',
+    ],
+    [
+      "a blank line inside a multi-line import",
+      'import {\n\n  a,\n} from "a";\nrun();',
+      'import {\n\n  a,\n} from "a";\nSNIPPET\nrun();',
     ],
   ])("%s", (_, source, expected) => {
     expect(insertAfterImports(source, S)).toBe(expected);
@@ -378,6 +429,20 @@ describe("package.json", () => {
       added: [],
       kept: [{ name: "@open-game-system/profile-kit", spec: "^1.0.0" }],
     });
+  });
+
+  it("a new one with nothing to add is still written", () => {
+    expect(addDependencies(null, {}, "comet")).toEqual({
+      text: `${JSON.stringify({ name: "comet", private: true, dependencies: {} }, null, 2)}\n`,
+      added: [],
+      kept: [],
+    });
+  });
+
+  it("a one-line file with spaces in it still gets two-space indent", () => {
+    expect(addDependencies('{"name": "x"}', deps, "x").text).toBe(
+      `${JSON.stringify({ name: "x", dependencies: deps }, null, 2)}\n`,
+    );
   });
 
   it("not JSON, or dependencies that aren't an object", () => {
