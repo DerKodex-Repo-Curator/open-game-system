@@ -41,7 +41,7 @@
     "build": "tsc -p tsconfig.build.json && pnpm run build:plugin",
     "build:plugin": "tsc -p plugin/tsconfig.build.json",
     "clean": "rm -rf build plugin/build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p plugin/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p plugin/tsconfig.json && tsc --noEmit -p test/tsconfig.json",
     "lint": "biome check .",
     "test": "pnpm run build:plugin && vitest run && jest --ci --passWithNoTests",
     "test:plugin": "pnpm run build:plugin && vitest run",
