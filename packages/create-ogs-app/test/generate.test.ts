@@ -138,8 +138,8 @@ describe("create-ogs-app generates an app", () => {
     const { io } = fakeIO(cwd);
     await main(["app", ...rocketCrewFlags], io);
     const index = readFileSync(join(cwd, "app/app/index.tsx"), "utf8");
-    expect(index).toContain('import { OgsShell } from "@open-game-system/shell";');
-    expect(index).toContain("<OgsShell />");
+    expect(index).toContain('import { OgsShell } from "@open-game-system/shell/app";');
+    expect(index).toContain("<OgsShell appleAuthentication={AppleAuthentication} />");
     expect(readFileSync(join(cwd, "app/app/_layout.tsx"), "utf8")).toContain("<Stack");
     expect(readFileSync(join(cwd, "app/app/+native-intent.ts"), "utf8")).toContain(
       "redirectSystemPath",

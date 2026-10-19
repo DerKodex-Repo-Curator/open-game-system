@@ -129,6 +129,6 @@ not yet measured. New tests: `packages/shell/src/__tests__/{cast-view,cast-sync,
 - `app-bridge-react-native` devDependencies pinned to apps/mobile's specifiers (one React / React Native);
   `bridge-resolution.test.ts` guards it. apps/mobile fingerprint `a047351a…` before and after.
 - `runtime.stop()` closes the game's profile (`ctx.onStop`); the token refresh timer is unref'd (`backgroundTimeout`).
-- Open: the template's `app/index.tsx` imports `OgsShell` from the main entry, which no longer exports it
-  (it moved to `@open-game-system/shell/app`), and passes no `appleAuthentication`. Fixing it needs a change to
-  an existing create-ogs-app test (it asserts the old import line): waiting for Jon.
+- Template entry (branch `claude/create-ogs-app-template-entry`, awaiting Jon because it changes an existing
+  test): `app/index.tsx` imports `OgsShell` from `@open-game-system/shell/app` (the main entry no longer exports
+  it) and passes `expo-apple-authentication`, so Sign in with Apple is offered.
