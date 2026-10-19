@@ -1,7 +1,7 @@
 {
   "name": "@open-game-system/cli",
   "version": "0.1.0",
-  "description": "ogs: set up a game's white-label app with OGS (login with the game's API key, register the app, upload push credentials, check everything)",
+  "description": "ogs: the OGS developer tool (add OGS to a web game, run it with a fake OGS app and TV, check and publish its catalogue entry, deploy a try path, send test pushes, set up its own app)",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -24,7 +24,6 @@
     "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "dependencies": {
-    "@open-game-system/ogs-protocol": "workspace:*",
     "qrcode-generator": "^2.0.4",
     "zod": "^4.3.6"
   },

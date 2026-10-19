@@ -36,6 +36,7 @@ jobs:
           - stream-kit-web
           - stream-kit-react
           - stream-kit-testing
+          - cli
     steps:
       - uses: actions/checkout@v4
         with:
@@ -159,6 +160,7 @@ jobs:
           - stream-kit-web
           - stream-kit-react
           - stream-kit-testing
+          - cli
     steps:
       - uses: actions/checkout@v4
         with:
