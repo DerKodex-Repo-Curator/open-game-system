@@ -65,10 +65,14 @@ export const AnswersSchema = z.object({
       /^[a-zA-Z][a-zA-Z0-9_]*(?:\.[a-zA-Z][a-zA-Z0-9_]*)+$/,
       "must be like tv.rocketcrew.app (letters, digits and _; each part starts with a letter)",
     ),
+  /** Empty (or "-") until the developer has an Apple Developer account: the simulator needs none. */
   teamId: z
     .string()
     .trim()
-    .regex(/^[A-Z0-9]{10}$/, "must be 10 characters (A-Z, 0-9), like 34S957HD77"),
+    .transform((id) => (id === "-" ? "" : id))
+    .pipe(
+      z.string().regex(/^(?:[A-Z0-9]{10})?$/, "must be 10 characters (A-Z, 0-9), like 34S957HD77"),
+    ),
   linkDomains: z.array(linkDomain).transform((domains) => [...new Set(domains)]),
   branding: z
     .string()
@@ -218,7 +222,8 @@ export const FIELDS: Field[] = [
   {
     key: "appId",
     flag: "--app-id",
-    question: "OGS app id (your game's catalogue id, like rocket-crew)",
+    question:
+      "OGS app id (your game's catalogue id, like rocket-crew; not listed yet? the id you'll submit)",
     fallback: () => undefined,
   },
   {
@@ -251,7 +256,8 @@ export const FIELDS: Field[] = [
   {
     key: "teamId",
     flag: "--team-id",
-    question: "Apple Team ID (developer.apple.com → Membership)",
+    question:
+      "Apple Team ID (developer.apple.com → Membership; Enter to skip: the simulator doesn't need one)",
     fallback: () => undefined,
   },
   {

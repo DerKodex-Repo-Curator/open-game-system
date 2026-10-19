@@ -3,9 +3,10 @@ import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Answers } from "./options";
-import { placeholderValues, renderTemplate } from "./placeholders";
+import { type PlaceholderValues, placeholderValues, renderTemplate } from "./placeholders";
 import { planFiles } from "./plan";
 import { drawAsset } from "./png";
+import { valuesForFile, withoutEmptyTeamIds } from "./team-id";
 
 /** The template ships next to src/ and dist/ (package files: dist, template). */
 export const TEMPLATE_DIR = fileURLToPath(new URL("../template/", import.meta.url));
@@ -43,7 +44,7 @@ export async function generateApp(opts: {
     plan.map(async (file) =>
       file.source.kind === "asset"
         ? drawAsset(file.source.asset, values.BRAND_COLOR)
-        : renderTemplate(await readFile(join(templateDir, file.source.from), "utf8"), values),
+        : renderFile(file.to, await readFile(join(templateDir, file.source.from), "utf8"), values),
     ),
   );
   for (const [i, file] of plan.entries()) {
@@ -52,4 +53,9 @@ export async function generateApp(opts: {
     await writeFile(to, contents[i] ?? "");
   }
   return plan.map((f) => f.to);
+}
+
+function renderFile(to: string, text: string, values: PlaceholderValues): string {
+  const rendered = renderTemplate(text, valuesForFile(to, values));
+  return to === "eas.json" ? withoutEmptyTeamIds(rendered) : rendered;
 }

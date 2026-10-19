@@ -40,6 +40,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // The plugin never sets these: they are yours.
   ios: {
     bundleIdentifier: "__OGS_BUNDLE_ID__",
+    // developer.apple.com → Membership. The simulator doesn't need it; a real phone and the stores do.
     appleTeamId: "__OGS_APPLE_TEAM_ID__",
     supportsTablet: true,
     infoPlist: { ITSAppUsesNonExemptEncryption: false },

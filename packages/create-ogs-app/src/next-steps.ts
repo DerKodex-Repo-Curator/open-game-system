@@ -1,4 +1,5 @@
 import type { Answers } from "./options";
+import { teamIdText } from "./team-id";
 
 const shellQuote = (path: string) => (/^[\w./-]+$/.test(path) ? path : JSON.stringify(path));
 
@@ -12,19 +13,28 @@ export function nextSteps(a: Answers, dir: string): string {
         `opengame.org/play/${a.appId}/… opens the app too.`,
       ]
     : [`Links: https://opengame.org/play/${a.appId}/… opens the app (add your own domain later).`];
+  const team = teamIdText(a.teamId);
+  const noTeamYet = a.teamId
+    ? []
+    : [
+        "",
+        "The simulator needs no Apple account. A real phone and the stores need your Apple Team ID",
+        "(developer.apple.com → Membership): put it in app.config.ts as ios.appleTeamId.",
+      ];
   return [
     `Your app is in ${dir}. Next:`,
     "",
     `  cd ${shellQuote(dir)}`,
     "  pnpm install",
     "  pnpm ios                 # or: pnpm android (a development build on a simulator/emulator)",
+    ...noTeamYet,
     "",
     "Tell OGS about the app (pnpm add -g @open-game-system/cli):",
     "",
     `  ogs login --app ${a.appId} --key <your game API key, ogsk_…>`,
-    `  ogs apps register --ios ${a.bundleId} --team-id ${a.teamId}`,
+    `  ogs apps register --ios ${a.bundleId} --team-id ${team}`,
     `  ogs apps register --android ${a.androidPackage} --sha256 <from eas credentials> --google-client-id <id>`,
-    `  ogs push credentials --ios AuthKey_<KEYID>.p8 --key-id <KEYID> --team-id ${a.teamId}`,
+    `  ogs push credentials --ios AuthKey_<KEYID>.p8 --key-id <KEYID> --team-id ${team}`,
     "  ogs push credentials --android service-account.json",
     "",
     "Build and ship:",
@@ -54,7 +64,8 @@ Flags:
   --game-url <url>       The game's phone page (https://) the app opens
   --bundle-id <id>       iOS bundle id; default from the game's domain (tv.rocketcrew.app)
   --package <name>       Android package; default from the bundle id
-  --team-id <id>         Apple Team ID (10 characters)
+  --team-id <id>         Apple Team ID (10 characters), or - for none yet: the simulator
+                         needs none; a real phone and the stores do
   --link-domain <host>   Your own link domain(s), repeatable or comma-separated;
                          default the game URL's host (not for shared hosts like pages.dev)
   --no-link-domain       No domain of your own: links go through opengame.org/play/<app-id>
