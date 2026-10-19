@@ -158,7 +158,9 @@ Mutation testing of `src/` (Stryker, in place, with apps/mobile's suites; don't 
 pnpm --filter @open-game-system/shell test:mutate
 ```
 
-`examples/shell-single-game` checks the plugin's output through `expo config --type introspect`.
+`examples/shell-single-game` checks the plugin's output through `expo config --type introspect`;
+`packages/create-ogs-app/scripts/e2e-simulator.sh` publishes the shell to a throwaway registry,
+builds a generated app and opens it in a simulator ([docs/testing/e2e.md](../../docs/testing/e2e.md)).
 
 ## Packing it for an app
 

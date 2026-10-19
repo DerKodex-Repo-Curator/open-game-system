@@ -251,3 +251,31 @@ manifest check, publish + admin approve + `--status`, try, push send through to 
 from the docs preview, dev, doctor). It needs `OGS_API`, `OGS_KEY_FILE` (the game's preview key),
 `OGS_ADMIN_TOKEN_FILE` and `TRY_URL`; keys are read from files and never printed. Build the CLI first
 (`pnpm --filter @open-game-system/cli build`). It takes ~2–5 minutes.
+
+## create-ogs-app from a clean directory to a simulator
+
+`packages/create-ogs-app/scripts/e2e-simulator.sh` checks what a game developer gets from
+`pnpm create ogs-app`, with nothing from the workspace but published packages. It starts a throwaway
+Verdaccio (`npx verdaccio@6`, `127.0.0.1` on a free port, temp storage, npmjs proxied for the rest),
+builds and publishes create-ogs-app, `@open-game-system/shell` and every workspace package the shell
+needs at `<version>-e2e.<timestamp>` (package.json files put back; no git changes), then in a fresh
+temp dir with only `npm_config_registry` set runs `pnpm create ogs-app` (Rocket Crew's `/host` as the
+game URL, `--team-id -`, `--shell-version` the published one), `pnpm install`, `pnpm typecheck`,
+`npx expo prebuild --platform ios` and a Release simulator build. It creates its own simulator,
+installs and launches the app, and Maestro waits for text only the game's page shows. On exit, pass
+or fail, the registry stops, the simulator is deleted and the temp dirs are removed.
+
+```bash
+packages/create-ogs-app/scripts/e2e-simulator.sh
+```
+
+First run (2026-10-19, a shared Mac under heavy load): 21 min, of which the Release `xcodebuild` took
+13.5 min, prebuild (CocoaPods) 2.3 min, registry start 1 min, simulator boot 1.5 min, Maestro 1 min;
+create + install + typecheck under 1 min. The page showed Rocket Crew's "Who's playing here?" (no
+OGS profile: `e2e-game` is not in the catalogue).
+
+Needs macOS with Xcode, CocoaPods, Maestro (`~/.maestro/bin/maestro`) and network. `E2E_LOGS=<dir>`
+keeps the step logs, `timings.txt` and screenshots; `E2E_KEEP=1` keeps the app, build and simulator;
+`E2E_GAME_URL` / `E2E_EXPECT` target another game. Not wired into GitHub CI (macOS runners cost):
+run it by hand before changing the template, the shell's native dependencies or its plugin.
+Details: [packages/create-ogs-app/README.md](../../packages/create-ogs-app/README.md).
