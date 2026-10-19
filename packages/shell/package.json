@@ -45,7 +45,8 @@
     "lint": "biome check .",
     "test": "pnpm run build:plugin && vitest run && jest --ci --passWithNoTests",
     "test:plugin": "pnpm run build:plugin && vitest run",
-    "test:runtime": "jest --ci --passWithNoTests"
+    "test:runtime": "jest --ci --passWithNoTests",
+    "test:mutate": "stryker run"
   },
   "dependencies": {
     "@open-game-system/app-bridge-native": "workspace:*",

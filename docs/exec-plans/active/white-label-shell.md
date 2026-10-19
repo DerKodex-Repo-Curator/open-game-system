@@ -103,3 +103,15 @@ Steps 0–6 done on `claude/shell-app` (2026-10-18). apps/mobile: 90 suites / 11
   nor has run them (pluginHistory), and is `createRunOncePlugin`'d. `expo-apple-authentication` is not installed in this
   monorepo: an app using the shell must depend on it (create-ogs-app will).
 - `mobile-release.yml` also watches `packages/shell/**` (shell code ships to the OGS app over the air).
+
+Step 14 done (2026-10-18): `examples/shell-single-game` (SDK 55, apps/mobile's versions, `expo-apple-authentication`
+added there) with `appId: "example-game"`; its Vitest test runs `npx expo config --type introspect --json` and checks
+associated domains (+ entitlement), App Link intent filters, `_googlecast._tcp` + `_807AD5E9._googlecast._tcp`,
+Sign in with Apple (`usesAppleSignIn` + `com.apple.developer.applesignin`), `extra.ogsShell` and the untouched bundle
+id/package. CI: `ci-mobile.yml` (paths include the example). `app/index.tsx` is a placeholder until `<OgsShell />`
+lands from `claude/shell-runtime` (TODO in the file).
+
+Shell quality: `packages/shell` has its own Stryker config (in place, apps/mobile's jest suites; docs/quality.md
+"Shell runtime mutation", docs/lessons.md). The cast batch ran (cast-store/trace/session-device 100%, cast-view 98.5%,
+cast-sync 97.1%, google-cast-backend 100% by hand, cast-once 88.9%, survivors equivalent); the other 17 modules are
+not yet measured. New tests: `packages/shell/src/__tests__/{cast-view,cast-sync,google-cast-backend}-trace.test.ts`.

@@ -3,6 +3,14 @@
   "root": false,
   "extends": "//",
   "files": {
-    "includes": ["**", "!**/node_modules", "!build", "!plugin/build", "!**/coverage"]
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!build",
+      "!plugin/build",
+      "!**/coverage",
+      "!reports",
+      "!.stryker-tmp"
+    ]
   }
 }

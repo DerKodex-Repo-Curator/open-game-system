@@ -22,7 +22,7 @@ Grade each package/domain. Update after major changes.
 | cast-kit-core | C | has tests | configured | Stryker configured. Sparse test coverage. |
 | cast-kit-react | C | has tests | configured | Stryker configured. Sparse test coverage. |
 | apps/web | C | 22 e2e (receiver) | — | Marketing site: build only. `public/receiver.html` (the Cast receiver) has 22 deterministic e2e tests (`e2e/tests/receiver-*.e2e.ts`: LOAD_VIEW, PEER_OFFER + HUD, stops) and 3 full-pipe tests against the real local renderer (`e2e/tests/stream-pipe.e2e.ts`: moving frames, idle 410, Chrome relaunch; the Realtime leg opt-in); see docs/testing/e2e.md. |
-| shell | B | 47 Vitest (config plugin) + 2 jest-expo; the moved runtime modules are tested by apps/mobile's suites through the shims | — | Moved modules are outside apps/mobile's `collectCoverageFrom`/Stryker `mutate` (both `services/**`), so their coverage and mutation score are not measured until the tests or a shell Stryker config cover `packages/shell/src`. |
+| shell | B | 47 Vitest (config plugin) + 14 jest-expo; the moved runtime modules are tested by apps/mobile's suites through the shims | cast modules 97.7% (8 of 25 modules) | `pnpm --filter @open-game-system/shell test:mutate` mutates `packages/shell/src` in place and runs apps/mobile's jest suites + `src/__tests__` (see "Shell runtime mutation" below). The fixture app `examples/shell-single-game` checks the plugin's native config through `expo config --type introspect`. |
 | apps/mobile | B | passing (Jest) + Detox | configured | Services tested, Stryker configured. Detox: 16 files in `apps/mobile/e2e` (incl. the `multi-couch.mjs` / `phones-follow.mjs` driver files), all passing on one local stack 2026-10-07 (docs/testing/e2e.md, "The whole Detox suite"). |
 
 ## Grading Scale
@@ -75,6 +75,28 @@ Equivalent mutants are marked in place (`Stryker disable next-line … : equival
 tested: the React views (`ScreenApp.tsx`, `BrowserTv.tsx`, `pages/Join.tsx`, `pages/join/*`); the
 Detox walks (`first-time-funnel.test.ts`, `browser-tv.test.ts`) and `e2e/first-time-funnel-web.mjs`
 drive them.
+
+## Shell runtime mutation (2026-10-18)
+
+The modules moved to `packages/shell/src` left apps/mobile's Stryker scope. `packages/shell/stryker.config.mjs`
+mutates them **in place** (apps/mobile resolves `@open-game-system/shell/modules/*` to the real src, never
+to a sandbox) and runs `jest.mutation.config.js`: apps/mobile's own jest config plus `src/__tests__`,
+with the cwd moved to apps/mobile and jest-expo's test environment named explicitly (docs/lessons.md).
+Run from packages/shell: `pnpm test:mutate` (everything) or `pnpm test:mutate --mutate src/<module>.ts`.
+Each Stryker runner loads apps/mobile's 90 suites: on a loaded machine the cast batch (268 mutants) took
+69 min with concurrency 6, so the rest were not run in this pass.
+
+| Module | Score | Killed / timeout | Survived | Notes |
+|--------|-------|------------------|----------|-------|
+| cast-store.ts | 100% | 37 | 0 | |
+| cast-trace.ts | 100% | 9 | 0 | |
+| cast-session-device.ts | 100% | 13 | 0 | 2 runtime errors (not scored) |
+| cast-view.ts | 98.5% (was 87.9%) | 54 + 11 | 1 | Equivalent: the empty `catch` around `JSON.parse` (a non-JSON string fails the schema either way). New `src/__tests__/cast-view-trace.test.ts` |
+| cast-sync.ts | 97.1% (was 81.7%) | 101 | 3 (2 equivalent + 1 killed since) | Equivalent: `.catch(() => null)` → `undefined` (no device either way) and teardown's `generation--` (any change makes in-flight lookups stale). `session.ended` at warn is now killed by `src/__tests__/cast-sync-trace.test.ts` (checked by hand, not rerun) |
+| google-cast-backend.ts | 95.2% → 100% (by hand) | 20 | 1 → 0 | `discovery.failed` killed by `src/__tests__/google-cast-backend-trace.test.ts` (checked by hand, not rerun) |
+| cast-once.ts | 88.9% | 8 | 1 | Equivalent: `if (running === p)` in `finally` (nothing can replace `running` while `p` is pending) |
+| cast-backend.ts | — | — | — | Types only |
+| client-log, js-errors, game-url-store, hardware-back, game-loading, consent-sheet, notifications, game-notifications, push-api, push-foreground, push-registration, api-request, identity, game-profile, ogs-bridge, fake-cast, screen-cast | not run | | | Covered by apps/mobile's suites (several at 99–100% before the move: see "Game push" and "First-time funnel"); next batches |
 
 ## CRAP (2026-10-04)
 

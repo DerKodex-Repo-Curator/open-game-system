@@ -48,6 +48,7 @@
 |------|----------|---------|----------------------|
 | `examples/expo-bridge-demo` | `@open-game-system/app-bridge-example-expo` | Expo demo of app-bridge | `app-bridge-native`, `app-bridge-react-native`, `app-bridge-types` |
 | `examples/web-game-demo` | `@open-game-system/app-bridge-example-react` | React web game using app-bridge | `app-bridge-web`, `app-bridge-react`, `app-bridge-types` |
+| `examples/shell-single-game` | `@open-game-system/example-shell-single-game` | Fixture: one game as its own Expo app on the shell's config plugin (appId `example-game`). Its Vitest test runs `expo config --type introspect` (no prebuild) and checks links, Chromecast discovery, Sign in with Apple, `extra.ogsShell` and the untouched bundle id; CI: `ci-mobile.yml` | `shell` |
 | `examples/stream-react-demo` | `stream-kit-basic-react-demo` | React demo of stream-kit client | `stream-kit-react`, `stream-kit-types`, `stream-kit-web` |
 
 ## Internal Dependency Resolution
@@ -96,7 +97,9 @@ Turbo parallelizes within each layer automatically.
 | `packages/*` | Vitest | Per-package `vitest.config.ts` (where present) |
 | `services/api` | Vitest | `services/api/vitest.config.ts` |
 | `apps/mobile` | Jest (Expo preset) | `apps/mobile/jest.config.js` (if present) |
-| `examples/*` | None (demo apps) | -- |
+| `examples/shell-single-game` | Vitest (`expo config --type introspect`) | `examples/shell-single-game/vitest.config.ts` |
+| `packages/shell` runtime mutation | Stryker + Jest (apps/mobile's suites, in place) | `packages/shell/stryker.config.mjs`, `jest.mutation.config.js` |
+| other `examples/*` | None (demo apps) | -- |
 
 Run all tests: `pnpm test` (delegates to `turbo run test`).
 
