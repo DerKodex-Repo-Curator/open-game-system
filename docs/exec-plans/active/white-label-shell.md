@@ -115,3 +115,20 @@ Shell quality: `packages/shell` has its own Stryker config (in place, apps/mobil
 "Shell runtime mutation", docs/lessons.md). The cast batch ran (cast-store/trace/session-device 100%, cast-view 98.5%,
 cast-sync 97.1%, google-cast-backend 100% by hand, cast-once 88.9%, survivors equivalent); the other 17 modules are
 not yet measured. New tests: `packages/shell/src/__tests__/{cast-view,cast-sync,google-cast-backend}-trace.test.ts`.
+
+### create-ogs-app ↔ shell integration (2026-10-18, branch `claude/create-ogs-app`)
+
+- Template depends on the shell's new peers `expo-application` and `expo-crypto` (apps/mobile's ranges).
+- `<OgsShell />` opens push taps like links (`watchIncomingUrls`: launch link, links while running, the
+  launch push via `getLastNotificationResponse`, later taps once per notification id), mapped by `webViewUrlFor`.
+- In-app signal: the WebView's user agent gets `OgsShell/<appId>` (`shellUserAgentName`). cast-kit's
+  `isOGSCastAvailable()` only sees the bridge (true in the OGS app too), so it can't replace it.
+- Guest vs signed in: `login?: "guest" | "apple" | "google"` on `OgsProfileSchema` (`ProfileLoginSchema`),
+  filled by the shell's `profileWithLogin`; profile-kit `requestOgsSignIn()` dispatches the account store's `SIGN_IN`.
+- Plugin: optional `apiBase` / `tvBase`, written to `extra.ogsShell` only when set (runtime defaults unchanged).
+- `app-bridge-react-native` devDependencies pinned to apps/mobile's specifiers (one React / React Native);
+  `bridge-resolution.test.ts` guards it. apps/mobile fingerprint `a047351a…` before and after.
+- `runtime.stop()` closes the game's profile (`ctx.onStop`); the token refresh timer is unref'd (`backgroundTimeout`).
+- Open: the template's `app/index.tsx` imports `OgsShell` from the main entry, which no longer exports it
+  (it moved to `@open-game-system/shell/app`), and passes no `appleAuthentication`. Fixing it needs a change to
+  an existing create-ogs-app test (it asserts the old import line): waiting for Jon.
