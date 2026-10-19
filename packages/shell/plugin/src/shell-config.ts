@@ -28,6 +28,13 @@ export const ShellConfigSchema = z.object({
   /** The developer's own link domains; opengame.org/play/<appId> is always claimed as well. */
   linkDomains: z.array(HostSchema).default([]),
   cast: z.object({ receiver: z.literal("ogs") }).default({ receiver: "ogs" }),
+  /**
+   * The OGS API the app talks to. Leave it out for production (the runtime's DEFAULT_OGS_API); set
+   * it to point a test build at a preview API.
+   */
+  apiBase: z.url({ protocol: /^https?$/, error: "an http(s):// URL" }).optional(),
+  /** The OGS TV launcher the Chromecast loads. Leave it out for production (DEFAULT_TV_BASE). */
+  tvBase: z.url({ protocol: /^https?$/, error: "an http(s):// URL" }).optional(),
 });
 
 export type ShellConfig = z.infer<typeof ShellConfigSchema>;

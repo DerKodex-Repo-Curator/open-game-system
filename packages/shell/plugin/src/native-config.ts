@@ -23,7 +23,10 @@ export type NativeConfig = {
   android: { intentFilters: IntentFilter[] };
   plugins: PluginEntry[];
   extra: {
-    ogsShell: Pick<ShellConfig, "appId" | "gameUrl" | "branding" | "linkDomains">;
+    ogsShell: Pick<
+      ShellConfig,
+      "appId" | "gameUrl" | "branding" | "linkDomains" | "apiBase" | "tvBase"
+    >;
   };
 };
 
@@ -88,6 +91,8 @@ export function nativeConfigFor(config: ShellConfig): NativeConfig {
         gameUrl: config.gameUrl,
         branding: config.branding,
         linkDomains: config.linkDomains,
+        ...(config.apiBase ? { apiBase: config.apiBase } : {}),
+        ...(config.tvBase ? { tvBase: config.tvBase } : {}),
       },
     },
   };

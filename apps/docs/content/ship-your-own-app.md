@@ -89,6 +89,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 });
 ```
 
+Two optional settings are for test builds: `apiBase` (the OGS API) and `tvBase` (the OGS TV
+launcher the Chromecast loads) point the app at a preview deploy; left out, the app uses production.
+
 The plugin adds Google Cast (with the local network permission iOS asks for), push, Sign in with
 Apple, the link entitlements and intent filters, and the splash screen, and passes the settings to
 `<OgsShell />`. Run it with `pnpm ios` or `pnpm android` (a development build: casting and push are

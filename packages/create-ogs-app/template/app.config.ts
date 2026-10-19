@@ -21,6 +21,8 @@ const shell = {
   linkDomains: __OGS_LINK_DOMAINS__,
   /** The TV shows your manifest's tvUrl full screen on the OGS Cast receiver. */
   cast: { receiver: "ogs" },
+  // A test build can point at a preview OGS API and TV launcher (production when left out):
+  // apiBase: "https://opengame-api-pr-123.example.workers.dev", tvBase: "https://…",
 } satisfies ShellConfigInput;
 
 /** Android push needs your Firebase app's config (README: "Push"). Not a secret: commit it. */
