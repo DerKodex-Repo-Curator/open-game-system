@@ -1,3 +1,4 @@
+import { requestOgsSignIn } from "@open-game-system/profile-kit";
 import { useOgsProfile } from "@open-game-system/profile-kit/react";
 import { useState } from "react";
 
@@ -5,8 +6,12 @@ import { useState } from "react";
  * Who is playing. In the app, the player always has an OGS profile: a guest profile from the
  * first launch (name "Player", a random sticker), and the same profile after they sign in with
  * Apple or Google from the app's native sheet, or their existing OGS profile if they had one.
- * Your page has no sign-in UI and treats guests and signed-in players the same: key saves on
- * `profile.id` and let the badge follow the profile when it changes.
+ * Key saves on `profile.id` and let the badge follow the profile when it changes.
+ *
+ * `profile.login` says which: `"guest"` until the player signs in, then `"apple"` or `"google"`.
+ * Your page has no sign-in UI of its own: a guest's "Sign in" button calls `requestOgsSignIn()`,
+ * which opens the app's native sheet; the signed-in profile then arrives here by itself.
+ * (`login` is absent inside the OGS app, which signs players in itself.)
  *
  * In a plain browser there is no profile (null): ask for a name, as you do today.
  *
@@ -20,7 +25,12 @@ export function PlayerBadge() {
   return (
     <div className="player">
       <img src={profile.avatar} alt="" width={40} height={40} />
-      <span>{profile.name}</span>
+      <span>{profile.login === "guest" ? "Guest" : profile.name}</span>
+      {profile.login === "guest" ? (
+        <button type="button" onClick={() => requestOgsSignIn()}>
+          Sign in
+        </button>
+      ) : null}
     </div>
   );
 }

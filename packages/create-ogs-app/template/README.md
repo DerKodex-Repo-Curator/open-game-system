@@ -76,6 +76,9 @@ Your page reads the player with `useOgsProfile()` ([`examples/web/player-badge.t
   once. Signing in with Apple (or Google on Android) happens in the app's native sheet, never in
   your page; it keeps the guest's profile, or switches to the player's existing OGS profile.
   Key your saves on `profile.id`.
+- `profile.login` is `"guest"` until the player signs in, then `"apple"` or `"google"`. Show a
+  "Sign in" button to guests that calls `requestOgsSignIn()` (profile-kit): the app opens its native
+  sheet, and the signed-in profile arrives through `useOgsProfile()` by itself.
 - `null` in a plain browser: ask for a name as you do today.
 - Your server checks `profile.token` with `verifyOgsToken` (`profile-kit/server`).
 

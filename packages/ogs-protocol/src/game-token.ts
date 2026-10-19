@@ -50,8 +50,19 @@ export function avatarUrl(base: string, sticker: string): string {
   return `${base.replace(/\/+$/, "")}/art/story-nook/char-${sticker}.webp`;
 }
 
+/** How a single-game app's player is signed in: a guest (device profile), or with Apple or Google. */
+export const ProfileLoginSchema = z.enum(["guest", "apple", "google"]);
+export type ProfileLogin = z.infer<typeof ProfileLoginSchema>;
+
 /** What `useOgsProfile()` gives a game: the player and a token for this game. */
-export const OgsProfileSchema = GamePlayerSchema.extend({ token: z.string().min(1) });
+export const OgsProfileSchema = GamePlayerSchema.extend({
+  token: z.string().min(1),
+  /**
+   * Single-game apps (OGS shell) only: `guest` until the player signs in from the app's native
+   * sheet (`SIGN_IN` on the `account` store), then `apple` or `google`. Absent in the OGS app.
+   */
+  login: ProfileLoginSchema.optional(),
+});
 export type OgsProfile = z.infer<typeof OgsProfileSchema>;
 
 /**

@@ -55,6 +55,8 @@ export interface ShellContext {
   onIdentity(listener: (identity: ShellIdentity | null) => void): () => void;
   /** The game asked for push: OS prompt if needed, then register this device with OGS. */
   requestPush(): Promise<PushRegistration>;
+  /** Called when the runtime stops (the shell unmounts): close timers and listeners. */
+  onStop(listener: () => void): void;
 }
 
 type AnyStore = Store<State, Event>;
@@ -142,6 +144,7 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
     setSheet({ visible: true, providers: offered });
   }
 
+  const stopListeners = new Set<() => void>();
   const ctx: ShellContext = {
     config,
     request,
@@ -158,6 +161,9 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
       };
     },
     requestPush: () => track(push.register({ ask: true })),
+    onStop(listener) {
+      stopListeners.add(listener);
+    },
   };
 
   const bridge: NativeBridge<BridgeStores> = createNativeBridge<BridgeStores>();
@@ -167,6 +173,8 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
     bridge.setStore(key, store);
 
   let stopPush: (() => void) | null = null;
+  /** Bumped by each start and stop: a start that finishes after a stop changes nothing. */
+  let run = 0;
 
   return {
     bridge,
@@ -177,15 +185,16 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
     /** Guest profile (or the stored identity), then push if it is already allowed. */
     async start(): Promise<void> {
       stopPush ??= push.start();
+      const mine = ++run;
       try {
-        setIdentity(
-          await ensureGuestProfile({
-            api: createGuestApi(request),
-            storage: deps.storage,
-            device: deps.device,
-            guestName: config.guestName,
-          }),
-        );
+        const guest = await ensureGuestProfile({
+          api: createGuestApi(request),
+          storage: deps.storage,
+          device: deps.device,
+          guestName: config.guestName,
+        });
+        if (mine !== run) return;
+        setIdentity(guest);
       } catch (err) {
         console.warn("[ogs-shell] no OGS profile yet:", err);
         return;
@@ -195,6 +204,8 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
     stop() {
       stopPush?.();
       stopPush = null;
+      run++;
+      for (const l of stopListeners) l();
     },
     sheet: {
       getSnapshot: () => sheet,

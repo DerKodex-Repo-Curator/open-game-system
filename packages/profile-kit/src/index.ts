@@ -1,4 +1,5 @@
 import { createWebBridge } from "@open-game-system/app-bridge-web";
+import { type AccountStores, requestSignIn } from "./account";
 import {
   createOgsNotifications,
   type NotificationsStores,
@@ -16,6 +17,7 @@ import { type InstanceReportInput, type OgsStores, reportOgsInstance } from "./r
 import { postOgsRoom } from "./room";
 import { createSessionSource, type SessionSnapshot } from "./session";
 
+export * from "./account";
 export * from "./notifications";
 export { listenForPause } from "./pause";
 export * from "./profile";
@@ -24,7 +26,8 @@ export { ogsRoomFromUrl } from "./room";
 export * from "./session";
 export { readGameToken } from "./token";
 
-type Bridge = ReturnType<typeof createWebBridge<ProfileStores & OgsStores & NotificationsStores>>;
+type PageStores = ProfileStores & OgsStores & NotificationsStores & AccountStores;
+type Bridge = ReturnType<typeof createWebBridge<PageStores>>;
 let bridge: Bridge | null = null;
 let profileSource: Source<ProfileSnapshot> | null = null;
 let sessionSource: Source<SessionSnapshot> | null = null;
@@ -39,7 +42,7 @@ const sharedNotifications = () => {
 };
 
 const sharedBridge = (): Bridge => {
-  bridge ??= createWebBridge<ProfileStores & OgsStores & NotificationsStores>();
+  bridge ??= createWebBridge<PageStores>();
   return bridge;
 };
 const nobody: Source<null> = { getSnapshot: () => null, subscribe: () => () => {} };
@@ -105,4 +108,14 @@ export function requestOgsNotifications(join?: { handle?: string }): Promise<Pus
 export function onOgsNotification(handler: (notification: OgsNotification) => void): () => void {
   if (typeof window === "undefined") return () => {};
   return sharedNotifications().listen(handler);
+}
+
+/**
+ * In the game's own app (OGS shell), shows the app's native sign-in sheet (call it from a tap; the
+ * profile's `login` is `"guest"` until the player signs in). False in a plain browser and in the
+ * OGS app.
+ */
+export function requestOgsSignIn(): boolean {
+  if (typeof window === "undefined") return false;
+  return requestSignIn(sharedBridge());
 }

@@ -21,9 +21,9 @@ The game's screens are web technology, rendered in the app; everything around th
 2. **Push notifications (APNs).** After a player's first turn the game offers "[Ping me when it's
    my turn]". The app asks for notification permission with the system prompt. When another
    player moves, the player gets a push; tapping it opens the app straight at that game.
-3. **Sign in with Apple.** Players start at once as a guest. From [where: Settings / the profile
-   badge] the native Sign in with Apple sheet saves their profile, name and avatar so they carry
-   to another device. There is no other sign-in method in the game and no account to create.
+3. **Sign in with Apple.** Players start at once as a guest (the profile badge says "Guest").
+   Tapping "Sign in" next to it opens the native Sign in with Apple sheet, which saves their
+   profile, name and avatar so they carry to another device. There is no other sign-in method in the game and no account to create.
 4. **Haptics.** Turns, buzzers and wins use the Taptic Engine.
 5. **Offline screen.** With no connection the app shows a native screen with a Retry button
    instead of a broken page.

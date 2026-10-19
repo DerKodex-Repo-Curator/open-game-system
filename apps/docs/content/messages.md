@@ -60,7 +60,10 @@ tap or a game moment; an app without haptics ignores them.
 In a game shipped as its own app with the OGS shell, players start as guests (a device profile).
 The game has no sign-in UI: it dispatches `SIGN_IN` (for example from a "Save your progress"
 button shown while `login` is `"guest"`) and the app shows its native sheet (Sign in with Apple, or
-Google on Android). The signed-in player then arrives through the `profile` store.
+Google on Android). The signed-in player then arrives through the `profile` store. The `profile`
+store's ready profile also carries `login` (`"guest"`, `"apple"` or `"google"`; `ProfileLoginSchema`
+in [game-token.ts](../../../packages/ogs-protocol/src/game-token.ts)), so a page that only reads the
+profile knows too; profile-kit's `requestOgsSignIn()` dispatches `SIGN_IN`.
 `AccountBridgeStateSchema` and `AccountBridgeEventSchema` in
 [native.ts](../../../packages/ogs-protocol/src/native.ts).
 

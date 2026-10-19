@@ -2,6 +2,7 @@ import { createApiRequest } from "./api-request";
 import { createGameNotifications } from "./game-notifications";
 import { createGameProfile, createGameTokenClient } from "./game-profile";
 import { createOgsBridgeStore } from "./ogs-bridge";
+import { profileWithLogin } from "./profile-login";
 import { createPushApi } from "./push-api";
 import type { ShellContext } from "./shell-runtime";
 
@@ -12,7 +13,7 @@ export interface OgsGameStoresOptions {
 
 /**
  * The OGS app's game stores, for the one game of a single-game app: `profile` (a game token for
- * this game, asked again after each sign-in), `notifications` (REQUEST → the shell's prompt → the
+ * this game, asked again after each sign-in, with `login`: guest, apple or google), `notifications` (REQUEST → the shell's prompt → the
  * OS prompt → this device registered for native push → a push handle), `ogs` (sitting reports).
  */
 export function ogsGameStores(opts: OgsGameStoresOptions) {
@@ -23,6 +24,7 @@ export function ogsGameStores(opts: OgsGameStoresOptions) {
       profile.close();
       if (identity) profile.open(appId);
     });
+    ctx.onStop(() => profile.close());
 
     const pushApi = createPushApi(ctx.apiOptions);
     const notifications = createGameNotifications({
@@ -45,6 +47,7 @@ export function ogsGameStores(opts: OgsGameStoresOptions) {
       });
     });
 
-    return { profile: profile.store, notifications: notifications.store, ogs };
+    const withLogin = profileWithLogin(profile.store, () => ctx.getIdentity()?.login ?? null);
+    return { profile: withLogin, notifications: notifications.store, ogs };
   };
 }

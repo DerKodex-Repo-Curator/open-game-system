@@ -140,8 +140,10 @@ on `false`, and only what was playing before. Pattern: `createAudioPause` in
 - **Sign-in in a single-game app (OGS shell):** players start as guests (a device profile). The game
   has no sign-in UI: it dispatches `SIGN_IN` on the `account` bridge store
   (`AccountBridgeEventSchema`; state `{ login: "none" | "guest" | "apple" | "google", signingIn }`,
-  `AccountBridgeStateSchema`) and the app shows its native sheet; the signed-in player then arrives
-  through the `profile` store.
+  `AccountBridgeStateSchema`) and the app shows its native sheet (profile-kit `requestOgsSignIn()`);
+  the signed-in player then arrives through the `profile` store. There the ready profile also carries
+  `login: "guest" | "apple" | "google"` (`ProfileLoginSchema`, optional on `OgsProfileSchema`; absent
+  in the OGS app), so `useOgsProfile()` tells a guest from a signed-in player.
 - **Own app or the OGS app (OGS shell):** a single-game app's WebView adds `OgsShell/<appId>` to the
   user agent (react-native-webview `applicationNameForUserAgent`; `shellUserAgentName` in
   `packages/shell/src/user-agent.ts`). The page checks `navigator.userAgent.includes("OgsShell/<appId>")`:

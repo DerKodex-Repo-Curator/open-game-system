@@ -104,8 +104,10 @@ On the game side, copy what you need from `examples/`:
   `OgsShell/<appId>` to the user agent, so `navigator.userAgent.includes("OgsShell/rocket-crew")` is
   true only in your own app: not in a plain browser, and not inside the OGS app (whose WebView also
   has the app bridge, so "has a bridge" alone can't tell them apart).
-- **Profile** (`examples/web/player-badge.tsx`): `useOgsProfile()`. Guests and signed-in players look
-  the same to your page; key saves on `profile.id`. `null` in a plain browser: ask for a name.
+- **Profile** (`examples/web/player-badge.tsx`): `useOgsProfile()`. Guests and signed-in players both
+  have real OGS profiles; key saves on `profile.id`. `profile.login` is `"guest"` until the player
+  signs in (then `"apple"` or `"google"`): show guests a "Sign in" button that calls
+  `requestOgsSignIn()`, and the app opens its native sheet. `null` in a plain browser: ask for a name.
 - **Push link** (`examples/server/send-push-link.ts`): `createOgsNotifier` with a `url` on your
   game's origin; the tap opens the app there.
 
