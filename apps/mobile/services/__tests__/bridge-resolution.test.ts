@@ -67,7 +67,12 @@ describe("app-bridge-react-native resolves to the app's React, React Native and 
 
   it.each(SHARED)("%s: the peer range includes the app's version", (name) => {
     const installed = readPackage(packageRealPath(path.resolve(appDir, "services"), name));
-    expect(satisfiesAtLeast(z.string().parse(bridge.peerDependencies[name]), z.string().parse(installed.version))).toBe(true);
+    expect(
+      satisfiesAtLeast(
+        z.string().parse(bridge.peerDependencies[name]),
+        z.string().parse(installed.version),
+      ),
+    ).toBe(true);
   });
 
   it.each(SHARED)("%s: the dev specifier is the app's", (name) => {
