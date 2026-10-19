@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createPairing, screenLauncherParams } from "./pairing";
 
-// docs/acceptance/2026-10-18-shell-device-gaps.feature: a white-label app's cast to a browser TV is
+// docs/acceptance/2026-10-18-cast-chrome-none.feature: a white-label app's cast to a browser TV is
 // chromeless: the screen shows only that app's TV page (chrome=none&app=<appId>).
 const b64url = (s: string) => btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const jwt = (payload: object) => `eyJhbGciOiJIUzI1NiJ9.${b64url(JSON.stringify(payload))}.sig`;

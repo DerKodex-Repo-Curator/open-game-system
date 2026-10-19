@@ -10,7 +10,7 @@ import { issueToken } from "../src/lib/identity";
 import { SCREEN_CLAIM_TTL_MS } from "../src/lib/screens";
 import { openTestD1, type TestD1 } from "./support/d1";
 
-// Acceptance: 2026-10-18-shell-device-gaps.feature, "A browser TV pairs by code and shows the game".
+// Acceptance: 2026-10-18-cast-chrome-none.feature, "A browser TV pairs by code and shows the game".
 // A white-label app casts chromeless (chrome=none&app=<appId>): the screen is told the app.
 const SECRET = "screen-app-secret";
 let d1: TestD1;

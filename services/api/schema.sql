@@ -232,7 +232,7 @@ CREATE TABLE IF NOT EXISTS screens (
   last_used_at INTEGER NOT NULL
 );
 
--- A white-label app's cast to a screen is chromeless (2026-10-18-shell-device-gaps.feature): the app
+-- A white-label app's cast to a screen is chromeless (2026-10-18-cast-chrome-none.feature): the app
 -- whose TV page the screen shows with the launcher token (no row: the whole launcher). A table, not a
 -- column: schema.sql only creates what doesn't exist.
 CREATE TABLE IF NOT EXISTS screen_apps (

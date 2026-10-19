@@ -28,3 +28,20 @@ Feature: A white-label app casts its game's TV page, with no OGS launcher around
   Scenario: Without chrome=none nothing changes
     When the launcher opens with only a launcher token
     Then it shows the OGS launcher as today
+
+  # --- a browser TV paired by code (POST /api/v1/screens/:id/show { token, app? }) ---
+
+  Scenario: A browser TV pairs by code and shows the game
+    Given a browser TV showing its pairing code, claimed by the couch host's phone in a white-label app
+    When the app casts with its launcher token and app "rocket-crew"
+    Then GET /api/v1/screens/:id answers show { token, app: "rocket-crew" }
+    And the screen shows only Rocket Crew's TV page, as chrome=none&app=rocket-crew does on a Chromecast
+
+  Scenario: The OGS app's cast to a browser TV keeps the launcher
+    Given a browser TV that showed a white-label app's cast
+    When the OGS app casts to it with only a launcher token
+    Then show has no app and the screen shows the whole OGS launcher
+
+  Scenario: Stopping clears the chromeless app
+    When the owner stops the screen
+    Then it goes back to its code, and its next cast without an app shows the launcher

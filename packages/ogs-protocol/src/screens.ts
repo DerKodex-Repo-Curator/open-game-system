@@ -15,7 +15,7 @@ export const ScreenCreatedSchema = z.object({
 export type ScreenCreated = z.infer<typeof ScreenCreatedSchema>;
 
 /**
- * A white-label app's cast is chromeless (`chrome=none&app=<appId>`, 2026-10-18-shell-device-gaps.feature):
+ * A white-label app's cast is chromeless (`chrome=none&app=<appId>`, 2026-10-18-cast-chrome-none.feature):
  * the screen then shows only that game's TV page. Absent for the OGS app's casts.
  */
 const ScreenAppSchema = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/);

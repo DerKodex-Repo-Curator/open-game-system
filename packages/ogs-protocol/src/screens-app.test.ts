@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ScreenShowSchema, ScreenStateSchema } from "./screens";
 
-// docs/acceptance/2026-10-18-shell-device-gaps.feature: a white-label app's cast to a browser TV is
+// docs/acceptance/2026-10-18-cast-chrome-none.feature: a white-label app's cast to a browser TV is
 // chromeless (chrome=none&app=<appId>), so the screen is told the app with the launcher token.
 describe("a screen shows a white-label app's launcher chromeless", () => {
   it("show takes the app with the token; without it, as before", () => {
