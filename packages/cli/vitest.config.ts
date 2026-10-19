@@ -11,5 +11,9 @@ export default defineConfig({
   resolve: {
     alias: { "@open-game-system/ogs-protocol": src("ogs-protocol") },
   },
-  test: { exclude: [...configDefaults.exclude, "test/**/*.e2e.test.ts"] },
+  test: {
+    exclude: [...configDefaults.exclude, "test/**/*.e2e.test.ts"],
+    // A throwaway HOME for every test and Stryker mutant: none may write the real ~/.config/ogs.
+    setupFiles: ["test/isolated-home.ts"],
+  },
 });
