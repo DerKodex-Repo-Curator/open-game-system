@@ -38,7 +38,7 @@ join.get("/:code", async (c) => {
   const members = await db
     .prepare(
       `SELECT p.name, p.sticker FROM session_members m JOIN profiles p ON p.id = m.profile_id
-       WHERE m.session_id = ? AND m.profile_id != ? ORDER BY m.joined_at`,
+       WHERE m.session_id = ? AND m.profile_id != ? ORDER BY m.joined_at, m.rowid`,
     )
     .bind(row.id, row.host_profile_id)
     .all();
