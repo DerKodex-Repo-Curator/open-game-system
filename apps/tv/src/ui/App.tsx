@@ -11,7 +11,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { Boot } from "../boot";
-import { buildHome, homeFocusRows, homeMove, recoverFocus } from "../launcher/home";
+import { buildHome, homeFocusRows, homeMove, homeStart, recoverFocus } from "../launcher/home";
 import { nameForDevice, phoneOf, playersOf } from "../launcher/people";
 import { pageMove } from "../launcher/shortcuts";
 import { waitingForView } from "../launcher/starting";
@@ -28,11 +28,13 @@ import { useFrames } from "./useFrames";
 import { useNow } from "./useNow";
 import { useTheme } from "./useTheme";
 import { useViewTimeout } from "./useViewTimeout";
+import { Chromeless } from "./Chromeless";
 
 export function App({ boot }: { boot: Boot }) {
   return (
     <Stage>
-      <Suspense fallback={<Assembling />}>
+      {/* chrome=none shows nothing of OGS, not even while it loads. */}
+      <Suspense fallback={boot.chrome ? <div style={{ position: "fixed", inset: 0, background: "#000" }} /> : <Assembling />}>
         <Launcher boot={boot} />
       </Suspense>
     </Stage>
@@ -42,6 +44,17 @@ export function App({ boot }: { boot: Boot }) {
 function Launcher({ boot }: { boot: Boot }) {
   const data = use(boot.data);
   const snap = useSyncExternalStore(boot.client.subscribe, boot.client.getSnapshot);
+  if (boot.chrome)
+    return (
+      <Chromeless
+        appId={boot.chrome.appId}
+        client={boot.client}
+        state={snap.state}
+        manifest={data.games.find((g) => g.appId === boot.chrome?.appId) ?? null}
+        frameTimeoutMs={boot.frameTimeoutMs}
+        grants={boot.grants}
+      />
+    );
   if (!snap.state) return <Connecting data={data} />;
   return (
     <Living
@@ -137,12 +150,12 @@ function Living(props: {
   const sentInitial = useRef<string | null>(null);
   useEffect(() => {
     if (state.screen !== "home" || connection !== "open") return;
-    const next = recoverFocus(grid, state.focus, lastPage.current);
+    const next = recoverFocus(grid, state.focus, lastPage.current, homeStart(home));
     if (next && sentInitial.current !== `${state.focus}->${next}`) {
       sentInitial.current = `${state.focus}->${next}`;
       client.send({ type: "focus.set", itemId: next });
     }
-  }, [state.screen, state.focus, grid, connection, client]);
+  }, [state.screen, state.focus, grid, home, connection, client]);
 
   // A sitting started from the Surprise card plays the reel over Getting ready, once.
   const homeFocus = useRef<string | null>(null);

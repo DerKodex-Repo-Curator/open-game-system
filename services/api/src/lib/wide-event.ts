@@ -28,9 +28,14 @@ export type WideEvent = EventFields & {
 
 const MAX_TEXT = 2000;
 
-/** Takes emails, JWTs, token= values and bearer tokens out of a string. */
+/** Takes emails, JWTs, token= values, bearer tokens, private keys and game keys out of a string. */
 export function scrub(text: string): string {
   return text
+    .replace(
+      /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g,
+      "[private key]",
+    )
+    .replace(/ogsk_[\w-]+/g, "ogsk_REDACTED")
     .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, "[email]")
     .replace(/eyJ[\w-]+\.[\w-]+\.[\w-]+/g, "REDACTED")
     .replace(/([?&#]token=)[^&#\s"]+/gi, "$1REDACTED")

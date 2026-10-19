@@ -2,16 +2,22 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { anyToken } from "./middleware/profile-auth";
 import { onError, wideEvent } from "./middleware/wide-event";
+import appDevices from "./routes/app-devices";
 import appRelease from "./routes/app-release";
+import apps from "./routes/apps";
 import auth from "./routes/auth";
 import catalogue from "./routes/catalogue";
+import catalogueEntries from "./routes/catalogue-entries";
 import clientEvents from "./routes/client-events";
 import couch from "./routes/couch";
+import couchInvites from "./routes/couch-invites";
+import deliver from "./routes/deliver";
+import dev from "./routes/dev";
 import devices from "./routes/devices";
+import familyInvites from "./routes/family-invites";
 import friends from "./routes/friends";
 import games from "./routes/games";
 import instances from "./routes/instances";
-import familyInvites from "./routes/family-invites";
 import join from "./routes/join";
 import library from "./routes/library";
 import me from "./routes/me";
@@ -40,6 +46,11 @@ app.get("/api/v1/health", (c) => {
 
 // Device registration (no API key required - called by the OGS app)
 app.route("/api/v1/devices", devices);
+// White-label apps: registration, push credentials (game API key), app links (public).
+app.route("/api/v1/apps", apps);
+app.route("/api/v1/apps", appDevices);
+// Developer API, deliver (ogs try, ogs push send): game key; before /games, whose routes need a profile token
+app.route("/api/v1", deliver);
 
 // Profiles (docs/product-specs/ogs-profiles.html): POST /profiles, GET /handles (no token)
 app.route("/api/v1", profiles);
@@ -61,6 +72,7 @@ app.route("/api/v1/sessions", sessions);
 app.route("/api/v1/join", join);
 // Invite another family: the game link with an invite id, and the funnel events
 app.route("/api/v1/family-invites", familyInvites);
+app.route("/api/v1/couch", couchInvites);
 // Browser screens: a browser on the TV, paired with a code (no Chromecast)
 app.route("/api/v1/screens", screens);
 
@@ -78,12 +90,17 @@ app.route("/api/v1/couch", couch);
 
 // Catalogue of games (public)
 app.route("/api/v1/catalogue", catalogue);
+// The catalogue's developer API: manifests/check (public), catalogue-entry (game key), admin review
+app.route("/api/v1", catalogueEntries);
 
 // Client wide events (app: profile token; cast receiver: none) → Workers Logs
 app.route("/api/v1/client-events", clientEvents);
 
 // Beta releases: the app reads the latest build per platform; CI records it (RELEASE_TOKEN)
 app.route("/api/v1/app-release", appRelease);
+
+// The developer tool (ogs init): where the docs and the kits are (public)
+app.route("/api/v1/dev", dev);
 
 // Stream routes (no API key required - called by web games directly)
 app.route("/api/v1/stream", stream);

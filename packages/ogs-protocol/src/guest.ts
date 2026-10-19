@@ -21,6 +21,40 @@ export const GUEST_STICKERS = [
   "cloud",
 ] as const;
 
+/** Where a browser remembers the guest who joined from it: one-tap "Join as <name>" next time. */
+export const GUEST_KEY = "ogs.guest";
+
+const RememberedGuestSchema = z.object({
+  name: z.string().trim().min(1).max(30),
+  sticker: z.enum(GUEST_STICKERS),
+});
+export type RememberedGuest = z.infer<typeof RememberedGuestSchema>;
+
+/** localStorage, or nothing: it may be missing or throw (private browsing). */
+export type GuestStorage = {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+} | null;
+
+/** The guest this browser joined as last, if any (parsed: anything else reads as nobody). */
+export function rememberedGuest(storage: GuestStorage): RememberedGuest | null {
+  try {
+    const raw = storage?.getItem(GUEST_KEY);
+    return raw ? (RememberedGuestSchema.safeParse(JSON.parse(raw)).data ?? null) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Remember who joined from this browser (only a name and sticker the join would take). */
+export function rememberGuest(storage: GuestStorage, guest: { name: string; sticker: string }) {
+  const parsed = RememberedGuestSchema.safeParse(guest);
+  if (!parsed.success) return;
+  try {
+    storage?.setItem(GUEST_KEY, JSON.stringify(parsed.data));
+  } catch {}
+}
+
 export type GuestJoin =
   | { kind: "joined"; joined: GuestJoined }
   | { kind: "gone" }

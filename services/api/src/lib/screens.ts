@@ -38,13 +38,17 @@ export async function createScreen(db: D1Database, now: number) {
   for (let attempt = 0; ; attempt++) {
     const code = newCode();
     try {
-      // A dead screen's code goes back in the pool.
-      await db
-        .prepare(
-          "DELETE FROM screens WHERE code = ? AND ((owner_profile_id IS NULL AND created_at <= ?) OR last_used_at <= ?)",
-        )
-        .bind(code, now - SCREEN_PAIR_TTL_MS, now - SCREEN_CLAIM_TTL_MS)
-        .run();
+      // A dead screen's code goes back in the pool (its chromeless app first, for the foreign key).
+      const dead =
+        "code = ? AND ((owner_profile_id IS NULL AND created_at <= ?) OR last_used_at <= ?)";
+      const deadOnes = (sql: string) =>
+        db.prepare(sql).bind(code, now - SCREEN_PAIR_TTL_MS, now - SCREEN_CLAIM_TTL_MS);
+      await db.batch([
+        deadOnes(
+          `DELETE FROM screen_apps WHERE screen_id IN (SELECT id FROM screens WHERE ${dead})`,
+        ),
+        deadOnes(`DELETE FROM screens WHERE ${dead}`),
+      ]);
       await db
         .prepare(
           "INSERT INTO screens (id, code, secret_hash, created_at, last_used_at) VALUES (?, ?, ?, ?, ?)",

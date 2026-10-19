@@ -52,6 +52,7 @@ import { createGameUrls, rejoinUrl, rememberGame } from "./game-rejoin";
 import { createGoogleCastBackend } from "./google-cast-backend";
 import { createInviteAttribution } from "./invite-attribution";
 import { captureJsErrors, type RejectionTracker } from "./js-errors";
+import { createLastTv, rememberConnectedTv } from "./last-tv";
 import { launchPlan } from "./launch-plan";
 import type { ReturnPill } from "./leave-game";
 import { createLinkHold } from "./link-routing";
@@ -340,6 +341,10 @@ export function ogsCastNow(): boolean {
 export const castStop = createCastStop({ isCast: ogsCastNow });
 castStore.subscribe(() => castStop.castChanged());
 couchHub.subscribe(() => castStop.castChanged());
+
+/** The TV this phone cast to last, kept across launches: the Cast button's TV after a restart. */
+export const lastTv = createLastTv({ storage: AsyncStorage });
+rememberConnectedTv(castStore, lastTv);
 
 export const deviceId = () => appState.getSnapshot().identity?.deviceId ?? "this-phone";
 

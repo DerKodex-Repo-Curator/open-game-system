@@ -195,9 +195,10 @@ async function main() {
     // Dana starts Rocket Crew: the TV frames it, the guest's phone follows into its room.
     await waitStep("host-in-game");
     const tvGame: FrameLocator = tv.frameLocator('[data-testid="game-frame"]');
-    await tvGame.locator(".tv").first().waitFor({ state: "attached", timeout: 120000 });
+    // The game arriving: slowest on an Android emulator under load (the phone WebView loads it).
+    await tvGame.locator(".tv").first().waitFor({ state: "attached", timeout: 300000 });
     check("the TV frames Rocket Crew", true);
-    await guest.getByTestId("guest-game").waitFor({ timeout: 120000 });
+    await guest.getByTestId("guest-game").waitFor({ timeout: 300000 });
     const fixer = guest.frameLocator('[data-testid="guest-game-frame"]');
     // Rocket Crew asks a browser guest its name (no OGS identity in the browser), then its lobby.
     const nameBox = fixer.getByRole("textbox", { name: "name" });
@@ -229,6 +230,24 @@ async function main() {
     const actions = z
       .array(z.object({ control: z.string(), value: z.string().optional() }))
       .parse(problem.expect);
+    // The success phase lasts a moment: record it when it happens, rather than poll for it.
+    // No named functions inside: tsx wraps those in a __name helper the page doesn't have.
+    await tvGame
+      .locator(".tv")
+      .first()
+      .evaluate((el) => {
+        const doc = el.ownerDocument;
+        if (doc.querySelector(".tv.phase-success")) doc.documentElement.dataset.sawSuccess = "true";
+        new MutationObserver(() => {
+          if (doc.querySelector(".tv.phase-success"))
+            doc.documentElement.dataset.sawSuccess = "true";
+        }).observe(doc, {
+          subtree: true,
+          attributes: true,
+          attributeFilter: ["class"],
+          childList: true,
+        });
+      });
     for (const action of actions) {
       const spec = z
         .object({ color: z.string(), kind: z.string() })
@@ -248,7 +267,9 @@ async function main() {
         await fixer.getByRole("button", { name: spec.color, exact: true }).click({ force: true });
       await sleep(800);
     }
-    await tvGame.locator(".tv.phase-success").waitFor({ timeout: 20000 });
+    await tvGame
+      .locator("html[data-saw-success='true']")
+      .waitFor({ state: "attached", timeout: 60000 });
     check("the first round is played: the TV says it's fixed", true);
     await tv.screenshot({ path: join(EVIDENCE, "04-tv-round-fixed.png") });
     post("round-done");

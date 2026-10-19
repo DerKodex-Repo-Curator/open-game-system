@@ -73,6 +73,48 @@ export const PAGES: PageDef[] = [
     source: content("testing.md"),
   },
   {
+    slug: "cli",
+    nav: "The ogs CLI",
+    summary:
+      "ogs, the OGS developer tool: init, dev (no device), manifest check, publish, try, push send, and your game's own app (apps register, push credentials, doctor), with the developer API they call.",
+    source: content("cli.md"),
+  },
+  {
+    slug: "cli-init",
+    nav: "ogs init",
+    summary:
+      "Add OGS to an existing web game in one command: the kits, ogs.manifest.json, the quickstart's code (optional codemod) and an agent prompt; GET /dev/kits.",
+    source: content("cli-init.md"),
+  },
+  {
+    slug: "cli-dev",
+    nav: "ogs dev",
+    summary:
+      "Run your game with a fake OGS app and TV, fake game tokens with their own JWKS, and QR codes for real phones; no device needed.",
+    source: content("cli-dev.md"),
+  },
+  {
+    slug: "cli-catalogue",
+    nav: "ogs manifest check and publish",
+    summary:
+      "Check ogs.manifest.json (schema, catalogue rules, live URLs; POST /manifests/check) and submit the game's catalogue entry for review (PUT /apps/:appId/catalogue-entry).",
+    source: content("cli-catalogue.md"),
+  },
+  {
+    slug: "cli-deliver",
+    nav: "ogs try and ogs push send",
+    summary:
+      "Deploy and register a game's try path (ogs try, PUT /apps/:appId/try) and send a test push or push link to your own handle (ogs push send, the notifications API and the handle check).",
+    source: content("cli-deliver.md"),
+  },
+  {
+    slug: "try-kit",
+    nav: "try-kit: no-app try path",
+    summary:
+      "Let a stranger play from one link with no app or account: room codes that recycle, dead-end pages, a blocked-WebSocket banner, the QR, play-on-this-computer, ?ref= events and a load runner.",
+    source: content("try-kit.md"),
+  },
+  {
     slug: "art-and-catalogue",
     nav: "Art kit and catalogue",
     summary:

@@ -66,12 +66,29 @@ screens.get("/:id", async (c) => {
   if (row instanceof Response) return row;
   if (!timingSafeEqual(await hashSecret(secret), row.secret_hash))
     return apiError(c, 403, "wrong_secret", "That isn't this screen's secret");
-  return c.json(
-    ScreenStateSchema.parse({ code: row.code, show: row.token ? { token: row.token } : null }),
-  );
+  // A launcher whose token expired (the household never stopped casting) can't connect: forget it
+  // (and its chromeless app), so the screen shows its code again.
+  const live = row.token && (await readClaims(row.token, c.env.OGS_JWT_SECRET, Date.now()));
+  if (row.token && !live)
+    await c.env.DB.batch([
+      c.env.DB.prepare("UPDATE screens SET token = NULL WHERE id = ?").bind(row.id),
+      c.env.DB.prepare("DELETE FROM screen_apps WHERE screen_id = ?").bind(row.id),
+    ]);
+  const chromeless =
+    row.token && live
+      ? await c.env.DB.prepare("SELECT app FROM screen_apps WHERE screen_id = ?")
+          .bind(row.id)
+          .first<{ app: string }>()
+      : null;
+  const show =
+    row.token && live ? { token: row.token, ...(chromeless ? { app: chromeless.app } : {}) } : null;
+  return c.json(ScreenStateSchema.parse({ code: row.code, show }));
 });
 
-/** POST /screens/:id/show — the owner's cast: show its couch's launcher on this screen. */
+/**
+ * POST /screens/:id/show — the owner's cast: show its couch's launcher on this screen. With `app`
+ * (a white-label app's cast), only that app's TV page (chrome=none).
+ */
 screens.post("/:id/show", anyToken, deviceOnly, async (c) => {
   const row = await ownedScreen(c);
   if (row instanceof Response) return row;
@@ -81,9 +98,19 @@ screens.post("/:id/show", anyToken, deviceOnly, async (c) => {
   if (whose === null) return invalidBody(c, "token must be a launcher token");
   if (whose !== c.get("claims").sub)
     return apiError(c, 403, "not_your_couch", "Only the couch's host shows it on a screen");
-  await c.env.DB.prepare("UPDATE screens SET token = ?, last_used_at = ? WHERE id = ?")
-    .bind(body.token, Date.now(), row.id)
-    .run();
+  await c.env.DB.batch([
+    c.env.DB.prepare("UPDATE screens SET token = ?, last_used_at = ? WHERE id = ?").bind(
+      body.token,
+      Date.now(),
+      row.id,
+    ),
+    // A white-label app's cast is chromeless: the screen shows only that app's TV page.
+    body.app
+      ? c.env.DB.prepare(
+          "INSERT INTO screen_apps (screen_id, app) VALUES (?, ?) ON CONFLICT (screen_id) DO UPDATE SET app = excluded.app",
+        ).bind(row.id, body.app)
+      : c.env.DB.prepare("DELETE FROM screen_apps WHERE screen_id = ?").bind(row.id),
+  ]);
   return c.body(null, 204);
 });
 
@@ -91,7 +118,10 @@ screens.post("/:id/show", anyToken, deviceOnly, async (c) => {
 screens.post("/:id/stop", anyToken, deviceOnly, async (c) => {
   const row = await ownedScreen(c);
   if (row instanceof Response) return row;
-  await c.env.DB.prepare("UPDATE screens SET token = NULL WHERE id = ?").bind(row.id).run();
+  await c.env.DB.batch([
+    c.env.DB.prepare("UPDATE screens SET token = NULL WHERE id = ?").bind(row.id),
+    c.env.DB.prepare("DELETE FROM screen_apps WHERE screen_id = ?").bind(row.id),
+  ]);
   return c.body(null, 204);
 });
 

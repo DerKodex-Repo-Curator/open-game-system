@@ -31,7 +31,7 @@ const config = {
   name: `opengame-api-pr-${prNumber}`,
   main,
   compatibility_date: compatDate,
-  compatibility_flags: ["nodejs_compat", "nodejs_compat_populate_process_env"],
+  compatibility_flags: ["nodejs_compat", "nodejs_compat_populate_process_env", "global_fetch_strictly_public"],
   account_id: accountId,
   d1_databases: [
     {

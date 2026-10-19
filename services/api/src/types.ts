@@ -11,6 +11,8 @@ export interface Env {
   DEBUG_STATE_TOKEN?: string;
   /** CI's bearer token for PUT /api/v1/app-release/:platform (a secret). Unset: every write is refused. */
   RELEASE_TOKEN?: string;
+  /** The catalogue reviewer's bearer token for /api/v1/admin/catalogue-entries/* (a secret). Unset: every review is refused. */
+  OGS_ADMIN_TOKEN?: string;
   STREAM_SERVER_URL?: string;
   /** Sign in with Apple / Google: OIDC issuers (default: the real ones) and accepted client ids (CSV). */
   APPLE_ISSUER?: string;
@@ -40,6 +42,8 @@ export interface Env {
   PUSH_VAPID_SUBJECT?: string;
   /** Expo push access token (secret), when the Expo project requires one for sending. */
   EXPO_ACCESS_TOKEN?: string;
+  /** The game-developer docs site: GET /dev/kits points at its pages and <base>/pkg/*.tgz (default https://ogs-docs.pages.dev). */
+  OGS_DOCS_BASE?: string;
   /** The deployed version (wrangler `version_metadata`); its id is every wide event's `version`. */
   CF_VERSION_METADATA?: WorkerVersionMetadata;
 }

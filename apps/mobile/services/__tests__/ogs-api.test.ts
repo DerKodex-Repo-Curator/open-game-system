@@ -434,3 +434,38 @@ describe("ogs-api: errors", () => {
     await expect(client.catalogue()).rejects.toMatchObject({ code: "OFFLINE", status: 0 });
   });
 });
+
+// 2026-10-18-second-visit.feature, "Invite last week's players"
+describe("ogs-api: invite last week's players", () => {
+  it("lists them", async () => {
+    const players = [{ profileId: "lee", name: "Lee", sticker: "owl", reachable: true }];
+    const { client, calls } = api(() => ({ status: 200, body: { players } }));
+    expect(await client.recentPlayers()).toEqual(players);
+    expect(calls[0]).toMatchObject({
+      url: `${BASE}/api/v1/couch/recent-players`,
+      method: "GET",
+      headers: { authorization: "Bearer tok" },
+    });
+  });
+
+  it("invites them to the couch", async () => {
+    const { client, calls } = api(() => ({
+      status: 200,
+      body: { invited: ["lee"], skipped: ["sam"] },
+    }));
+    expect(await client.inviteToCouch(["lee", "sam"])).toEqual({
+      invited: ["lee"],
+      skipped: ["sam"],
+    });
+    expect(calls[0]).toMatchObject({
+      url: `${BASE}/api/v1/couch/invite`,
+      method: "POST",
+      body: { profileIds: ["lee", "sam"] },
+    });
+  });
+
+  it("a reply that doesn't parse is BAD_RESPONSE", async () => {
+    const { client } = api(() => ({ status: 200, body: { players: "nope" } }));
+    await expect(client.recentPlayers()).rejects.toMatchObject({ code: "BAD_RESPONSE" });
+  });
+});

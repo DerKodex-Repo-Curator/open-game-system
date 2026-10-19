@@ -87,6 +87,18 @@ Audit and ranking: [docs/funnel-audit.md](../../../funnel-audit.md).
   `claude/android-native-0e55ec`. The Detox plugin is added by `app.config.js` only with
   `DETOX_ANDROID=1`.
 
+## Shipped (2026-10-18)
+
+- Jon approved; fast-forward to main at 27e3e2f2. CI: API deploy (schema first), EAS Update to
+  build 7 (iOS) and 8 (Android), no native builds. Launcher and opengame.org deployed from main
+  (no VITE_OGS_GET_APP yet).
+- Production checks pass: /join/ABCDEF, /play/rocket-crew, /open?url=…, the AASA with /join/*.
+- The stranger funnel e2e passes against production in 139 s (iOS simulator build against the
+  production API, stamped build 7: a local build is build 1, which the update gate blocks).
+- Android: the funnel reaches the TV framing Rocket Crew with the guest as Fixer; the phone's
+  Captain step still fails in Detox's Espresso Web (`runScript` futures time out on this loaded
+  machine). Follow-up.
+
 ## Next
 
 See the ranked list in docs/funnel-audit.md. Next up: #8 Android /join/ (native build), guest game-token flag, guest cleanup, deploy (owner).

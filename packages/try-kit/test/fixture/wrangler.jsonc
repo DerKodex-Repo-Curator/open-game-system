@@ -1,0 +1,10 @@
+// The seam-test fixture: a minimal room game made with try-kit (test/room.seam.test.ts runs it under wrangler dev).
+{
+  "name": "try-kit-fixture",
+  "main": "worker.ts",
+  "compatibility_date": "2026-09-01",
+  "durable_objects": { "bindings": [{ "name": "ROOM", "class_name": "FixtureRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["FixtureRoom"] }],
+  // Rooms are abandoned after 1.5 s here, so recycling and "that game is over" test in seconds.
+  "vars": { "IDLE_MS": "1500" }
+}

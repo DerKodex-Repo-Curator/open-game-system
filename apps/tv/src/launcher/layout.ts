@@ -7,7 +7,7 @@ import {
 } from "@open-game-system/ogs-protocol";
 import type { FocusRow } from "./focus-grid";
 
-export type RowId = "continue" | "tonight" | "library";
+export type RowId = "continue" | "tonight" | "again" | "library";
 
 export interface BoxModel {
   /** The manifest's HUD-free crop for cover and hero. */
@@ -106,6 +106,21 @@ function placer(tvGames: Map<string, Manifest>) {
     });
 }
 
+/** How long the TV offers Play again for the game played last. */
+export const PLAY_AGAIN_MS = 30 * DAY;
+
+/** The household's last game on this TV, played within PLAY_AGAIN_MS, whatever its status. */
+export function lastPlayed(
+  instances: Instance[],
+  tvGames: Map<string, Manifest>,
+  now: number,
+): Instance | null {
+  const recent = instances.filter(
+    (i) => tvGames.has(i.appId) && now - i.updatedAt <= PLAY_AGAIN_MS,
+  );
+  return recent.reduce<Instance | null>((a, i) => (a && a.updatedAt >= i.updatedAt ? a : i), null);
+}
+
 /**
  * Status first: what you paused (Continue), what's on tonight (Tonight), then the rest of the
  * household's TV games (Library). Each game appears once, so the focus ring is never ambiguous.
@@ -148,6 +163,11 @@ export function buildRows(input: {
     const name = sittingName({ ...i, label: instanceLabel(i), at: i.updatedAt }, now);
     return box(g, tag, name, tag, i.instanceId);
   });
+  // The second visit: the game played last comes next (its sitting may be long past its TTL).
+  const last = lastPlayed(input.instances, tvGames, now);
+  const again = place(last ? [last] : [], (g, i) =>
+    box(g, `Played ${when(i.updatedAt, now)}`, g.tagline, chipWhen(i.updatedAt, now)),
+  );
   const library = place(
     [...tvGames.keys()].map((appId) => ({ appId })),
     (g) => box(g, "", g.tagline),
@@ -155,6 +175,7 @@ export function buildRows(input: {
   const rows: RowModel[] = [
     { id: "continue", title: "Continue", boxes: cont },
     { id: "tonight", title: "Tonight", boxes: tonight },
+    { id: "again", title: "Play again", boxes: again },
     { id: "library", title: "Library", boxes: library },
   ];
   return rows.filter((r) => r.boxes.length > 0);

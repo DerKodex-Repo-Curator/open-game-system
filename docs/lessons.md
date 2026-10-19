@@ -290,3 +290,22 @@ Persistent project knowledge. Review at the start of each task.
 - **`readline/promises` `question()` loses piped lines.** Lines that arrive before a question is asked are emitted as `line` events nobody hears, and at EOF the pending question never settles, so the process exits 0 having done nothing. `createLinePrompt` queues lines and fails a question after the input ends.
 - **Template placeholders must not look like JSX.** `{{name}}` collides with `style={{ … }}`; the template uses `__OGS_<NAME>__`, an unknown name throws, and the integration test fails on any leftover.
 - **`pnpm create ogs-app` needs the unscoped name `create-ogs-app`.** `pnpm create <x>` runs `create-<x>`; a scoped `@open-game-system/create-ogs-app` would be `pnpm create @open-game-system/ogs-app`.
+- **Workers can send to APNs and FCM directly (checked 2026-10-18).** A probe Worker's fetch to
+  api.sandbox.push.apple.com got APNs' own HTTP/2 answer (`403 InvalidProviderToken`), and FCM HTTP v1
+  answered too, so white-label push needs no relay (ADR 2026-10-18-multi-tenant-push). Expo's push
+  service can't send for an app built in someone else's EAS project.
+- **TanStack Router holds a data-only route pending for 500 ms by default** (`defaultPendingMinMs`),
+  showing a blank page if there's no pending UI. Trivia Jam's phone join was 500 ms late from it.
+
+## A Worker's fetch to another Worker on the same account's workers.dev answers 404 (2026-10-18)
+
+The API checks developers' URLs (manifest check's startUrl, `ogs try`'s `/` and `/ws-probe`). From the
+preview API, every rocket-crew workers.dev URL answered 404, although curl got 302 and 426: Cloudflare
+won't route a Worker's subrequest to another Worker on the same account's workers.dev. The
+`global_fetch_strictly_public` compatibility flag sends `fetch()` out over the public internet, as a
+developer's game would see it; it's on in `wrangler.jsonc` and the preview renderer. Any Worker that
+fetches arbitrary developer URLs needs it.
+- **Release builds wrote the player's OGS token to the device log** (found 2026-10-18): React Native's `console.log` reaches Android logcat and iOS os_log in release, and the native bridge logged every store snapshot (the profile store holds the token); the web bridge logged messages in the page, which Android's WebView also writes to logcat. The bridges no longer log state, patches, events or raw messages, and `services/log-guard.ts` (first import of the root layout) drops log/info/debug in release and blanks JWTs, Bearer values, `token=`/`secret=` parameters and Expo push tokens everywhere.
+- **Detox web on Android hangs while a game runs.** Espresso Web performs each script through `onView(webView)`, which waits for the app to be idle, and a running game never is (live connection, animated overlays): every `runScript` timed out at 30 s. Turn Detox's synchronization off around in-game steps that poll for themselves (`device.disableSynchronization()`), and look up one element (`.captain`, the page through `ownerDocument`).
+- **A page point is not a screen point on Android.** `getBoundingClientRect()` is relative to the WebView, which starts below the status bar: tap the WebView element at that point (`element(by.id("gameWebView")).tap(point)`), not `device.tap`.
+- **Don't poll for a phase that lasts a moment.** Under load Playwright missed Rocket Crew's brief `.tv.phase-success`; a MutationObserver installed before the action records it. Functions passed to `evaluate` from tsx must not contain named inner functions (tsx wraps them in a `__name` helper the page lacks).

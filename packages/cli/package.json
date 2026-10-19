@@ -1,0 +1,40 @@
+{
+  "name": "@open-game-system/cli",
+  "version": "0.1.0",
+  "description": "ogs: the OGS developer tool (add OGS to a web game, run it with a fake OGS app and TV, check and publish its catalogue entry, deploy a try path, send test pushes, set up its own app)",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "ogs": "./dist/bin.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts"
+  },
+  "dependencies": {
+    "qrcode-generator": "^2.0.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@open-game-system/app-bridge-web": "workspace:*",
+    "@open-game-system/profile-kit": "workspace:*",
+    "@open-game-system/ogs-protocol": "workspace:*",
+    "@types/node": "^24",
+    "esbuild": "^0.27.3",
+    "jsdom": "^28.1.0",
+    "playwright": "^1.58.2",
+    "vitest": "^4.1.0"
+  }
+}

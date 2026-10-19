@@ -1,4 +1,6 @@
 import {
+  type CouchInviteResult,
+  CouchInviteResultSchema,
   type FamilyInvite,
   FamilyInviteSchema,
   type Instance,
@@ -6,6 +8,8 @@ import {
   InstanceSchema,
   type Manifest,
   ManifestSchema,
+  type RecentPlayer,
+  RecentPlayersSchema,
   type ScreenClaimed,
   ScreenClaimedSchema,
 } from "@open-game-system/ogs-protocol";
@@ -155,6 +159,25 @@ export function createOgsApi(opts: OgsApiOptions) {
       const made = FamilyInviteSchema.safeParse(data);
       if (!made.success) throw new OgsApiError("BAD_RESPONSE", made.error.message, 0);
       return made.data;
+    },
+    /** Who shared a couch with me in the last 7 days (2026-10-18-second-visit.feature). */
+    async recentPlayers(): Promise<RecentPlayer[]> {
+      const data = await request("/api/v1/couch/recent-players", { authed: true });
+      // ogs-protocol's schema (zod 3), so not through parse (this app's zod 4).
+      const got = RecentPlayersSchema.safeParse(data);
+      if (!got.success) throw new OgsApiError("BAD_RESPONSE", got.error.message, 0);
+      return got.data.players;
+    },
+    /** Push my couch's join link to them (409 not_casting when my couch isn't on). */
+    async inviteToCouch(profileIds: string[]): Promise<CouchInviteResult> {
+      const data = await request("/api/v1/couch/invite", {
+        method: "POST",
+        body: { profileIds },
+        authed: true,
+      });
+      const got = CouchInviteResultSchema.safeParse(data);
+      if (!got.success) throw new OgsApiError("BAD_RESPONSE", got.error.message, 0);
+      return got.data;
     },
     /** Join a cast with the code the TV shows (404 session_not_found for a wrong code). */
     async joinSession(code: string): Promise<SessionInfo> {

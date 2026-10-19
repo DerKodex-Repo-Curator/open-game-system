@@ -39,6 +39,8 @@ export interface Boot {
   viewTimeoutMs: number;
   /** The session's game token for a framed game (and who's on the couch), for its ogs:start. */
   grants: (appId: string) => Promise<StartGrant | null>;
+  /** chrome=none: a white-label app's cast of this game (only then). */
+  chrome?: { appId: string };
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -79,6 +81,7 @@ export function boot(params: LauncherParams, search: string): Boot {
       frameTimeoutMs: timeout,
       viewTimeoutMs: viewTimeout,
       grants: async () => null,
+      ...(params.chrome ? { chrome: params.chrome } : {}),
     };
   }
   const client = createWsClient({ url: wsUrl(params.api, params.token) });
@@ -91,5 +94,6 @@ export function boot(params: LauncherParams, search: string): Boot {
     frameTimeoutMs: timeout,
     viewTimeoutMs: viewTimeout,
     grants: createGameGrants(params),
+    ...(params.chrome ? { chrome: params.chrome } : {}),
   };
 }

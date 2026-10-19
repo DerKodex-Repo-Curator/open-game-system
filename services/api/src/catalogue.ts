@@ -316,20 +316,38 @@ export const findManifest = (appId: string): Manifest | undefined =>
 const StartUrlsSchema = z.record(z.string(), z.string().url());
 
 /**
- * The catalogue with local start URLs (`CATALOGUE_START_URLS` = JSON `{ appId: url }`), so a dev
- * stack or an e2e run can open a game served on localhost. Never adds games; a malformed value is
- * ignored. Production leaves it unset.
+ * The seed with games' approved catalogue entries (`ogs publish`): a live entry replaces the seed
+ * game with its appId in place, or is added after the seed. No live entries: the seed itself.
  */
-export function catalogueFor(env: { CATALOGUE_START_URLS?: string }): readonly Manifest[] {
-  if (!env.CATALOGUE_START_URLS) return CATALOGUE;
+export function withLiveEntries(
+  seed: readonly Manifest[],
+  live: readonly Manifest[],
+): readonly Manifest[] {
+  if (live.length === 0) return seed;
+  const byId = new Map(live.map((m) => [m.appId, m]));
+  const seedIds = new Set(seed.map((m) => m.appId));
+  return [...seed.map((m) => byId.get(m.appId) ?? m), ...live.filter((m) => !seedIds.has(m.appId))];
+}
+
+/**
+ * The catalogue (the seed plus `live` entries) with local start URLs (`CATALOGUE_START_URLS` = JSON
+ * `{ appId: url }`), so a dev stack or an e2e run can open a game served on localhost. Never adds
+ * games; a malformed value is ignored. Production leaves it unset.
+ */
+export function catalogueFor(
+  env: { CATALOGUE_START_URLS?: string },
+  live: readonly Manifest[] = [],
+): readonly Manifest[] {
+  const games = withLiveEntries(CATALOGUE, live);
+  if (!env.CATALOGUE_START_URLS) return games;
   let raw: unknown;
   try {
     raw = JSON.parse(env.CATALOGUE_START_URLS);
   } catch {
-    return CATALOGUE;
+    return games;
   }
   const parsed = StartUrlsSchema.safeParse(raw);
-  if (!parsed.success) return CATALOGUE;
+  if (!parsed.success) return games;
   const urls = parsed.data;
-  return CATALOGUE.map((m) => (urls[m.appId] ? { ...m, startUrl: urls[m.appId] } : m));
+  return games.map((m) => (urls[m.appId] ? { ...m, startUrl: urls[m.appId] } : m));
 }

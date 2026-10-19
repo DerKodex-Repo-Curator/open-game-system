@@ -1,0 +1,14 @@
+{
+  "appId": "fixture-game",
+  "name": "Fixture Game",
+  "tagline": "The tiny game the ogs dev e2e test runs",
+  "shape": "couch",
+  "tv": "required",
+  "startUrl": "http://localhost:5173/play",
+  "tvUrl": "http://localhost:5173/tv",
+  "roles": [
+    { "id": "captain", "label": "Captain", "audience": "grownup" },
+    { "id": "crew", "label": "Crew", "audience": "kid" }
+  ],
+  "art": { "tile": "/tile.png" }
+}

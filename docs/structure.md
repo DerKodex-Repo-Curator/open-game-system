@@ -42,6 +42,7 @@
 | `apps/web` | `@open-game-system/web` | opengame.org marketing website (Vite + React + Tailwind) | None |
 | `apps/tv` | `@open-game-system/tv` | OGS TV launcher: the one page the Chromecast stream shows for the whole cast; frames each game's TV page (Vite + React, Vitest + Playwright) | `ogs-protocol` |
 | `apps/docs` | `@open-game-system/docs` | Docs site for game developers and their coding agents (ogs-docs.pages.dev): `content/*.md` + `docs/specification.md` rendered to static HTML with `.md` twins, `llms.txt`, `llms-full.txt`; protocol tables generated from the zod schemas; tests fail when profile-kit's exports drift from the reference | `ogs-protocol` |
+| `packages/cli` | `@open-game-system/cli` (bin `ogs`) | Sets up a game's white-label app: `ogs login` (the game's API key), `apps register`, `push credentials`, `doctor` (ADR 2026-10-18-multi-tenant-push) | none (talks to services/api over HTTP) |
 
 ### Examples (`examples/`)
 
