@@ -24,7 +24,9 @@ export function tvAddress(tvBase: string): string {
 function memoryStorage(): BrowserTvStorage {
   const data = new Map<string, string>();
   return {
+    // Stryker disable next-line LogicalOperator: equivalent, a fresh map read once at start: undefined and null both mean none
     getItem: async (key) => data.get(key) ?? null,
+    // Stryker disable next-line BlockStatement: equivalent, nothing reads this run-only storage again (screen-cast reads it once, at start)
     setItem: async (key, value) => {
       data.set(key, value);
     },
@@ -61,6 +63,7 @@ export function castGameStores(
     });
     tvs.subscribeDevices((devices) => cast.dispatch({ type: "DEVICES_UPDATED", devices }));
     const detach = ctx.castPicker.attach({
+      // Stryker disable next-line ArrowFunction: equivalent, startDiscovery right after publishes the same list to the picker
       getDevices: () => tvs.getDevices(),
       subscribeDevices: (listener) => tvs.subscribeDevices(listener),
       cast: (deviceId) => cast.dispatch({ type: "START_CASTING", deviceId }),

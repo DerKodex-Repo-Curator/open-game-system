@@ -159,6 +159,7 @@ function BrowserTvPanel({ tv, pairing }: { tv: BrowserTvState; pairing: Pairing 
           testID="browserTvPair"
           accessibilityRole="button"
           accessibilityLabel="Pair"
+          // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent, Pressable sets accessibilityState.disabled from disabled
           accessibilityState={{ disabled: !canPair }}
           disabled={!canPair}
           style={[styles.pair, !canPair && styles.dim]}

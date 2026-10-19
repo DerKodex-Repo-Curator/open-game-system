@@ -36,9 +36,11 @@ export async function loadShellIdentity(
   apiBase?: string,
 ): Promise<ShellIdentity | null> {
   const raw = await storage.getItemAsync(IDENTITY_KEY);
+  // Stryker disable next-line ConditionalExpression: equivalent, JSON.parse("") throws and JSON.parse(null) is null: both load as null
   if (!raw) return null;
   try {
     const parsed = StoredIdentitySchema.safeParse(JSON.parse(raw));
+    // Stryker disable next-line ConditionalExpression: equivalent, a failed parse has no data: the destructuring throws and the catch answers null
     if (!parsed.success) return null;
     const { apiBase: savedFor, ...identity } = parsed.data;
     return apiBase === undefined || savedFor === apiBase ? identity : null;
@@ -53,6 +55,7 @@ export async function saveShellIdentity(
   identity: ShellIdentity,
   apiBase?: string,
 ): Promise<void> {
+  // Stryker disable next-line ConditionalExpression: equivalent, JSON.stringify leaves out apiBase: undefined
   const stored = apiBase === undefined ? identity : { ...identity, apiBase };
   await storage.setItemAsync(IDENTITY_KEY, JSON.stringify(stored));
 }

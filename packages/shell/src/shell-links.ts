@@ -33,9 +33,12 @@ interface HttpsParts {
 function httpsParts(url: string): HttpsParts | null {
   const m = /^https:\/\/([^/?#]+)(.*)$/i.exec(url);
   if (!m) return null;
+  // Stryker disable next-line StringLiteral: equivalent, the group always matches
   const authority = (m[1] ?? "").toLowerCase();
+  // Stryker disable next-line ConditionalExpression: equivalent, no OGS host, link domain or game origin has an @, so such a link matches none
   if (authority.includes("@")) return null;
   const host = authority.replace(/:\d+$/, "");
+  // Stryker disable next-line StringLiteral: equivalent, the group always matches
   return { authority, host, rest: m[2] ?? "" };
 }
 
@@ -52,9 +55,11 @@ function playRest(rest: string, appId: string): string | null {
 
 /** What follows `://` in a link on one of the app's custom schemes, or null for any other link. */
 function ownSchemeRest(url: string, config: ShellLinkConfig): string | null {
+  // Stryker disable next-line Regex: equivalent, with the s flag .* reaches the end anyway
   const m = /^([a-z][a-z0-9+.-]*):\/\/(.*)$/is.exec(url);
   if (!m) return null;
   const schemes = (config.schemes ?? [config.appId]).map((s) => s.toLowerCase());
+  // Stryker disable next-line StringLiteral: equivalent, both groups always match
   return schemes.includes((m[1] ?? "").toLowerCase()) ? (m[2] ?? "") : null;
 }
 
@@ -62,6 +67,7 @@ function ownSchemeRest(url: string, config: ShellLinkConfig): string | null {
 function withoutPlayPrefix(after: string, appId: string): string {
   for (const prefix of [`play/${appId}`, "play"]) {
     const next = after.slice(prefix.length, prefix.length + 1);
+    // Stryker disable next-line ConditionalExpression,StringLiteral: equivalent, "/?#".includes("") is true
     if (after.startsWith(prefix) && (next === "" || "/?#".includes(next))) {
       return after.slice(prefix.length);
     }

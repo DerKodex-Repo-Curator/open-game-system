@@ -89,6 +89,7 @@ export function createNativePush(deps: NativePushDeps) {
 
   async function onRotated(raw: { type: string; data: unknown }): Promise<void> {
     const token = NativeTokenSchema.safeParse(raw);
+    // Stryker disable next-line ConditionalExpression: equivalent, a failed parse has no data: the TypeError is swallowed by the pending chain and nothing is sent
     if (!token.success) return;
     const { granted } = await deps.notifications.getPermissionsAsync();
     if (granted) await put(token.data.data);

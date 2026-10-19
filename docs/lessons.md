@@ -316,3 +316,26 @@ fetches arbitrary developer URLs needs it.
 green whatever npm says. The org's `NPM_TOKEN` gets `E404 Not Found - PUT …/@open-game-system%2fcli`
 (npm's answer to a token that can't publish to the scope): nothing has reached npm since April
 (cast-kit-core 0.1.1). Check `npm view <package> version` after a release, not the job's colour.
+
+## Shell mutation and CRAP runs (2026-10-19)
+
+- **Stryker's incremental mode keeps a "Survived" result after you add the test that kills it.** A
+  rerun reused every old survivor (device-id key, login schema, sheet styles) although new test files
+  covered them. After adding tests, drop the Survived / NoCoverage / Timeout / RuntimeError entries
+  from the incremental file (`reports/stryker-incremental.json`, `reports/mutation/shell/incremental.json`)
+  so only those are tested again; the killed ones stay cached.
+- **Any file under `src/__tests__` that isn't a test breaks an in-place run.** An empty `.ts` there
+  made every jest run fail with "Your test suite must contain at least one test", and Stryker scored
+  each mutant a RuntimeError (not killed, not survived). Fixtures go in `src/__fixtures__`.
+- **Shell-only modules run in a sandbox, not with apps/mobile's suites.** `stryker.shell-tests.config.mjs`
+  (`pnpm exec stryker run stryker.shell-tests.config.mjs --mutate src/<module>.ts`) runs the shell's own
+  jest config: minutes, not an hour. Start it before an in-place run of `stryker.config.mjs`, never
+  after: a sandbox copied while the in-place run has instrumented src would share its mutant ids.
+- **At load above ~100 (other agents' Stryker and emulators), Stryker's timeouts are noise**: rerun
+  the Timeout results on a quieter machine before counting them as killed.
+- **Measuring the shell's CRAP needs coverage with the repo root as `rootDir`**: apps/mobile's jest
+  (rootDir apps/mobile) matches no `collectCoverageFrom` glob outside its own folder, so the moved
+  modules show no coverage. A scratch config spreading `jest.mutation.config.js` with
+  `rootDir: <repo>`, `collectCoverageFrom: ["packages/shell/src/**/*.{ts,tsx}"]`, `coverageProvider: "v8"`
+  works (run from apps/mobile). `game-rig crap` parses `.ts` with the JSX plugin and stops at a generic
+  arrow (`<T>(x) =>`); parse `.ts` without it.

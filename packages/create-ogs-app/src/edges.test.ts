@@ -6,9 +6,11 @@ import { describe, expect, it } from "vitest";
 import { type CliIO, main } from "./cli";
 import { generateApp, TargetNotEmptyError } from "./generate";
 import { InputEndedError } from "./line-prompt";
+import { nextSteps } from "./next-steps";
 import { type Answers, AnswersSchema, type Args, collectAnswers } from "./options";
 import { placeholderValues, renderTemplate } from "./placeholders";
 import { drawAsset } from "./png";
+import { withoutEmptyTeamIds } from "./team-id";
 
 // Edges the other suites leave open (found by mutation testing): exact messages, error names,
 // the exact ring the placeholder art draws.
@@ -228,5 +230,29 @@ describe("drawAsset", () => {
       }
     }
     expect(wrong).toBe(0);
+  });
+});
+
+describe("no Team ID yet", () => {
+  it("drops only whole eas.json lines with an empty Team ID, last entry or not", () => {
+    const eas = [
+      "{",
+      '  "build": {',
+      '    "ios": { "appleTeamId": "" },',
+      '    "ios": { "appleTeamId": "" }',
+      '    "x": 1, "ios": { "appleTeamId": "" },',
+      "  }",
+      "}",
+      "",
+    ].join("\n");
+    expect(withoutEmptyTeamIds(eas)).toBe(
+      ["{", '  "build": {', '    "x": 1, "ios": { "appleTeamId": "" },', "  }", "}", ""].join("\n"),
+    );
+  });
+
+  it("the next steps say where the Team ID goes, after a blank line", () => {
+    expect(nextSteps({ ...rocketCrew, teamId: "" }, "app")).toContain(
+      "\n\nThe simulator needs no Apple account.",
+    );
   });
 });

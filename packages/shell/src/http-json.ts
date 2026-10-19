@@ -23,6 +23,7 @@ export function jsonRequestInit(
   return {
     method: init.method ?? "GET",
     headers,
+    // Stryker disable next-line ConditionalExpression: equivalent, JSON.stringify(undefined) is undefined
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
   };
 }

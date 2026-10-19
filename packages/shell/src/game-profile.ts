@@ -80,6 +80,7 @@ export function createGameProfile(opts: { fetchToken: (appId: string) => Promise
 
   async function ask(gen: number) {
     const id = appId;
+    // Stryker disable next-line ConditionalExpression: equivalent, close clears the timer, so ask always runs with an app id
     if (!id) return;
     try {
       const grant = await opts.fetchToken(id);
@@ -99,6 +100,7 @@ export function createGameProfile(opts: { fetchToken: (appId: string) => Promise
   }
 
   const close = () => {
+    // Stryker disable next-line UpdateOperator: equivalent, counting down also gives every open its own number
     generation++;
     appId = null;
     clearTimer();
@@ -123,6 +125,7 @@ export function createGameProfile(opts: { fetchToken: (appId: string) => Promise
     store,
     /** The game screen shows `next` (null: a page OGS can't name). */
     open(next: string | null) {
+      // Stryker disable next-line ConditionalExpression: equivalent, with no app open, close changes nothing
       if (next !== null && next === appId) return;
       close();
       if (next === null) return;

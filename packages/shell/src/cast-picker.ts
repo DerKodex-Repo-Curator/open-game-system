@@ -92,6 +92,7 @@ export function createCastPicker() {
     /** The code the browser TV shows: pair it, then cast to it. */
     async pairBrowserTv(code: string): Promise<void> {
       const add = targets?.addBrowserTv;
+      // Stryker disable next-line OptionalChaining: equivalent, attach sets browserTv whenever the targets offer addBrowserTv
       if (!add || state.browserTv?.pairing) return;
       setBrowserTv({ pairing: true, error: null });
       const result = await add(code.trim().toUpperCase());

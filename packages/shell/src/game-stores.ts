@@ -31,6 +31,7 @@ export function ogsGameStores(opts: OgsGameStoresOptions) {
       appId: () => appId,
       gameName: () => name,
       // A single-game app is the game's own app: no kid-device rule of its own (the game decides).
+      // Stryker disable next-line ArrowFunction: equivalent, undefined is as false as false
       isKidDevice: () => false,
       alreadyAllowed: async (id) => (await pushApi.grantedGames()).includes(id),
       askPlayer: opts.askPlayer,
