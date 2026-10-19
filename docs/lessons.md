@@ -276,3 +276,12 @@ Persistent project knowledge. Review at the start of each task.
   service can't send for an app built in someone else's EAS project.
 - **TanStack Router holds a data-only route pending for 500 ms by default** (`defaultPendingMinMs`),
   showing a blank page if there's no pending UI. Trivia Jam's phone join was 500 ms late from it.
+
+## A Worker's fetch to another Worker on the same account's workers.dev answers 404 (2026-10-18)
+
+The API checks developers' URLs (manifest check's startUrl, `ogs try`'s `/` and `/ws-probe`). From the
+preview API, every rocket-crew workers.dev URL answered 404, although curl got 302 and 426: Cloudflare
+won't route a Worker's subrequest to another Worker on the same account's workers.dev. The
+`global_fetch_strictly_public` compatibility flag sends `fetch()` out over the public internet, as a
+developer's game would see it; it's on in `wrangler.jsonc` and the preview renderer. Any Worker that
+fetches arbitrary developer URLs needs it.

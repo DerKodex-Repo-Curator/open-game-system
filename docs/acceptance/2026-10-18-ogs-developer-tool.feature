@@ -1,4 +1,4 @@
-# Status: PLANNED (branch claude/shell-platform; contract docs/design-docs/ogs-cli.md).
+# Status: BUILT (branch claude/shell-platform, unmerged; end to end on the preview API: packages/cli/scripts/e2e-preview.sh; contract docs/design-docs/ogs-cli.md).
 # ADR: docs/adrs/2026-10-18-ogs-developer-api.md. The shell commands are in 2026-10-18-ogs-cli.feature.
 
 Feature: ogs is the OGS developer tool

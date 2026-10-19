@@ -242,3 +242,11 @@ gradle step, native ones the prebuild too.
 For a phone: `eas build -p android --profile preview` (an internal APK, installable from the EAS
 link). The `play` profile (the app bundle for Google Play internal testing) is on branch
 `claude/android-native-0e55ec` with the `/join/` App Link.
+
+## The ogs CLI against a preview API
+
+`packages/cli/scripts/e2e-preview.sh` runs every `ogs` command against a deployed preview API (login,
+manifest check, publish + admin approve + `--status`, try, push send through to APNs, init with kits
+from the docs preview, dev, doctor). It needs `OGS_API`, `OGS_KEY_FILE` (the game's preview key),
+`OGS_ADMIN_TOKEN_FILE` and `TRY_URL`; keys are read from files and never printed. Build the CLI first
+(`pnpm --filter @open-game-system/cli build`). It takes ~2–5 minutes.

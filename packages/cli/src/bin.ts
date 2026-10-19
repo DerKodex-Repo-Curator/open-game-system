@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
 import { run } from "./cli";
+import { timedFetch } from "./timed-fetch";
 
 /** A shell command, its output passed through to the terminal and kept (ogs try reads the URL from it). */
 const exec = (command: string, opts: { cwd: string }) =>
@@ -30,7 +31,7 @@ const code = await run(process.argv.slice(2), {
   stdout: (line) => process.stdout.write(`${line}\n`),
   stderr: (line) => process.stderr.write(`${line}\n`),
   readFile: (path) => readFileSync(path, "utf8"),
-  fetch,
+  fetch: timedFetch(fetch, 30_000),
   exec,
   cwd: () => process.cwd(),
   isTTY: Boolean(process.stdin.isTTY && process.stdout.isTTY),
