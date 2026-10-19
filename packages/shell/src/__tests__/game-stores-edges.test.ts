@@ -27,10 +27,14 @@ describe("ogsGameStores, edges", () => {
   it("losing the identity closes the profile without asking for a game token", async () => {
     const { stores, setIdentity, net } = setup();
     const before = stores.profile.getSnapshot();
+    const heard: unknown[] = [];
+    stores.profile.subscribe((s) => heard.push(s));
     setIdentity(null);
     await new Promise((r) => setTimeout(r, 20));
     expect(net.calls).toEqual([]);
     expect(stores.profile.getSnapshot()).toEqual(before);
+    expect(heard).toEqual([]);
+    expect(console.warn).not.toHaveBeenCalled();
   });
 
   it("files a sitting report with a POST", async () => {

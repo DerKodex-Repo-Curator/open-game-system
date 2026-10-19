@@ -85,3 +85,11 @@ describe("native sign-in, edges", () => {
     expect(flow.getState()).toEqual({ status: "idle" });
   });
 });
+
+describe("native sign-in, the answer's logins", () => {
+  it("an answer naming a login OGS doesn't have is a bad response", async () => {
+    const flow = setup({ logins: [{ provider: "facebook", email: null }] });
+    await flow.start("apple");
+    expect(flow.getState()).toEqual({ status: "error", code: "BAD_RESPONSE" });
+  });
+});
