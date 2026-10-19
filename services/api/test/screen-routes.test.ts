@@ -138,6 +138,31 @@ describe("a browser screen", () => {
     expect(ScreenStateSchema.parse(state.body)).toEqual({ code: s.code, show: { token: lt } });
   });
 
+  // The second visit (2026-10-18-second-visit.feature): the household closed the app without Stop
+  // casting; the next day the TV page asks again. Yesterday's launcher token has expired, so the
+  // screen goes back to its code instead of booting a launcher that can't connect.
+  it("forgets a launcher whose token expired: the screen shows its code again", async () => {
+    const s = await newScreen();
+    await call("POST", "/claim", { auth: await phone("dana"), body: { code: s.code } });
+    const HOUR = 60 * 60;
+    const yesterday = await issueToken(
+      { sub: "dana", did: "launcher-s1", kind: "launcher", sid: "s1" },
+      SECRET,
+      { now: Date.now() - 24 * HOUR * 1000, ttlSeconds: 12 * HOUR },
+    );
+    await d1.db
+      .prepare("UPDATE screens SET token = ? WHERE id = ?")
+      .bind(yesterday, s.screenId)
+      .run();
+    const state = await call("GET", `/${s.screenId}`, { secret: s.secret });
+    expect(ScreenStateSchema.parse(state.body)).toEqual({ code: s.code, show: null });
+    const row = await d1.db
+      .prepare("SELECT token FROM screens WHERE id = ?")
+      .bind(s.screenId)
+      .first();
+    expect(row).toEqual({ token: null });
+  });
+
   it("won't show a launcher token for someone else's couch, or anything that isn't one", async () => {
     const s = await newScreen();
     await call("POST", "/claim", { auth: await phone("sam"), body: { code: s.code } });

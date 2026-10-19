@@ -1,4 +1,4 @@
-# Status: BUILT on claude/shell-platform (apps/tv; not deployed).
+# Status: SHIPPED 2026-10-19 (main d2897aca: API + schema by CI; opengame.org, ogs-tv, ogs-docs deployed).
 # Design: docs/design-docs/white-label-shell.md (decisions 2a and 10).
 # The Chromecast shows the cloud-rendered page the sender loads (apps/web/public/receiver.html,
 # LOAD_VIEW). A white-label app loads the launcher (apps/tv) with chrome=none and its appId.

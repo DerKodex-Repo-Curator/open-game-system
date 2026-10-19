@@ -48,10 +48,15 @@ export async function check(io: Io, args: string[]): Promise<number> {
   }
   const result = CheckSchema.parse(await postPublic(io, "/api/v1/manifests/check", raw));
   if (!result.valid) return printIssues(io, result.issues);
+  printValid(io, appId, result);
+  return 0;
+}
+
+/** The API's warnings, what its live checks saw, and the verdict. */
+function printValid(io: Io, appId: string, result: z.infer<typeof CheckSchema>) {
   for (const w of result.warnings) io.stdout(`warning ${w.code}: ${w.message}`);
   const line = checkedLine(result.checked);
   if (line) io.stdout(line);
   const n = result.warnings.length;
   io.stdout(`valid: ${appId} has no issues${n > 0 ? ` (${n} warning${n === 1 ? "" : "s"})` : ""}`);
-  return 0;
 }

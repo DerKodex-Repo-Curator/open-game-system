@@ -47,7 +47,8 @@ The Open Game System (OGS) is a platform that lets web games use native mobile c
 | Module | Directory | Responsibility | Depends On |
 |--------|-----------|---------------|------------|
 | API | `services/api/` | Auth, device registration, push dispatch, profiles + sign-in, catalogue, instances, couch sessions + DO | Hono, D1, Durable Objects, ogs-protocol |
-| Mobile App | `apps/mobile/` | WebView host, push tokens, casting, deep links | app-bridge-react-native, Expo |
+| Mobile App | `apps/mobile/` | The OGS app: tabs, catalogue, couch, onboarding, sign-in, launcher cast flow, deep links; the generic native powers come from the shell through one-line shims in `services/` | shell, app-bridge-react-native, Expo |
+| Shell | `packages/shell/` | Ship a game as its own app: config plugin (`plugin/src`: ShellConfigSchema, nativeConfigFor, withOgsShell) and the generic runtime moved from apps/mobile (`src/`: cast store/sync/backends, client log, JS errors, notifications + push registration, API request + identity storage, profile/notification/ogs bridge stores, game URL store, hardware back). Never imports apps/mobile; app-only config (`EXPO_PUBLIC_*`) is passed in | app-bridge-native, app-bridge-types, ogs-protocol, zod; peers: Expo modules, react-native-google-cast |
 | App Bridge Types | `packages/app-bridge-types/` | Core type definitions for bridge protocol | (none) |
 | App Bridge Web | `packages/app-bridge-web/` | Web-side bridge (runs in WebView) | app-bridge-types |
 | App Bridge Native | `packages/app-bridge-native/` | Native-side bridge (runs in RN) | app-bridge-types, immer |
@@ -89,7 +90,8 @@ cast-kit-core  (depends on app-bridge-web)
   └── cast-kit-react  (also depends on app-bridge-react)
 
 services/api  (standalone -- no workspace deps, uses Hono)
-apps/mobile   (depends on app-bridge-native, -react-native, -types, -testing)
+shell         (depends on app-bridge-native, -types, ogs-protocol)
+apps/mobile   (depends on shell, app-bridge-native, -react-native, -types, -testing, ogs-protocol)
 ```
 
 Build order (Turbo manages automatically):
@@ -153,6 +155,8 @@ route → 403 `profile_token_required`.
 | POST | `/api/v1/family-invites` | phone/tablet | Invite another family: `{ appId }` (a catalogue game) → 201 `{ inviteId, link }` (`https://opengame.org/play/<appId>?inv=<id>`); logs `funnel.invite_sent` |
 | GET | `/api/v1/family-invites/:id` | none | `{ appId, opened, testflightTaps, firstSession }` (counts only, no one named); 404 `invite_not_found` |
 | POST | `/api/v1/family-invites/:id/events` | none (rate limited per IP) | `{ step: "link_opened" \| "testflight_tap" }` from the invite's page → 204; logs `funnel.<step>` |
+| GET | `/api/v1/couch/recent-players` | phone/tablet | Who shared a couch with me (hosted or joined) in the last 7 days, newest couch first: `{ players: [{ profileId, name, sticker, reachable }] }`; never me or a browser guest; `reachable`: a phone OGS can notify |
+| POST | `/api/v1/couch/invite` | phone/tablet | `{ profileIds }` (1–20) → `{ invited, skipped }`: pushes my couch's join link (`https://opengame.org/join/<code>`, data `type: couch-invite`) to their phones, only last week's players, once per person per couch (`couch_invites`); 409 `not_casting` without my cast in the last 12 h; logs `couch.invite_sent` |
 | POST | `/api/v1/screens` | none | A browser on the TV becomes a screen: `{ screenId, code, secret }` (201); the secret is kept only as a SHA-256 hash |
 | GET | `/api/v1/screens/:id` | `X-Screen-Secret` | `{ code, show: { token, app? } \| null }`: the launcher token to show (`app`: a white-label app's chromeless cast, `chrome=none&app=`); 401 `missing_secret`, 403 `wrong_secret`, 404 `screen_not_found` (unclaimed > 1 h, claimed and unused > 30 days) |
 | POST | `/api/v1/screens/claim` | phone/tablet | `{ code }` → `{ screenId, name: "Browser TV" }`; the caller owns it; 404 `screen_not_found` |

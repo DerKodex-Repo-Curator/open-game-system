@@ -272,6 +272,26 @@ Persistent project knowledge. Review at the start of each task.
 - **Android onboarding has no notifications page** when Android already allows notifications; Detox walks tap Maybe later only when it shows.
 - **`assembleAndroidTest` across every module fails dexing expo-eas-client**: build only `:app:assembleRelease :app:assembleAndroidTest`.
 
+## Shell package (2026-10-18)
+
+- **`jest.mock("<native module>")` only intercepts a workspace package's import of it when both resolve to the same `.pnpm` folder.** Jest keys mocks by resolved real path. A package that imports `react-native-google-cast` must declare it as a peer **and** a devDependency with apps/mobile's exact specifier, and must also pin the dependencies that pick a peer variant: `expo` resolved to a second `.pnpm` folder in `packages/shell` (`@expo/dom-webview@57.0.1` and `react-dom@19.2.4` as its peers) until the shell added `@expo/dom-webview: ^55.0.6` and `react-dom: 19.2.0` as devDependencies. A new importer can also resolve the same specifier to a newer version than the lockfile has for the app (zod 4.4.3 vs 4.3.6); pin it in the lockfile to the app's version. `apps/mobile/services/__tests__/shell-resolution.test.ts` checks specifiers and real paths.
+
+- **A workspace React Native library with open peer ranges and no devDependencies gets its own React Native.** `app-bridge-react-native` declared `react`, `react-native` and `react-native-webview` as `>=` peers only; pnpm auto-installed the latest (react 19.2.4, react-native 0.84.1, webview 13.16.1) into `packages/app-bridge-react-native/node_modules`, and Metro resolves from the source file's folder first, so an app bundling its source got two Reacts ("Invalid hook call") and two React Natives. Fix: devDependencies with apps/mobile's exact specifiers (plus `jest-expo`, `@expo/dom-webview`, `react-dom` as the app has them, so `expo` keeps one peer variant; `react-test-renderer` equal to React because @testing-library/react-native checks it). `apps/mobile/services/__tests__/bridge-resolution.test.ts` checks it; the apps/mobile fingerprint did not change.
+- **A moved module keeps apps/mobile's tests unedited through a one-line shim** (`export * from "@open-game-system/shell/modules/<name>";`): relative `jest.mock("../x")` of a shimmed module still replaces the shim (and every app import of it), but NOT the shell's internal imports of that module. Modules that app tests mock by relative path (deep-links, via `link-routing.test`) stay in the app.
+- **Moved code leaves apps/mobile's coverage and Stryker scope** (`collectCoverageFrom` and `mutate` are `services/**` under apps/mobile). Its tests still run there; measure the shell's coverage/mutation from packages/shell.
+- **Mutation-testing the shell with apps/mobile's tests needs a particular setup** (`packages/shell/stryker.config.mjs`, `jest.mutation.config.js`): `inPlace: true` (apps/mobile imports the shell's real src, never a sandbox copy); Stryker run from packages/shell (it silently ignores `mutate` globs outside its cwd: "did not result in any files"); the jest worker `chdir`s to apps/mobile (its tests read app.json/package.json from the cwd, and Babel rooted at packages/shell applies the shell's babel.config.js to react-native's jest setup: "Unexpected token" in `jest/setup.js`); and `testEnvironment` named from jest-expo's preset, because Stryker wraps the environment before Jest applies the preset and falls back to plain node, whose export conditions load the shell from `build/` (the shell-resolution guard test catches it). One project only: Stryker's jest runner flattens `projects` and ran e2e and Vitest files. `disableTypeChecks: false`, or Stryker writes `// @ts-nocheck` into every apps/mobile file during the run (it restores them at the end).
+
+- **A `"react-native"` field must point inside the published `files`.** app-bridge-native, -types, -web and -react pointed `"react-native"` (which Metro reads before `main`) at `src/` but published only `dist/`, so an app installing packed tarballs failed to bundle; app-bridge-react's even named `src/index.ts` for `src/index.tsx`. Fix: publish `src` (tests excluded), like the shell, which ships TS source under its `react-native` condition. `packages/shell/test/packed-exports.test.ts` packs the shell, every workspace package it needs and the game kits, and checks that every `main`/`module`/`types`/`react-native`/`source`/`bin`/`exports` target is in the tarball.
+
+- **React Native's Linking loses a link handed to an app that is already starting (iOS).** `getInitialURL` reads only the launch options, and the "url" event fires from `application:openURL:` before any JS listener, so it's dropped. A link that arrives after the process started but before the JS subscribes (Maestro `stopApp` racing `launchApp`, a tap during startup) opens the start page. expo-linking's `getLinkingURL()` keeps the latest URL natively from launch (expo-router uses it on iOS): read it synchronously for the first page, and again after subscribing.
+- **Anything stored with an API-issued token must remember which API issued it.** A build switched between the production and preview API reused the other's device token (401s); the shell stores `apiBase` with the identity and ignores a mismatch.
+
+## create-ogs-app (2026-10-18)
+
+- **npm drops `.gitignore` and `.npmrc` from a published package.** A template stores them as `gitignore` / `npmrc` and the CLI renames them (`packages/create-ogs-app/src/plan.ts`); `test/bin.test.ts` packs the package and checks they are in the tarball.
+- **`readline/promises` `question()` loses piped lines.** Lines that arrive before a question is asked are emitted as `line` events nobody hears, and at EOF the pending question never settles, so the process exits 0 having done nothing. `createLinePrompt` queues lines and fails a question after the input ends.
+- **Template placeholders must not look like JSX.** `{{name}}` collides with `style={{ … }}`; the template uses `__OGS_<NAME>__`, an unknown name throws, and the integration test fails on any leftover.
+- **`pnpm create ogs-app` needs the unscoped name `create-ogs-app`.** `pnpm create <x>` runs `create-<x>`; a scoped `@open-game-system/create-ogs-app` would be `pnpm create @open-game-system/ogs-app`.
 - **Workers can send to APNs and FCM directly (checked 2026-10-18).** A probe Worker's fetch to
   api.sandbox.push.apple.com got APNs' own HTTP/2 answer (`403 InvalidProviderToken`), and FCM HTTP v1
   answered too, so white-label push needs no relay (ADR 2026-10-18-multi-tenant-push). Expo's push
@@ -287,3 +307,22 @@ won't route a Worker's subrequest to another Worker on the same account's worker
 `global_fetch_strictly_public` compatibility flag sends `fetch()` out over the public internet, as a
 developer's game would see it; it's on in `wrangler.jsonc` and the preview renderer. Any Worker that
 fetches arbitrary developer URLs needs it.
+- **Release builds wrote the player's OGS token to the device log** (found 2026-10-18): React Native's `console.log` reaches Android logcat and iOS os_log in release, and the native bridge logged every store snapshot (the profile store holds the token); the web bridge logged messages in the page, which Android's WebView also writes to logcat. The bridges no longer log state, patches, events or raw messages, and `services/log-guard.ts` (first import of the root layout) drops log/info/debug in release and blanks JWTs, Bearer values, `token=`/`secret=` parameters and Expo push tokens everywhere.
+- **Detox web on Android hangs while a game runs.** Espresso Web performs each script through `onView(webView)`, which waits for the app to be idle, and a running game never is (live connection, animated overlays): every `runScript` timed out at 30 s. Turn Detox's synchronization off around in-game steps that poll for themselves (`device.disableSynchronization()`), and look up one element (`.captain`, the page through `ownerDocument`).
+- **A page point is not a screen point on Android.** `getBoundingClientRect()` is relative to the WebView, which starts below the status bar: tap the WebView element at that point (`element(by.id("gameWebView")).tap(point)`), not `device.tap`.
+- **Don't poll for a phase that lasts a moment.** Under load Playwright missed Rocket Crew's brief `.tv.phase-success`; a MutationObserver installed before the action records it. Functions passed to `evaluate` from tsx must not contain named inner functions (tsx wraps them in a `__name` helper the page lacks).
+
+## The package publish job hides npm failures (2026-10-19)
+
+`publish-packages.yml` ends each publish with `npm publish --access public || true`, so every job is
+green whatever npm says. The org's `NPM_TOKEN` gets `E404 Not Found - PUT …/@open-game-system%2fcli`
+(npm's answer to a token that can't publish to the scope): nothing has reached npm since April
+(cast-kit-core 0.1.1). Check `npm view <package> version` after a release, not the job's colour.
+
+## Mutation testing a CLI can write the developer's real config (2026-10-19)
+
+Stryker runs mutated code: a mutant of `configDir` that ignored `OGS_CONFIG_DIR` made the CLI's tests
+save their fake logins to the real `~/.config/ogs/credentials.json`, replacing production game keys
+(revoked and re-minted). packages/cli's tests now run with a throwaway HOME (`test/isolated-home.ts`,
+a Vitest setup file). Any package whose code writes under the home folder needs the same before
+Stryker runs on it.

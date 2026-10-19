@@ -13,7 +13,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { CastDevice } from "../../../services/cast-store";
-import { castBackend, castNow, castPrompt, waitForOgsCast } from "../../../services/runtime";
+import {
+  castBackend,
+  castNow,
+  castPrompt,
+  lastTv,
+  waitForOgsCast,
+} from "../../../services/runtime";
 import { userMessage } from "../../../services/user-message";
 import { Button } from "../Button";
 import { BrowserTv } from "../remote/BrowserTv";
@@ -51,7 +57,8 @@ function CastPromptSheet({ request }: { request: CastPromptRequest }) {
   const [picked, setPicked] = useState<CastDevice | null>(null);
   const [connecting, setConnecting] = useState<CastDevice | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const view = castPromptView({ devices, searching, picked, stopped });
+  const last = useSyncExternalStore(lastTv.subscribe, lastTv.get, lastTv.get);
+  const view = castPromptView({ devices, searching, picked, stopped, last });
 
   // The search runs for a few seconds each time it starts (a timer: legitimate effect).
   useEffect(() => {

@@ -19,5 +19,6 @@ Named `YYYY-MM-DD-short-description.md` and sorted chronologically.
 | 2026-10-07 | [Beta distribution: TestFlight + Firebase App Distribution, EAS Update, and a forced update](2026-10-07-beta-distribution.md) | Accepted |
 | 2026-10-07 | [Game pushes go through OGS to the app or the game's PWA; game links open the app (planned)](2026-10-07-game-push-and-app-links.md) | Accepted (supersedes 2026-03-14 device tokens) |
 | 2026-10-17 | [Browser screens are a cast device, paired through the API](2026-10-17-browser-screens.md) | Accepted |
+| 2026-10-18 | [`@open-game-system/shell` is extracted from apps/mobile, source-first, with one copy of each native module](2026-10-18-shell-package.md) | Accepted |
 | 2026-10-18 | [Multi-tenant push: OGS sends for each white-label app with that app's own credentials](2026-10-18-multi-tenant-push.md) | Accepted |
 | 2026-10-18 | [The ogs CLI is the developer tool, backed by a public developer API](2026-10-18-ogs-developer-api.md) | Accepted |

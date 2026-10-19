@@ -25,6 +25,8 @@
 | `packages/cast-kit-react` | `@open-game-system/cast-kit-react` | React hooks for cast state and dispatch | `app-bridge-react`, `cast-kit-core` |
 | `packages/ogs-protocol` | `@open-game-system/ogs-protocol` | The OGS app v3 contract: game manifest, identity claims, instances + `playingView`, couch-session reducer, launcher↔game frame messages (zod) | None |
 | `packages/profile-kit` | `@open-game-system/profile-kit` | Games know who you are: `useOgsProfile()` (the `profile` bridge store in the app WebView), `useOgsSession()` (players + game token from the launcher's `ogs:start`), `reportOgsSitting()`, server `verifyOgsToken()` (ES256 against `/.well-known/jwks.json`). Bundles ogs-protocol + app-bridge-web into its dist; games install its packed tarball from `vendor/` like cast-kit | `ogs-protocol`, `app-bridge-web` (bundled) |
+| `packages/shell` | `@open-game-system/shell` | The OGS native shell: an Expo config plugin (`app.plugin.js`, pure core in `plugin/src`, Vitest) and per-file React Native modules extracted from apps/mobile (`@open-game-system/shell/modules/<name>`, TypeScript source through the `react-native` export condition, jest-expo). A game ships as its own app on it; apps/mobile is its first consumer (ADR 2026-10-18) | `app-bridge-native`, `app-bridge-types`, `ogs-protocol` |
+| `packages/create-ogs-app` | `create-ogs-app` (unscoped, so `pnpm create ogs-app` finds it) | CLI + Expo template: a game ships as its own App Store / Play app with the `@open-game-system/shell` plugin. `template/` is copied with `__OGS_<NAME>__` placeholders filled; icons are drawn in code; `template/examples` is type-checked against cast-kit-react, profile-kit and notification-kit-server | None at run time (examples type-check against `cast-kit-react`, `profile-kit`, `notification-kit-server`) |
 
 ### Services (`services/`)
 
@@ -36,7 +38,7 @@
 
 | Path | npm Name | Purpose | Internal Dependencies |
 |------|----------|---------|----------------------|
-| `apps/mobile` | `@open-game-system/mobile` | Host app (Expo/React Native), WebView + bridge | `app-bridge-native`, `app-bridge-react-native`, `app-bridge-types`, `app-bridge-testing` |
+| `apps/mobile` | `@open-game-system/mobile` | Host app (Expo/React Native), WebView + bridge | `app-bridge-native`, `app-bridge-react-native`, `app-bridge-types`, `app-bridge-testing`, `ogs-protocol`, `shell` |
 | `apps/web` | `@open-game-system/web` | opengame.org marketing website (Vite + React + Tailwind) | None |
 | `apps/tv` | `@open-game-system/tv` | OGS TV launcher: the one page the Chromecast stream shows for the whole cast; frames each game's TV page (Vite + React, Vitest + Playwright) | `ogs-protocol` |
 | `apps/docs` | `@open-game-system/docs` | Docs site for game developers and their coding agents (ogs-docs.pages.dev): `content/*.md` + `docs/specification.md` rendered to static HTML with `.md` twins, `llms.txt`, `llms-full.txt`; protocol tables generated from the zod schemas; tests fail when profile-kit's exports drift from the reference | `ogs-protocol` |
@@ -48,6 +50,7 @@
 |------|----------|---------|----------------------|
 | `examples/expo-bridge-demo` | `@open-game-system/app-bridge-example-expo` | Expo demo of app-bridge | `app-bridge-native`, `app-bridge-react-native`, `app-bridge-types` |
 | `examples/web-game-demo` | `@open-game-system/app-bridge-example-react` | React web game using app-bridge | `app-bridge-web`, `app-bridge-react`, `app-bridge-types` |
+| `examples/shell-single-game` | `@open-game-system/example-shell-single-game` | Fixture: one game as its own Expo app on the shell's config plugin (appId `example-game`). Its Vitest test runs `expo config --type introspect` (no prebuild) and checks links, Chromecast discovery, Sign in with Apple, `extra.ogsShell` and the untouched bundle id; CI: `ci-mobile.yml` | `shell` |
 | `examples/stream-react-demo` | `stream-kit-basic-react-demo` | React demo of stream-kit client | `stream-kit-react`, `stream-kit-types`, `stream-kit-web` |
 
 ## Internal Dependency Resolution
@@ -80,7 +83,7 @@ Layer 1:
 Layer 2:
   app-bridge-react, app-bridge-react-native
   stream-kit-react, stream-kit-testing
-  cast-kit-core, profile-kit
+  cast-kit-core, profile-kit, shell
 
 Layer 3:
   cast-kit-react
@@ -96,7 +99,9 @@ Turbo parallelizes within each layer automatically.
 | `packages/*` | Vitest | Per-package `vitest.config.ts` (where present) |
 | `services/api` | Vitest | `services/api/vitest.config.ts` |
 | `apps/mobile` | Jest (Expo preset) | `apps/mobile/jest.config.js` (if present) |
-| `examples/*` | None (demo apps) | -- |
+| `examples/shell-single-game` | Vitest (`expo config --type introspect`) | `examples/shell-single-game/vitest.config.ts` |
+| `packages/shell` runtime mutation | Stryker + Jest (apps/mobile's suites, in place) | `packages/shell/stryker.config.mjs`, `jest.mutation.config.js` |
+| other `examples/*` | None (demo apps) | -- |
 
 Run all tests: `pnpm test` (delegates to `turbo run test`).
 

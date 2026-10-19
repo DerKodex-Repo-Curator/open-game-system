@@ -11,7 +11,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { Boot } from "../boot";
-import { buildHome, homeFocusRows, homeMove, recoverFocus } from "../launcher/home";
+import { buildHome, homeFocusRows, homeMove, homeStart, recoverFocus } from "../launcher/home";
 import { nameForDevice, phoneOf, playersOf } from "../launcher/people";
 import { pageMove } from "../launcher/shortcuts";
 import { waitingForView } from "../launcher/starting";
@@ -150,12 +150,12 @@ function Living(props: {
   const sentInitial = useRef<string | null>(null);
   useEffect(() => {
     if (state.screen !== "home" || connection !== "open") return;
-    const next = recoverFocus(grid, state.focus, lastPage.current);
+    const next = recoverFocus(grid, state.focus, lastPage.current, homeStart(home));
     if (next && sentInitial.current !== `${state.focus}->${next}`) {
       sentInitial.current = `${state.focus}->${next}`;
       client.send({ type: "focus.set", itemId: next });
     }
-  }, [state.screen, state.focus, grid, connection, client]);
+  }, [state.screen, state.focus, grid, home, connection, client]);
 
   // A sitting started from the Surprise card plays the reel over Getting ready, once.
   const homeFocus = useRef<string | null>(null);

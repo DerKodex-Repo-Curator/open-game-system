@@ -133,6 +133,30 @@ on `false`, and only what was playing before. Pattern: `createAudioPause` in
   that sitting's id, as the launcher does with the TV page's `ogs:instance`), so the phone page and the
   TV page may both report: one start is one sitting. The game's own `instanceId` is used only when
   the phone plays alone.
+- **Haptics:** the page dispatches `IMPACT { style: "light" | "medium" | "heavy" }` or
+  `NOTIFY { kind: "success" | "warning" | "error" }` on the app's `haptics` bridge store
+  (`HapticsBridgeEventSchema` in `packages/ogs-protocol/src/native.ts`); the app plays it with the
+  platform's haptics. Unknown or malformed events are ignored.
+- **Sign-in in a single-game app (OGS shell):** players start as guests (a device profile). The game
+  has no sign-in UI: it dispatches `SIGN_IN` on the `account` bridge store
+  (`AccountBridgeEventSchema`; state `{ login: "none" | "guest" | "apple" | "google", signingIn }`,
+  `AccountBridgeStateSchema`) and the app shows its native sheet (profile-kit `requestOgsSignIn()`);
+  the signed-in player then arrives through the `profile` store. There the ready profile also carries
+  `login: "guest" | "apple" | "google"` (`ProfileLoginSchema`, optional on `OgsProfileSchema`; absent
+  in the OGS app), so `useOgsProfile()` tells a guest from a signed-in player.
+- **Own app or the OGS app (OGS shell):** a single-game app's WebView adds `OgsShell/<appId>` to the
+  user agent (react-native-webview `applicationNameForUserAgent`; `shellUserAgentName` in
+  `packages/shell/src/user-agent.ts`). The page checks `navigator.userAgent.includes("OgsShell/<appId>")`:
+  true only in its own app, where the cast button is the game's (the one exception to "no cast button").
+  The OGS app adds nothing, and `isOGSCastAvailable()` is true in both apps (it only sees the bridge).
+- **Casting in a single-game app (OGS shell):** the app's `cast` store says `isAvailable: true` even with
+  no Chromecast found (a browser TV is always a target), so cast-kit-react's `<CastButton>` renders with
+  `deviceCount` 0. Its `showPicker()` (`SHOW_CAST_PICKER`) opens the app's native picker: every
+  Chromecast found and the phone's paired browser TVs (`CastDevice.type` `"browser"`), plus "Use a
+  browser TV" (open the OGS TV page on the TV's browser, type the code it shows). The TV shows the
+  launcher with `chrome=none&app=<appId>`; a browser TV gets the launcher token with `app`
+  (`POST /api/v1/screens/:id/show { token, app }`). In the OGS app the cast store is unchanged
+  (available only while a Chromecast is found; a game shows no cast button there).
 
 ## 4. Server: verify the token
 

@@ -42,9 +42,38 @@ parent. profile-kit uses two bridge stores:
 |---|---|---|
 | `profile` | app → page | `{ status: "asking" }`, `{ status: "ready", profile: OgsProfile }` or `{ status: "none" }` |
 | `ogs` | page → app | event `{ type: "INSTANCE_REPORT", report: InstanceReport }` (`OgsBridgeEventSchema`) |
+| `haptics` | page → app | events `IMPACT` / `NOTIFY` (`HapticsBridgeEventSchema`, below): the device taps the player's hand |
+| `account` | both | single-game apps: state `{ login, signingIn }`, event `SIGN_IN` shows the app's native sign-in sheet (below) |
 
 Room games declare their TV page with cast-kit's `useCastViewUrl(url)`; the app forwards it to the
 launcher. See [the contract, §3](contract.md#3-phones-the-game-page-in-the-apps-webview).
+
+### Haptics
+
+`HapticsBridgeEventSchema` in [native.ts](../../../packages/ogs-protocol/src/native.ts). Send from a
+tap or a game moment; an app without haptics ignores them.
+
+<!-- schema:haptics -->
+
+### Account (single-game apps)
+
+In a game shipped as its own app with the OGS shell, players start as guests (a device profile).
+The game has no sign-in UI: it dispatches `SIGN_IN` (for example from a "Save your progress"
+button shown while `login` is `"guest"`) and the app shows its native sheet (Sign in with Apple, or
+Google on Android). The signed-in player then arrives through the `profile` store. The `profile`
+store's ready profile also carries `login` (`"guest"`, `"apple"` or `"google"`; `ProfileLoginSchema`
+in [game-token.ts](../../../packages/ogs-protocol/src/game-token.ts)), so a page that only reads the
+profile knows too; profile-kit's `requestOgsSignIn()` dispatches `SIGN_IN`.
+`AccountBridgeStateSchema` and `AccountBridgeEventSchema` in
+[native.ts](../../../packages/ogs-protocol/src/native.ts).
+
+State:
+
+<!-- schema:account-state -->
+
+Events:
+
+<!-- schema:account-events -->
 
 ## A typical sequence
 

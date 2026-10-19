@@ -1,0 +1,42 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "development-simulator": {
+      "extends": "development",
+      "ios": { "simulator": true },
+      "android": { "buildType": "apk" }
+    },
+    "preview": {
+      "distribution": "store",
+      "autoIncrement": true,
+      "android": { "buildType": "app-bundle" }
+    },
+    "production": {
+      "distribution": "store",
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "preview": {
+      "ios": { "appleTeamId": "__OGS_APPLE_TEAM_ID__" },
+      "android": {
+        "serviceAccountKeyPath": "./secrets/play-service-account.json",
+        "track": "internal"
+      }
+    },
+    "production": {
+      "ios": { "appleTeamId": "__OGS_APPLE_TEAM_ID__" },
+      "android": {
+        "serviceAccountKeyPath": "./secrets/play-service-account.json",
+        "track": "production"
+      }
+    }
+  }
+}

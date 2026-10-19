@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker/master/packages/core/schema/stryker-core.schema.json",
+  "testRunner": "vitest",
+  "appendPlugins": ["@stryker-mutator/vitest-runner"],
+  "vitest": { "configFile": "vitest.stryker.config.ts" },
+  "mutate": ["src/**/*.ts", "!src/**/*.test.ts", "!src/bin.ts"],
+  "reporters": ["json", "clear-text"],
+  "thresholds": {
+    "high": 90,
+    "low": 70,
+    "break": 60
+  }
+}

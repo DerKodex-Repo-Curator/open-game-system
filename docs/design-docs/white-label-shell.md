@@ -46,7 +46,7 @@ listing.
 
 ## Contract between the pieces (v1)
 
-- **Shell config (`app.config.ts` via the `@open-game-system/shell` plugin):** `appId` (the OGS catalogue id), `gameUrl` (phone page), `name`, `icon`, `splash`, `branding: "hidden" | "powered-by"`, `linkDomains: string[]` (own domain(s); `opengame.org` fallback is always on), `cast: { receiver: "ogs" }`.
+- **Shell config (`app.config.ts` via the `@open-game-system/shell` plugin):** `appId` (the OGS catalogue id), `gameUrl` (phone page), `name`, `icon`, `splash`, `branding: "hidden" | "powered-by"`, `linkDomains: string[]` (own domain(s); `opengame.org` fallback is always on), `cast: { receiver: "ogs" }`, optional `apiBase` / `tvBase` (http(s) URLs written to `extra.ogsShell` only when set; the runtime defaults to the production API and `https://ogs-tv.pages.dev`), for test builds against a preview API.
 - **API additions (`services/api`):**
   - `POST /v1/auth/native` `{ provider: "apple" | "google", identityToken, deviceProfileId? }` → OGS session + profile (links the guest device profile).
   - `PUT /v1/apps/:appId/push-credentials` (ios: p8, keyId, teamId, bundleId; android: service account, package) — encrypted at rest; only the app's owner.

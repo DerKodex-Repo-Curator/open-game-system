@@ -17,30 +17,37 @@ Options: --app <appId> (default: the app you logged in with).
 Environment: OGS_API (API base, e.g. a preview), OGS_SITE (link domain to check, default opengame.org),
 OGS_CONFIG_DIR (default ~/.config/ogs).`;
 
+const isHelp = (word: string | undefined) =>
+  !word || word === "--help" || word === "-h" || word === "help";
+
+/** The longest command whose words start argv (["apps", "register"] before ["apps"]). */
+const findCommand = (argv: string[]) =>
+  [...COMMANDS]
+    .sort((a, b) => b.words.length - a.words.length)
+    .find((c) => c.words.every((w, i) => argv[i] === w));
+
+/** What a failed command says (exit 1): our errors, bad arguments, bad JSON, an API answer of the wrong shape. */
+const userError = (e: unknown): string | null => {
+  if (e instanceof z.ZodError) return "Unexpected answer from the API";
+  if (e instanceof CliError || e instanceof TypeError || e instanceof SyntaxError) return e.message;
+  return null;
+};
+
 /** Runs one command; the exit code: 0 ok, 1 failed, 2 usage. */
 export async function run(argv: string[], io: Io): Promise<number> {
   try {
-    if (!argv[0] || argv[0] === "--help" || argv[0] === "-h" || argv[0] === "help") {
+    if (isHelp(argv[0])) {
       io.stdout(HELP());
       return 0;
     }
-    // The longest command whose words start argv (["apps", "register"] before ["apps"]).
-    const command = [...COMMANDS]
-      .sort((a, b) => b.words.length - a.words.length)
-      .find((c) => c.words.every((w, i) => argv[i] === w));
+    const command = findCommand(argv);
     if (command) return await command.run(io, argv.slice(command.words.length));
     io.stderr(`Unknown command: ${argv.join(" ")}\n\n${HELP()}`);
     return 2;
   } catch (e) {
-    if (
-      e instanceof CliError ||
-      e instanceof TypeError ||
-      e instanceof SyntaxError ||
-      e instanceof z.ZodError
-    ) {
-      io.stderr(e instanceof z.ZodError ? "Unexpected answer from the API" : e.message);
-      return 1;
-    }
-    throw e;
+    const message = userError(e);
+    if (message === null) throw e;
+    io.stderr(message);
+    return 1;
   }
 }

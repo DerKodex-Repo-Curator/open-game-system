@@ -66,14 +66,22 @@ screens.get("/:id", async (c) => {
   if (row instanceof Response) return row;
   if (!timingSafeEqual(await hashSecret(secret), row.secret_hash))
     return apiError(c, 403, "wrong_secret", "That isn't this screen's secret");
-  const chromeless = row.token
-    ? await c.env.DB.prepare("SELECT app FROM screen_apps WHERE screen_id = ?")
-        .bind(row.id)
-        .first<{ app: string }>()
-    : null;
-  const show = row.token
-    ? { token: row.token, ...(chromeless ? { app: chromeless.app } : {}) }
-    : null;
+  // A launcher whose token expired (the household never stopped casting) can't connect: forget it
+  // (and its chromeless app), so the screen shows its code again.
+  const live = row.token && (await readClaims(row.token, c.env.OGS_JWT_SECRET, Date.now()));
+  if (row.token && !live)
+    await c.env.DB.batch([
+      c.env.DB.prepare("UPDATE screens SET token = NULL WHERE id = ?").bind(row.id),
+      c.env.DB.prepare("DELETE FROM screen_apps WHERE screen_id = ?").bind(row.id),
+    ]);
+  const chromeless =
+    row.token && live
+      ? await c.env.DB.prepare("SELECT app FROM screen_apps WHERE screen_id = ?")
+          .bind(row.id)
+          .first<{ app: string }>()
+      : null;
+  const show =
+    row.token && live ? { token: row.token, ...(chromeless ? { app: chromeless.app } : {}) } : null;
   return c.json(ScreenStateSchema.parse({ code: row.code, show }));
 });
 

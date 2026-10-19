@@ -1,6 +1,6 @@
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { type Io, run } from "./cli";
 import { saveCredentials } from "./io";
@@ -85,13 +85,10 @@ describe("ogs manifest check", () => {
 
   it("reads ogs.manifest.json by default", async () => {
     writeManifest(COMET);
-    const cwd = process.cwd();
-    process.chdir(dir);
-    try {
-      expect(await run(["manifest", "check", "--offline"], io())).toBe(0);
-    } finally {
-      process.chdir(cwd);
-    }
+    // A relative path resolves against the working directory; this test's is `dir` (no
+    // process.chdir: Stryker runs the suite in worker threads, which can't change directory).
+    const inDir = { ...io(), readFile: (p: string) => readFileSync(resolve(dir, p), "utf8") };
+    expect(await run(["manifest", "check", "--offline"], inDir)).toBe(0);
     expect(out.join("\n")).toContain("valid");
   });
 

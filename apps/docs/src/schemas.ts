@@ -5,10 +5,13 @@
  */
 import { resolve } from "node:path";
 import {
+  AccountBridgeEventSchema,
+  AccountBridgeStateSchema,
   CouchClaimSchema,
   GamePlayerSchema,
   GameTokenSchema,
   GameToLauncherSchema,
+  HapticsBridgeEventSchema,
   InstanceReportSchema,
   InstanceStatusSchema,
   LauncherToGameSchema,
@@ -306,6 +309,24 @@ export function schemaBlocks(): Record<string, () => string> {
         NOTES.manifest ?? {},
       ),
     types: () => namedTypes(),
+    haptics: () =>
+      unionSection(
+        HapticsBridgeEventSchema,
+        schemaDocs(protocolFile("native.ts"), "HapticsBridgeEventSchema"),
+        {},
+      ),
+    "account-state": () =>
+      objectTable(
+        AccountBridgeStateSchema,
+        schemaDocs(protocolFile("native.ts"), "AccountBridgeStateSchema"),
+        {},
+      ),
+    "account-events": () =>
+      unionSection(
+        AccountBridgeEventSchema,
+        schemaDocs(protocolFile("native.ts"), "AccountBridgeEventSchema"),
+        {},
+      ),
   };
 }
 

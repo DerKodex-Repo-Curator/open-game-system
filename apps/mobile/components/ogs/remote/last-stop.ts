@@ -34,13 +34,18 @@ export function createLastStop() {
 
 export const lastStop = createLastStop();
 
-/** The Cast button's TV: the one you picked, else the one you just stopped, else the first found. */
+/**
+ * The Cast button's TV: the one you picked, else the one you just stopped, else the one this phone
+ * cast to last (kept across launches), else the first found.
+ */
 export function castTarget(
   devices: CastDevice[],
   picked: CastDevice | null,
   stopped: StoppedTv | null,
+  last: StoppedTv | null = null,
 ): CastDevice | null {
   if (picked) return picked;
   const again = stopped ? devices.find((d) => d.id === stopped.id) : undefined;
-  return again ?? devices[0] ?? null;
+  const before = last ? devices.find((d) => d.id === last.id) : undefined;
+  return again ?? before ?? devices[0] ?? null;
 }

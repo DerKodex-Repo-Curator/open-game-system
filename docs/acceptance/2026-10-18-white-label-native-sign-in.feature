@@ -1,4 +1,4 @@
-# Status: BUILT on claude/shell-platform (API preview opengame-api-pr-shell).
+# Status: SHIPPED 2026-10-19 (main d2897aca: API + schema by CI; opengame.org, ogs-tv, ogs-docs deployed).
 # Design: docs/design-docs/white-label-shell.md (decision 8: guest first, native upgrade).
 # POST /api/v1/auth/native { provider, identityToken, deviceProfileId?, device? }.
 

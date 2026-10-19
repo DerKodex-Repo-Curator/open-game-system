@@ -195,6 +195,23 @@ function Card(props: { card: CardModel; focused: boolean; chip: string; resume: 
     "data-item": card.itemId,
     "data-focused": focused || undefined,
   };
+  if (card.kind === "again")
+    return (
+      <div
+        className={`card again${focused ? " focused" : ""}`}
+        data-card="again"
+        data-app={card.appId}
+        {...common}
+      >
+        <div className="card-art" data-cover-card={card.appId}>
+          <img src={card.art.src} alt="" style={safeStyle(card.art.safe)} />
+          <span className="card-tag">{card.chip}</span>
+          <PlayMark />
+        </div>
+        <span className="card-name">{card.name}</span>
+        <span className="card-resume">{card.tag}</span>
+      </div>
+    );
   if (card.kind === "surprise")
     return (
       <div className={`card surprise${focused ? " focused" : ""}`} data-card="surprise" {...common}>

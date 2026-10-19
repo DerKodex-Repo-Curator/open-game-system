@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker/master/packages/core/schema/stryker-core.schema.json",
+  "testRunner": "vitest",
+  "appendPlugins": ["@stryker-mutator/vitest-runner"],
+  "mutate": ["src/**/*.ts", "!src/**/*.test.ts", "!src/bin.ts"],
+  "reporters": ["json", "clear-text"],
+  "thresholds": {
+    "high": 95,
+    "low": 80,
+    "break": 70
+  },
+  "incrementalFile": "reports/stryker-incremental.json",
+  "tempDirName": "../../.stryker-tmp-cli",
+  "tsconfigFile": "none-the-sandbox-is-two-levels-under-the-repo-root-so-extends-already-resolves.json"
+}

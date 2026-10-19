@@ -59,6 +59,13 @@ export const PAGES: PageDef[] = [
     source: content("notifications.md"),
   },
   {
+    slug: "ship-your-own-app",
+    nav: "Ship your own app",
+    summary:
+      "Your game as its own App Store / Play app with casting, profiles, push links and native sign-in: create-ogs-app, configure, register with the ogs CLI, push credentials, EAS builds, App Review notes, link domains.",
+    source: content("ship-your-own-app.md"),
+  },
+  {
     slug: "testing",
     nav: "Testing your game",
     summary:

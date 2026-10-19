@@ -1,0 +1,43 @@
+{
+  "name": "@open-game-system/example-shell-single-game",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Fixture: one OGS game shipped as its own Expo app through the @open-game-system/shell config plugin",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@open-game-system/shell": "workspace:*",
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "expo": "~55.0.31",
+    "expo-apple-authentication": "~55.0.17",
+    "expo-constants": "~55.0.17",
+    "expo-device": "^55.0.21",
+    "expo-haptics": "~55.0.18",
+    "expo-linking": "~55.0.17",
+    "expo-notifications": "^55.0.27",
+    "expo-router": "~55.0.18",
+    "expo-secure-store": "^55.0.18",
+    "expo-splash-screen": "~55.0.25",
+    "expo-status-bar": "~55.0.6",
+    "react": "19.2.0",
+    "react-native": "0.83.10",
+    "react-native-google-cast": "^4.9.1",
+    "react-native-safe-area-context": "5.6.2",
+    "react-native-screens": "~4.23.0",
+    "react-native-webview": "13.16.0"
+  },
+  "devDependencies": {
+    "@expo/dom-webview": "^55.0.6",
+    "@types/node": "^25.5.0",
+    "@types/react": "~19.2.14",
+    "react-dom": "19.2.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0",
+    "zod": "^4.3.6"
+  }
+}

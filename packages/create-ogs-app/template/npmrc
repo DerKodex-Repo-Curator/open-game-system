@@ -1,0 +1,2 @@
+# React Native's native builds find modules in a flat node_modules
+node-linker=hoisted

@@ -9,6 +9,9 @@ OGS casts once and keeps that one cast across every game; the launcher frames yo
 never shows a cast button or a "cast to TV" prompt, and never ships a cast receiver for OGS. Inside
 the OGS app the app ignores a game's own cast actions anyway.
 
+The one exception is your game's **own app** (built with `@open-game-system/shell`): there the cast
+button is yours, and it shows only there. See [Ship your game as its own app](ship-your-own-app.md).
+
 **Check:** search the phone page for a cast button and remove it; room games keep only
 `useCastViewUrl` (see [Quickstart, step 8](quickstart.md#8-room-games-declare-the-tv-page-from-the-phone)).
 

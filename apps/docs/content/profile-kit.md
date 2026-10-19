@@ -108,15 +108,44 @@ Hears a push that arrived while this game is open and in front, in the OGS app o
 its `sw.js`). OGS shows no system banner for it, so show your own hint or just update the page.
 Returns a function that stops listening. With no handler, the banner shows as usual.
 
+#### `requestOgsSignIn`
+
+```ts
+function requestOgsSignIn(): boolean
+```
+
+In your game's **own app** (built with `@open-game-system/shell`), shows the app's native sign-in
+sheet (Sign in with Apple, or Google on Android). Call it from a tap, for example a "Sign in" button
+you show while `profile.login` is `"guest"`; the signed-in player then arrives through
+`useOgsProfile()` with `login: "apple"` or `"google"`. Returns `false` in a plain browser and inside
+the OGS app (which signs players in itself). See [Ship your game as its own app](ship-your-own-app.md).
+
 ### Types
 
 #### `OgsProfile`
 
 ```ts
-type OgsProfile = { id: string; handle: string; name: string; avatar: string; token: string }
+type OgsProfile = {
+  id: string;
+  handle: string;
+  name: string;
+  avatar: string;
+  token: string;
+  login?: ProfileLogin;
+}
 ```
 
 The player on this device: profile id, @handle, name, avatar URL and a game token for this game.
+`login` is set only in your game's own app: `"guest"` until the player signs in, then how they did.
+
+#### `ProfileLogin`
+
+```ts
+type ProfileLogin = "guest" | "apple" | "google"
+```
+
+How the player in your game's own app is signed in: a guest (a device profile), or with Apple or
+Google. Guests and signed-in players have real OGS profiles and game tokens alike.
 
 #### `ProfileSnapshot`
 
@@ -279,6 +308,45 @@ type ProfileBridgeState =
 
 The `profile` store's state: `asking` while the app fetches the game token, `ready` with it, `none`
 when there is no profile or no token for this game.
+
+#### `requestSignIn`
+
+```ts
+function requestSignIn(bridge: AccountBridge): boolean
+```
+
+`requestOgsSignIn` over any app bridge: dispatches `SIGN_IN` on its `account` store.
+
+#### `AccountBridge`
+
+```ts
+interface AccountBridge {
+  isSupported(): boolean;
+  getStore(key: "account"): { dispatch(event: AccountBridgeEvent): void } | undefined;
+}
+```
+
+What sign-in needs of an app bridge.
+
+#### `AccountStores`
+
+```ts
+type AccountStores = { account: { state: AccountBridgeState; events: AccountBridgeEvent } };
+```
+
+The `account` store a game's own app gives its WebView ([Messages, Account](messages.md)).
+
+#### `AccountBridgeState`
+
+```ts
+type AccountBridgeState = { login: "none" | "guest" | "apple" | "google"; signingIn: boolean };
+```
+
+#### `AccountBridgeEvent`
+
+```ts
+type AccountBridgeEvent = { type: "SIGN_IN" };
+```
 
 #### `PROFILE_TIMEOUT_MS`
 

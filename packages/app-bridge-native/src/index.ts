@@ -168,35 +168,26 @@ export function createNativeBridge<TStores extends BridgeStores>(): NativeBridge
     let parsedData: WebToNativeMessage;
     try {
       parsedData = JSON.parse(data);
-    } catch (e) {
-      console.warn("[Native Bridge] Failed to parse message:", data, e);
+    } catch {
+      // Not the message itself: it may carry a token.
+      console.warn("[Native Bridge] Failed to parse message (not JSON); ignored.");
       return;
     }
 
     if (!parsedData || typeof parsedData !== "object" || !("type" in parsedData)) {
-      console.warn("[Native Bridge] Invalid message format:", parsedData);
+      console.warn("[Native Bridge] Invalid message format (no type); ignored.");
       return;
     }
 
-    console.log("[Native Bridge] Received message:", parsedData.type);
     switch (parsedData.type) {
       case "BRIDGE_READY": {
-        console.log(
-          "[Native Bridge] BRIDGE_READY received. Registered stores:",
-          Array.from(stores.keys()),
-        );
         const targetWebViews = sourceWebView ? [sourceWebView] : Array.from(webViews);
-        console.log("[Native Bridge] Sending STATE_INIT to", targetWebViews.length, "webview(s)");
         targetWebViews.forEach((webView) => {
           if (!webView) return;
           readyWebViews.add(webView);
           notifyReadyStateListeners(webView, true);
           stores.forEach((store, key) => {
             const snapshot = store.getSnapshot();
-            console.log(
-              `[Native Bridge] Sending STATE_INIT for store '${String(key)}':`,
-              JSON.stringify(snapshot),
-            );
             const initMessage = JSON.stringify({
               type: "STATE_INIT",
               storeKey: key,
@@ -209,7 +200,6 @@ export function createNativeBridge<TStores extends BridgeStores>(): NativeBridge
       }
       case "EVENT": {
         const { storeKey, event } = parsedData;
-        console.log(`[Native Bridge] EVENT for store '${storeKey}':`, JSON.stringify(event));
         const store = stores.get(storeKey as keyof TStores) as Store<any, typeof event> | undefined;
         if (store) {
           store.dispatch(event);
@@ -245,14 +235,7 @@ export function createNativeBridge<TStores extends BridgeStores>(): NativeBridge
 
         store.subscribe((currentState: TStores[K]["state"]) => {
           const operations = compare(prevState, currentState);
-          console.log(
-            `[Native Bridge] Store '${String(key)}' subscription fired. Operations: ${operations.length}, WebViews: ${webViews.size}`,
-          );
           if (operations.length > 0) {
-            console.log(
-              `[Native Bridge] Broadcasting STATE_UPDATE for store '${String(key)}':`,
-              JSON.stringify(operations),
-            );
             broadcastToWebViews({
               type: "STATE_UPDATE",
               storeKey: key,

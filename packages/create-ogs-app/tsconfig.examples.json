@@ -1,0 +1,15 @@
+{
+  "//": "Type-checks template/examples against the real cast-kit-react, profile-kit and notification-kit-server (built dist).",
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": []
+  },
+  "include": ["template/examples"]
+}
