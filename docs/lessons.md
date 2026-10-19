@@ -281,6 +281,9 @@ Persistent project knowledge. Review at the start of each task.
 
 - **A `"react-native"` field must point inside the published `files`.** app-bridge-native, -types, -web and -react pointed `"react-native"` (which Metro reads before `main`) at `src/` but published only `dist/`, so an app installing packed tarballs failed to bundle; app-bridge-react's even named `src/index.ts` for `src/index.tsx`. Fix: publish `src` (tests excluded), like the shell, which ships TS source under its `react-native` condition. `packages/shell/test/packed-exports.test.ts` packs the shell, every workspace package it needs and the game kits, and checks that every `main`/`module`/`types`/`react-native`/`source`/`bin`/`exports` target is in the tarball.
 
+- **React Native's Linking loses a link handed to an app that is already starting (iOS).** `getInitialURL` reads only the launch options, and the "url" event fires from `application:openURL:` before any JS listener, so it's dropped. A link that arrives after the process started but before the JS subscribes (Maestro `stopApp` racing `launchApp`, a tap during startup) opens the start page. expo-linking's `getLinkingURL()` keeps the latest URL natively from launch (expo-router uses it on iOS): read it synchronously for the first page, and again after subscribing.
+- **Anything stored with an API-issued token must remember which API issued it.** A build switched between the production and preview API reused the other's device token (401s); the shell stores `apiBase` with the identity and ignores a mismatch.
+
 ## create-ogs-app (2026-10-18)
 
 - **npm drops `.gitignore` and `.npmrc` from a published package.** A template stores them as `gitignore` / `npmrc` and the CLI renames them (`packages/create-ogs-app/src/plan.ts`); `test/bin.test.ts` packs the package and checks they are in the tarball.

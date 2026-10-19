@@ -24,20 +24,35 @@ export type ShellIdentity = z.infer<typeof ShellIdentitySchema>;
 
 export const IDENTITY_KEY = "ogs.identity";
 
-export async function loadShellIdentity(storage: SecureStorage): Promise<ShellIdentity | null> {
+/** What is stored: the identity plus the OGS API that issued its device token. */
+const StoredIdentitySchema = ShellIdentitySchema.extend({ apiBase: z.string().optional() });
+
+/**
+ * The stored identity. With `apiBase`, only one saved for that API: a device token is good only on
+ * the API that issued it, so a build switched to another API (production ↔ preview) starts over.
+ */
+export async function loadShellIdentity(
+  storage: SecureStorage,
+  apiBase?: string,
+): Promise<ShellIdentity | null> {
   const raw = await storage.getItemAsync(IDENTITY_KEY);
   if (!raw) return null;
   try {
-    const parsed = ShellIdentitySchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : null;
+    const parsed = StoredIdentitySchema.safeParse(JSON.parse(raw));
+    if (!parsed.success) return null;
+    const { apiBase: savedFor, ...identity } = parsed.data;
+    return apiBase === undefined || savedFor === apiBase ? identity : null;
   } catch {
     return null;
   }
 }
 
+/** Saves the identity, with the API base that issued its token when given. */
 export async function saveShellIdentity(
   storage: SecureStorage,
   identity: ShellIdentity,
+  apiBase?: string,
 ): Promise<void> {
-  await storage.setItemAsync(IDENTITY_KEY, JSON.stringify(identity));
+  const stored = apiBase === undefined ? identity : { ...identity, apiBase };
+  await storage.setItemAsync(IDENTITY_KEY, JSON.stringify(stored));
 }

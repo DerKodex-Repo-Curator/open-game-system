@@ -55,6 +55,8 @@ export function createGuestApi(request: ShellRequest): GuestApi {
 export interface GuestDeps {
   api: GuestApi;
   storage: SecureStorage;
+  /** The OGS API the profile is made on: an identity stored for another API is not reused. */
+  apiBase?: string;
   /** This device (id minted once by the caller, e.g. expo-crypto's randomUUID; kind; name). */
   device: () => Promise<ShellDevice>;
   /** The guest's display name (default "Player"). */
@@ -74,7 +76,7 @@ export function ensureGuestProfile(deps: GuestDeps): Promise<ShellIdentity> {
 }
 
 async function makeGuest(deps: GuestDeps): Promise<ShellIdentity> {
-  const stored = await loadShellIdentity(deps.storage);
+  const stored = await loadShellIdentity(deps.storage, deps.apiBase);
   if (stored) return stored;
   const device = await deps.device();
   const random = deps.random ?? Math.random;
@@ -90,6 +92,6 @@ async function makeGuest(deps: GuestDeps): Promise<ShellIdentity> {
     deviceToken: created.token,
     login: "guest",
   };
-  await saveShellIdentity(deps.storage, identity);
+  await saveShellIdentity(deps.storage, identity, deps.apiBase);
   return identity;
 }

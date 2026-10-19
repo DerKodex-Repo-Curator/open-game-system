@@ -76,6 +76,8 @@ export type SignInState =
 
 export interface NativeSignInDeps {
   api: NativeAuthApi;
+  /** The OGS API signed in on: a guest stored for another API is not upgraded. */
+  apiBase?: string;
   storage: SecureStorage;
   device: () => Promise<ShellDevice>;
   providers: readonly NativeSignInProvider[];
@@ -102,7 +104,7 @@ export function createNativeSignIn(deps: NativeSignInDeps) {
     }
     if (credential.status === "cancelled") return set({ status: "cancelled" });
     try {
-      const guest = await loadShellIdentity(deps.storage);
+      const guest = await loadShellIdentity(deps.storage, deps.apiBase);
       const device = await deps.device();
       const answer = await deps.api.authNative(
         {
@@ -120,7 +122,7 @@ export function createNativeSignIn(deps: NativeSignInDeps) {
         deviceToken: answer.token,
         login: name,
       };
-      await saveShellIdentity(deps.storage, identity);
+      await saveShellIdentity(deps.storage, identity, deps.apiBase);
       deps.onIdentity?.(identity);
       set({ status: "signed-in", provider: name, profile: answer.profile });
     } catch (err) {

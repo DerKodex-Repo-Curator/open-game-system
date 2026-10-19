@@ -1,9 +1,25 @@
 import { z } from "zod";
 
-/** The slice of React Native's Linking this needs. */
+/** The slice of React Native's Linking (or expo-linking) this needs. */
 export interface LinkingLike {
   getInitialURL(): Promise<string | null>;
   addEventListener(type: "url", listener: (event: { url: string }) => void): { remove(): void };
+  /**
+   * expo-linking's getLinkingURL: the latest link the OS handed the app, kept natively from launch.
+   * It covers a link React Native's Linking loses: one handed to an app that is already starting
+   * (iOS application:openURL: before the JS listens), which isn't a launch option.
+   */
+  getLinkingURL?(): string | null;
+}
+
+/** The link the app was opened with, if the linking keeps one (synchronous: before the first render). */
+export function launchUrl(linking: LinkingLike): string | null {
+  try {
+    return linking.getLinkingURL?.() ?? null;
+  } catch (err) {
+    console.warn("[ogs-shell] no kept link:", err);
+    return null;
+  }
 }
 
 /** The slice of expo-notifications this needs: push taps (a cold start's, then each later one). */
@@ -68,13 +84,15 @@ export function watchIncomingUrls(opts: {
     opts.open(tap.url);
   };
 
-  opts.linking.getInitialURL().then(
+  const linkSub = opts.linking.addEventListener("url", ({ url }) => opts.open(url));
+  // After subscribing: a link that came before the listener is the kept one (or the launch option).
+  const kept = launchUrl(opts.linking);
+  (kept ? Promise.resolve(kept) : opts.linking.getInitialURL()).then(
     (url) => {
       if (live && url) opts.open(url);
     },
     () => {},
   );
-  const linkSub = opts.linking.addEventListener("url", ({ url }) => opts.open(url));
   const tapSub = opts.pushTaps?.addNotificationResponseReceivedListener(onTap);
   onTap(launchTap(opts.pushTaps));
 

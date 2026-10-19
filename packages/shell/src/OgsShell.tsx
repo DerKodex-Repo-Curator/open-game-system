@@ -1,10 +1,16 @@
 import Constants from "expo-constants";
+import * as ExpoLinking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { useEffect, useReducer, useState, useSyncExternalStore } from "react";
-import { AppState, Linking, StyleSheet, Text, View } from "react-native";
+import { AppState, StyleSheet, Text, View } from "react-native";
 import { CastPickerSheet } from "./CastPickerSheet";
 import { defaultShellDeps } from "./default-deps";
-import { type LinkingLike, type PushTapsLike, watchIncomingUrls } from "./incoming-links";
+import {
+  type LinkingLike,
+  launchUrl,
+  type PushTapsLike,
+  watchIncomingUrls,
+} from "./incoming-links";
 import { DEFAULT_OFFLINE_THEME, OfflineScreen, type OfflineTheme } from "./OfflineScreen";
 import { type OgsShellConfig, readRuntimeConfig } from "./runtime-config";
 import { ShellWebView } from "./ShellWebView";
@@ -31,6 +37,7 @@ export interface OgsShellProps {
   theme?: Partial<OfflineTheme>;
   /** `import * as AppleAuthentication from "expo-apple-authentication"` (optional peer). */
   appleAuthentication?: AppleAuthModule;
+  /** Default: expo-linking (React Native's Linking plus the link it keeps natively from launch). */
   linking?: LinkingLike;
   /** Push taps (default: expo-notifications). A tapped push's `data.url` opens like a link. */
   pushTaps?: PushTapsLike;
@@ -53,11 +60,15 @@ export function OgsShell(props: OgsShellProps) {
         ...props.deps,
       }),
   );
-  const linking = props.linking ?? Linking;
+  const linking = props.linking ?? ExpoLinking;
   const pushTaps = props.pushTaps ?? Notifications;
   const appState = props.appState ?? AppState;
   const [status, dispatch] = useReducer(webViewStatus, INITIAL_WEBVIEW_STATUS);
-  const [uri, setUri] = useState(config.gameUrl);
+  // A launch link decides the first page: the WebView never starts on gameUrl to be switched later.
+  const [uri, setUri] = useState(() => {
+    const link = launchUrl(linking);
+    return (link ? runtime.webViewUrlFor(link) : null) ?? config.gameUrl;
+  });
   const sheet = useSyncExternalStore(runtime.sheet.subscribe, runtime.sheet.getSnapshot);
   const picker = useSyncExternalStore(runtime.castPicker.subscribe, runtime.castPicker.getSnapshot);
   const theme: OfflineTheme = { ...DEFAULT_OFFLINE_THEME, ...props.theme };

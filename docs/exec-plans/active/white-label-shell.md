@@ -155,3 +155,16 @@ Acceptance: `docs/acceptance/2026-10-18-shell-device-gaps.feature`.
   `node packages/shell/scripts/pack-vendor.mjs <app>/vendor` (shell as `file:`, the rest as `pnpm.overrides`)
   installs with `pnpm install --ignore-workspace` and `CI=1 npx expo export --platform ios` bundles
   (1310 modules, 3.9 MB hbc); its `scheme` is `smoke-game`.
+- **Launch links (iOS flake, 1 in 4 cold starts opened gameUrl):** a link handed to an app that is already
+  starting (Maestro's `stopApp` racing `launchApp`, or a tap during startup) arrives by
+  `application:openURL:`, not as a launch option, before any JS "url" listener: React Native's Linking drops
+  the event and `getInitialURL` (launch options only) is null. expo-linking keeps it (`getLinkingURL`, set by
+  its AppDelegate subscriber / Android activity listener). `<OgsShell />` now defaults to expo-linking, picks
+  the WebView's first page from `launchUrl(linking)` (never gameUrl first), and `watchIncomingUrls` reads the
+  kept link after subscribing (falls back to `getInitialURL`). Tests: `incoming-links-launch.test.ts`,
+  `OgsShell-launch-link.test.tsx`.
+- **Identity per API base:** `saveShellIdentity(storage, identity, apiBase)` stores the API base with it;
+  `loadShellIdentity(storage, apiBase)` ignores an identity from another API (or with none). The runtime passes
+  `config.apiBase` to the guest and native sign-in flows, so production ↔ preview builds never reuse a token
+  the other API rejects. Same key `ogs.identity`; apps/mobile uses its own `identity.ts` (unchanged).
+  Tests: `shell-identity-api-base.test.ts`.

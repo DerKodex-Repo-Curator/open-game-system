@@ -128,6 +128,7 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
 
   const signIn = createNativeSignIn({
     api: createNativeAuthApi(request),
+    apiBase: config.apiBase,
     storage: deps.storage,
     device: deps.device,
     providers: deps.signInProviders,
@@ -197,6 +198,7 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
       try {
         const guest = await ensureGuestProfile({
           api: createGuestApi(request),
+          apiBase: config.apiBase,
           storage: deps.storage,
           device: deps.device,
           guestName: config.guestName,

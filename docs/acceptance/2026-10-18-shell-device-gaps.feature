@@ -76,3 +76,24 @@ Feature: The shell's cast picker, browser TV, scheme links and packages work on 
       Given a fresh app from create-ogs-app at HEAD using packed shell tarballs
       When it runs "expo export --platform ios"
       Then the bundle is written
+
+  Rule: A link that opens the app is never lost while the app starts
+
+    Scenario: A link handed to an app that is still starting opens its page
+      Given the app's process is starting and its JS has no link listener yet
+      When iOS hands it "rocket-crew://play/play.html" (application:openURL:, not a launch option)
+      Then the game's WebView first loads "/play.html" on the game origin
+      And it never loads the game's start page first
+
+    Scenario: A cold start with no link opens the game's start page
+      When the app starts with no link
+      Then the WebView loads gameUrl
+
+  Rule: The stored identity belongs to the API that issued its token
+
+    Scenario: Switching a build from the production API to the preview API starts a new guest
+      Given the device stored a guest identity issued by the production API
+      When the app starts on the preview API
+      Then it makes a new guest profile on the preview API
+      And it never sends the production device token to the preview API
+      And native sign-in does not upgrade the production guest on the preview API
