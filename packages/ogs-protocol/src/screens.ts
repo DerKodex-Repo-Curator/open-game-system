@@ -14,10 +14,16 @@ export const ScreenCreatedSchema = z.object({
 });
 export type ScreenCreated = z.infer<typeof ScreenCreatedSchema>;
 
+/**
+ * A white-label app's cast is chromeless (`chrome=none&app=<appId>`, 2026-10-18-shell-device-gaps.feature):
+ * the screen then shows only that game's TV page. Absent for the OGS app's casts.
+ */
+const ScreenAppSchema = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/);
+
 /** GET /api/v1/screens/:id (X-Screen-Secret) — its code, and the launcher to show, if any. */
 export const ScreenStateSchema = z.object({
   code: TvCodeSchema,
-  show: z.object({ token: z.string().min(1) }).nullable(),
+  show: z.object({ token: z.string().min(1), app: ScreenAppSchema.optional() }).nullable(),
 });
 export type ScreenState = z.infer<typeof ScreenStateSchema>;
 
@@ -26,4 +32,8 @@ export const ScreenClaimedSchema = z.object({ screenId: z.string().min(1), name:
 export type ScreenClaimed = z.infer<typeof ScreenClaimedSchema>;
 
 /** POST /api/v1/screens/:id/show — the launcher token of the couch session the phone casts. */
-export const ScreenShowSchema = z.object({ token: z.string().min(1) });
+export const ScreenShowSchema = z.object({
+  token: z.string().min(1),
+  /** A white-label app's chromeless cast: the app whose TV page the screen shows. */
+  app: ScreenAppSchema.optional(),
+});

@@ -154,9 +154,9 @@ route → 403 `profile_token_required`.
 | GET | `/api/v1/family-invites/:id` | none | `{ appId, opened, testflightTaps, firstSession }` (counts only, no one named); 404 `invite_not_found` |
 | POST | `/api/v1/family-invites/:id/events` | none (rate limited per IP) | `{ step: "link_opened" \| "testflight_tap" }` from the invite's page → 204; logs `funnel.<step>` |
 | POST | `/api/v1/screens` | none | A browser on the TV becomes a screen: `{ screenId, code, secret }` (201); the secret is kept only as a SHA-256 hash |
-| GET | `/api/v1/screens/:id` | `X-Screen-Secret` | `{ code, show: { token } \| null }`: the launcher token to show; 401 `missing_secret`, 403 `wrong_secret`, 404 `screen_not_found` (unclaimed > 1 h, claimed and unused > 30 days) |
+| GET | `/api/v1/screens/:id` | `X-Screen-Secret` | `{ code, show: { token, app? } \| null }`: the launcher token to show (`app`: a white-label app's chromeless cast, `chrome=none&app=`); 401 `missing_secret`, 403 `wrong_secret`, 404 `screen_not_found` (unclaimed > 1 h, claimed and unused > 30 days) |
 | POST | `/api/v1/screens/claim` | phone/tablet | `{ code }` → `{ screenId, name: "Browser TV" }`; the caller owns it; 404 `screen_not_found` |
-| POST | `/api/v1/screens/:id/show` | phone/tablet (owner) | `{ token }`: a launcher token for a couch the caller hosts → 204; 400 not a launcher token, 403 `not_your_screen` / `not_your_couch` |
+| POST | `/api/v1/screens/:id/show` | phone/tablet (owner) | `{ token, app? }`: a launcher token for a couch the caller hosts (with `app`, a white-label app's catalogue id: the screen shows only its TV page; without, the whole launcher) → 204; 400 not a launcher token, 403 `not_your_screen` / `not_your_couch` |
 | POST | `/api/v1/screens/:id/stop` | phone/tablet (owner) | Back to the code → 204 |
 | POST | `/api/v1/auth/apple`, `/auth/google` | optional phone/tablet | `{ idToken, nonce?, device? }`: with a token links the login (back up) → `Me`; without signs in (`device` required) → `Me & { token }`. 401 `invalid_id_token`, 409 `login_in_use`, 404 `login_not_found` |
 | POST | `/api/v1/auth/email/start` | none | `{ email }` → 202 `{ sent: true }` (6-digit code, 10 min, 5 tries, sent with Cloudflare Email Service); 503 `email_unavailable` (no `SEND_EMAIL` binding), 502 `email_failed` (the binding refused the send) |

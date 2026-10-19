@@ -232,6 +232,14 @@ CREATE TABLE IF NOT EXISTS screens (
   last_used_at INTEGER NOT NULL
 );
 
+-- A white-label app's cast to a screen is chromeless (2026-10-18-shell-device-gaps.feature): the app
+-- whose TV page the screen shows with the launcher token (no row: the whole launcher). A table, not a
+-- column: schema.sql only creates what doesn't exist.
+CREATE TABLE IF NOT EXISTS screen_apps (
+  screen_id TEXT PRIMARY KEY REFERENCES screens(id),
+  app TEXT NOT NULL
+);
+
 -- Guests from the browser (spec ogs-join, "Guests from the browser"): a profile made for one couch
 -- session, with no device, login or friends. The couch's members table lists it like any member.
 CREATE TABLE IF NOT EXISTS guest_profiles (

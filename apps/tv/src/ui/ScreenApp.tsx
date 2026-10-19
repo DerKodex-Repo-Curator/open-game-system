@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { boot } from "../boot";
-import { launcherSessionOf } from "../params";
-import { createPairing, type PairingView } from "../screen/pairing";
+import { createPairing, type PairingView, screenLauncherParams } from "../screen/pairing";
 import { App } from "./App";
 import { Stage } from "./Stage";
 
@@ -27,18 +26,26 @@ export function ScreenApp({ api, search }: { api: string; search: string }) {
   }, [pairing]);
 
   return view.kind === "launcher" ? (
-    <Launcher key={view.token} api={api} token={view.token} search={search} />
+    <Launcher key={`${view.token} ${view.app ?? ""}`} api={api} view={view} search={search} />
   ) : (
     <Pairing view={view} />
   );
 }
 
-function Launcher({ api, token, search }: { api: string; token: string; search: string }) {
-  const sessionId = launcherSessionOf(token);
-  const booted = useMemo(
-    () => (sessionId ? boot({ mode: "live", api, token, sessionId }, search) : null),
-    [api, token, sessionId, search],
-  );
+function Launcher({
+  api,
+  view,
+  search,
+}: {
+  api: string;
+  view: Extract<PairingView, { kind: "launcher" }>;
+  search: string;
+}) {
+  // The key remounts on a new token or app: this view is fixed for the component's life.
+  const booted = useMemo(() => {
+    const params = screenLauncherParams(api, view);
+    return params ? boot(params, search) : null;
+  }, [api, view, search]);
   return booted ? <App boot={booted} /> : <Pairing view={{ kind: "offline" }} />;
 }
 

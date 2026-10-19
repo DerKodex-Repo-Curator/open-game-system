@@ -1,5 +1,6 @@
 import { ScreenCreatedSchema, ScreenStateSchema } from "@open-game-system/ogs-protocol";
 import { z } from "zod";
+import { type LauncherParams, launcherSessionOf } from "../params";
 
 /** The production OGS API: a bare TV page pairs with it. */
 export const PRODUCTION_API = "https://opengame-api.jonathanrmumm.workers.dev";
@@ -27,7 +28,7 @@ export function screenParams(
 export type PairingView =
   | { kind: "starting" }
   | { kind: "code"; code: string }
-  | { kind: "launcher"; token: string }
+  | { kind: "launcher"; token: string; app?: string }
   | { kind: "offline" };
 
 type Storage = Pick<globalThis.Storage, "getItem" | "setItem" | "removeItem">;
@@ -88,9 +89,10 @@ export function createPairing(deps: { api: string; fetch: FetchLike; storage: St
         return set({ kind: "starting" });
       }
       const state = ScreenStateSchema.parse(await res.json());
+      const show = state.show;
       set(
-        state.show
-          ? { kind: "launcher", token: state.show.token }
+        show
+          ? { kind: "launcher", token: show.token, ...(show.app ? { app: show.app } : {}) }
           : { kind: "code", code: state.code },
       );
     } catch {
@@ -108,4 +110,19 @@ export function createPairing(deps: { api: string; fetch: FetchLike; storage: St
     },
     tick,
   };
+}
+
+/**
+ * The launcher a phone's cast puts on this screen: live on its couch, chromeless for a white-label
+ * app's cast (`app`: only that game's TV page, as `chrome=none&app=` does on a Chromecast). null for
+ * a token that isn't a launcher's.
+ */
+export function screenLauncherParams(
+  api: string,
+  view: Extract<PairingView, { kind: "launcher" }>,
+): LauncherParams | null {
+  const sessionId = launcherSessionOf(view.token);
+  if (!sessionId) return null;
+  const live = { mode: "live", api, token: view.token, sessionId } satisfies LauncherParams;
+  return view.app ? { ...live, chrome: { appId: view.app } } : live;
 }
