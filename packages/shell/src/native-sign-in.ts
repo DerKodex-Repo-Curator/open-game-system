@@ -74,6 +74,24 @@ export type SignInState =
   | { status: "cancelled" }
   | { status: "error"; code: string };
 
+type SignedCredential = Extract<NativeCredential, { status: "ok" }>;
+
+/** POST /api/v1/auth/native's body: the nonce and the guest's profile id only when there are. */
+function authRequest(
+  provider: NativeProvider,
+  credential: SignedCredential,
+  guest: ShellIdentity | null,
+  device: ShellDevice,
+): NativeAuthRequest {
+  return {
+    provider,
+    identityToken: credential.identityToken,
+    ...(credential.nonce ? { nonce: credential.nonce } : {}),
+    ...(guest ? { deviceProfileId: guest.profile.id } : {}),
+    device,
+  };
+}
+
 export interface NativeSignInDeps {
   api: NativeAuthApi;
   /** The OGS API signed in on: a guest stored for another API is not upgraded. */
@@ -104,30 +122,33 @@ export function createNativeSignIn(deps: NativeSignInDeps) {
     }
     if (credential.status === "cancelled") return set({ status: "cancelled" });
     try {
-      const guest = await loadShellIdentity(deps.storage, deps.apiBase);
-      const device = await deps.device();
-      const answer = await deps.api.authNative(
-        {
-          provider: name,
-          identityToken: credential.identityToken,
-          ...(credential.nonce ? { nonce: credential.nonce } : {}),
-          ...(guest ? { deviceProfileId: guest.profile.id } : {}),
-          device,
-        },
-        guest?.deviceToken,
-      );
-      const identity: ShellIdentity = {
-        profile: answer.profile,
-        deviceId: guest?.deviceId ?? device.deviceId,
-        deviceToken: answer.token,
-        login: name,
-      };
-      await saveShellIdentity(deps.storage, identity, deps.apiBase);
-      deps.onIdentity?.(identity);
-      set({ status: "signed-in", provider: name, profile: answer.profile });
+      const profile = await exchange(name, credential);
+      set({ status: "signed-in", provider: name, profile });
     } catch (err) {
       set({ status: "error", code: err instanceof ShellApiError ? err.code : "FAILED" });
     }
+  }
+
+  /** Trades the provider's token (and the guest, if any) for this device's identity, and stores it. */
+  async function exchange(
+    name: NativeProvider,
+    credential: SignedCredential,
+  ): Promise<ShellProfile> {
+    const guest = await loadShellIdentity(deps.storage, deps.apiBase);
+    const device = await deps.device();
+    const answer = await deps.api.authNative(
+      authRequest(name, credential, guest, device),
+      guest?.deviceToken,
+    );
+    const identity: ShellIdentity = {
+      profile: answer.profile,
+      deviceId: guest?.deviceId ?? device.deviceId,
+      deviceToken: answer.token,
+      login: name,
+    };
+    await saveShellIdentity(deps.storage, identity, deps.apiBase);
+    deps.onIdentity?.(identity);
+    return answer.profile;
   }
 
   return {

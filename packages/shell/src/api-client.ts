@@ -1,5 +1,6 @@
-import { z } from "zod";
+import type { z } from "zod";
 import type { FetchLike } from "./api-request";
+import { failureOf, jsonRequestInit, responseJson } from "./http-json";
 
 /**
  * The single-game shell's OGS API request: JSON in and out, an optional device token, every
@@ -30,10 +31,6 @@ export interface RequestInitLite {
   token?: string;
 }
 
-const ErrorBodySchema = z.object({
-  error: z.object({ code: z.string(), message: z.string(), status: z.number() }),
-});
-
 export type ShellRequest = <T>(
   schema: z.ZodType<T>,
   path: string,
@@ -43,33 +40,16 @@ export type ShellRequest = <T>(
 export function createShellRequest({ baseUrl, fetch }: ShellApiOptions): ShellRequest {
   const base = baseUrl.replace(/\/+$/, "");
   return async (schema, path, init = {}) => {
-    const headers: Record<string, string> = { Accept: "application/json" };
-    if (init.body !== undefined) headers["Content-Type"] = "application/json";
-    if (init.token) headers.Authorization = `Bearer ${init.token}`;
     let res: Response;
     try {
-      res = await fetch(`${base}${path}`, {
-        method: init.method ?? "GET",
-        headers,
-        body: init.body === undefined ? undefined : JSON.stringify(init.body),
-      });
+      res = await fetch(`${base}${path}`, jsonRequestInit(init, init.token || undefined));
     } catch (err) {
       throw new ShellApiError("OFFLINE", `Can't reach OGS: ${String(err)}`, 0);
     }
-    const text = await res.text();
-    let json: unknown = null;
-    try {
-      json = text ? JSON.parse(text) : null;
-    } catch {
-      json = null;
-    }
+    const json = await responseJson(res);
     if (!res.ok) {
-      const parsed = ErrorBodySchema.safeParse(json);
-      if (parsed.success) {
-        const { code, message, status } = parsed.data.error;
-        throw new ShellApiError(code, message, status);
-      }
-      throw new ShellApiError(`HTTP_${res.status}`, `OGS answered ${res.status}`, res.status);
+      const { code, message, status } = failureOf(res.status, json);
+      throw new ShellApiError(code, message, status);
     }
     const parsed = schema.safeParse(json);
     if (!parsed.success) throw new ShellApiError("BAD_RESPONSE", parsed.error.message, 0);

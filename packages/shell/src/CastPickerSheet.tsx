@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import type { CastPickerState } from "./cast-picker";
+import type { BrowserTvState, CastPickerState } from "./cast-picker";
 
 export interface CastPickerSheetProps {
   state: CastPickerState;
@@ -45,82 +45,12 @@ export function CastPickerSheet({
       <View style={styles.backdrop}>
         <View style={styles.sheet} testID="castPicker" accessibilityLabel="Play on TV">
           <Text style={styles.title}>Play on TV</Text>
-          {state.devices.length === 0 ? (
-            <Text style={styles.body} testID="castPickerNoDevices">
-              No Chromecast found on this Wi-Fi.
-            </Text>
-          ) : (
-            state.devices.map((d) => (
-              <Pressable
-                key={d.id}
-                testID={`castPickerDevice-${d.id}`}
-                accessibilityRole="button"
-                accessibilityLabel={d.name}
-                style={styles.device}
-                onPress={() => onPick(d.id)}
-              >
-                <Text style={styles.deviceName}>{d.name}</Text>
-              </Pressable>
-            ))
-          )}
-          {tv && !tv.open ? (
-            <Pressable
-              testID="browserTvOpen"
-              accessibilityRole="button"
-              accessibilityLabel="Use a browser TV"
-              style={styles.secondary}
-              onPress={onOpenBrowserTv}
-            >
-              <Text style={styles.secondaryText}>Use a browser TV</Text>
-            </Pressable>
-          ) : null}
-          {tv?.open ? (
-            <View style={styles.browserTv} testID="browserTv">
-              <Text style={styles.subtitle}>Use a browser TV</Text>
-              <Text style={styles.body}>
-                On the TV (or a laptop plugged into it), open{" "}
-                <Text style={styles.address} testID="browserTvAddress">
-                  {tv.address}
-                </Text>{" "}
-                in the browser, then type the code it shows.
-              </Text>
-              <View style={styles.row}>
-                <TextInput
-                  testID="browserTvCode"
-                  accessibilityLabel="Code on the TV"
-                  value={code}
-                  onChangeText={(t) => setCode(t.toUpperCase())}
-                  style={styles.input}
-                  placeholder="Code"
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  maxLength={8}
-                  returnKeyType="go"
-                  onSubmitEditing={pair}
-                />
-                <Pressable
-                  testID="browserTvPair"
-                  accessibilityRole="button"
-                  accessibilityLabel="Pair"
-                  accessibilityState={{ disabled: !canPair }}
-                  disabled={!canPair}
-                  style={[styles.pair, !canPair && styles.dim]}
-                  onPress={pair}
-                >
-                  {busy ? (
-                    <ActivityIndicator color="#FFFFFF" testID="browserTvPairing" />
-                  ) : (
-                    <Text style={styles.pairText}>Pair</Text>
-                  )}
-                </Pressable>
-              </View>
-              {tv.error ? (
-                <Text style={styles.error} testID="browserTvError">
-                  {tv.error}
-                </Text>
-              ) : null}
-            </View>
-          ) : null}
+          <DeviceList devices={state.devices} onPick={onPick} />
+          <BrowserTv
+            tv={tv}
+            onOpen={onOpenBrowserTv}
+            pairing={{ code, setCode, busy, canPair, pair }}
+          />
           <Pressable
             testID="castPickerClose"
             accessibilityRole="button"
@@ -132,6 +62,121 @@ export function CastPickerSheet({
         </View>
       </View>
     </Modal>
+  );
+}
+
+function DeviceList({
+  devices,
+  onPick,
+}: {
+  devices: CastPickerState["devices"];
+  onPick: (deviceId: string) => void;
+}) {
+  if (devices.length === 0) {
+    return (
+      <Text style={styles.body} testID="castPickerNoDevices">
+        No Chromecast found on this Wi-Fi.
+      </Text>
+    );
+  }
+  return devices.map((d) => (
+    <Pressable
+      key={d.id}
+      testID={`castPickerDevice-${d.id}`}
+      accessibilityRole="button"
+      accessibilityLabel={d.name}
+      style={styles.device}
+      onPress={() => onPick(d.id)}
+    >
+      <Text style={styles.deviceName}>{d.name}</Text>
+    </Pressable>
+  ));
+}
+
+/** The code typed so far, and whether it can be sent (the sheet keeps it while the panel closes). */
+interface Pairing {
+  code: string;
+  setCode: (code: string) => void;
+  busy: boolean;
+  canPair: boolean;
+  pair: () => void;
+}
+
+/** Nothing (no browser TV offered), the "Use a browser TV" button, or the pairing panel. */
+function BrowserTv({
+  tv,
+  onOpen,
+  pairing,
+}: {
+  tv: BrowserTvState | null;
+  onOpen: () => void;
+  pairing: Pairing;
+}) {
+  if (!tv) return null;
+  if (!tv.open) {
+    return (
+      <Pressable
+        testID="browserTvOpen"
+        accessibilityRole="button"
+        accessibilityLabel="Use a browser TV"
+        style={styles.secondary}
+        onPress={onOpen}
+      >
+        <Text style={styles.secondaryText}>Use a browser TV</Text>
+      </Pressable>
+    );
+  }
+  return <BrowserTvPanel tv={tv} pairing={pairing} />;
+}
+
+function BrowserTvPanel({ tv, pairing }: { tv: BrowserTvState; pairing: Pairing }) {
+  const { code, setCode, busy, canPair, pair } = pairing;
+  return (
+    <View style={styles.browserTv} testID="browserTv">
+      <Text style={styles.subtitle}>Use a browser TV</Text>
+      <Text style={styles.body}>
+        On the TV (or a laptop plugged into it), open{" "}
+        <Text style={styles.address} testID="browserTvAddress">
+          {tv.address}
+        </Text>{" "}
+        in the browser, then type the code it shows.
+      </Text>
+      <View style={styles.row}>
+        <TextInput
+          testID="browserTvCode"
+          accessibilityLabel="Code on the TV"
+          value={code}
+          onChangeText={(t) => setCode(t.toUpperCase())}
+          style={styles.input}
+          placeholder="Code"
+          autoCapitalize="characters"
+          autoCorrect={false}
+          maxLength={8}
+          returnKeyType="go"
+          onSubmitEditing={pair}
+        />
+        <Pressable
+          testID="browserTvPair"
+          accessibilityRole="button"
+          accessibilityLabel="Pair"
+          accessibilityState={{ disabled: !canPair }}
+          disabled={!canPair}
+          style={[styles.pair, !canPair && styles.dim]}
+          onPress={pair}
+        >
+          {busy ? (
+            <ActivityIndicator color="#FFFFFF" testID="browserTvPairing" />
+          ) : (
+            <Text style={styles.pairText}>Pair</Text>
+          )}
+        </Pressable>
+      </View>
+      {tv.error ? (
+        <Text style={styles.error} testID="browserTvError">
+          {tv.error}
+        </Text>
+      ) : null}
+    </View>
   );
 }
 

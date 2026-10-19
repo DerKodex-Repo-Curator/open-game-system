@@ -118,6 +118,33 @@ export function newAttemptId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}-${attempts}`;
 }
 
+type ErrorFields = Pick<ClientEvent, "error" | "errorType" | "errorStack">;
+
+/** An event's error, cleaned, with its type and stack (only alongside an error). */
+function errorFields(fields: EventFields): ErrorFields {
+  if (fields.error === undefined) return {};
+  const out: ErrorFields = { error: clean(errorMessage(fields.error)) };
+  if (fields.errorType) out.errorType = fields.errorType.slice(0, 80);
+  if (fields.errorStack) out.errorStack = clean(fields.errorStack);
+  return out;
+}
+
+/** One wide event from a call's fields: an error makes it "error" unless a level is given. */
+function buildEvent(name: string, fields: EventFields, at: number): ClientEvent {
+  const errors = errorFields(fields);
+  const event: ClientEvent = {
+    name,
+    at,
+    level: fields.level ?? (errors.error === undefined ? "info" : "error"),
+  };
+  if (fields.attemptId) event.attemptId = fields.attemptId;
+  if (fields.durationMs !== undefined) event.durationMs = Math.max(0, fields.durationMs);
+  Object.assign(event, errors);
+  const data = cleanData(fields.data);
+  if (data) event.data = data;
+  return event;
+}
+
 const Scalar = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 const StoredSchema = z.array(
   z.object({
@@ -205,19 +232,7 @@ export function createClientLog(deps: {
 
   return {
     event(name, fields = {}) {
-      const error = fields.error === undefined ? undefined : clean(errorMessage(fields.error));
-      const event: ClientEvent = {
-        name,
-        at: deps.now(),
-        level: fields.level ?? (error === undefined ? "info" : "error"),
-      };
-      if (fields.attemptId) event.attemptId = fields.attemptId;
-      if (fields.durationMs !== undefined) event.durationMs = Math.max(0, fields.durationMs);
-      if (error !== undefined) event.error = error;
-      if (error !== undefined && fields.errorType) event.errorType = fields.errorType.slice(0, 80);
-      if (error !== undefined && fields.errorStack) event.errorStack = clean(fields.errorStack);
-      const data = cleanData(fields.data);
-      if (data) event.data = data;
+      const event = buildEvent(name, fields, deps.now());
       add([{ context: { ...deps.context() }, event }]);
       if (buffer.length >= batchSize) void flush();
       else if (!pending)

@@ -16,16 +16,18 @@ export type WebViewStatusEvent =
 
 export const INITIAL_WEBVIEW_STATUS: WebViewStatus = { phase: "loading", attempt: 0 };
 
+const retry = (s: WebViewStatus): WebViewStatus =>
+  s.phase === "offline" ? { phase: "loading", attempt: s.attempt + 1 } : s;
+
+const TRANSITIONS: Record<WebViewStatusEvent["type"], (s: WebViewStatus) => WebViewStatus> = {
+  LOADED: (s) => (s.phase === "loading" ? { ...s, phase: "ready" } : s),
+  FAILED: (s) => (s.phase === "offline" ? s : { ...s, phase: "offline" }),
+  RETRY: retry,
+  FOREGROUND: retry,
+};
+
 export function webViewStatus(state: WebViewStatus, event: WebViewStatusEvent): WebViewStatus {
-  switch (event.type) {
-    case "LOADED":
-      return state.phase === "loading" ? { ...state, phase: "ready" } : state;
-    case "FAILED":
-      return state.phase === "offline" ? state : { ...state, phase: "offline" };
-    case "RETRY":
-    case "FOREGROUND":
-      return state.phase === "offline" ? { phase: "loading", attempt: state.attempt + 1 } : state;
-  }
+  return TRANSITIONS[event.type](state);
 }
 
 /** The slice of React Native's AppState this needs. */
