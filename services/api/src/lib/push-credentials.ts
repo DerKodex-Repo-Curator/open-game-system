@@ -165,6 +165,7 @@ export async function apnsCredential(
   if (!raw) return null;
   const r = Row.parse(raw);
   return {
+    // Stryker disable next-line StringLiteral: equivalent, an ios row always has its key_id (storeCredentials)
     keyId: r.key_id ?? "",
     teamId: r.team_id ?? "",
     p8: await open({ secretEnc: r.secret_enc, iv: r.iv }, secret, owner(appId, "ios")),

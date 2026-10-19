@@ -401,4 +401,28 @@ describe("key handling: keys stay inside the Worker's crypto", { timeout: 20_000
       android: { configured: true, projectId: "rocket-crew-test", clientEmail: sa.client_email },
     });
   });
+
+  it("an app with no uploaded key has none to send with (null, not an error)", async () => {
+    expect(await apnsCredential(d1.db, "rocket-crew", PUSH_KEY_SECRET)).toBeNull();
+    expect(await fcmCredential(d1.db, "rocket-crew", PUSH_KEY_SECRET)).toBeNull();
+  });
+
+  it("a service account without token_uri gets Google's", async () => {
+    const { token_uri: _, ...sa } = await fcmServiceAccount();
+    await call("PUT", "/api/v1/apps/rocket-crew/native/android", rcKey, {
+      package: "tv.rocketcrew.app",
+      sha256CertFingerprints: [Array.from({ length: 32 }, () => "AB").join(":")],
+      googleClientIds: [],
+    });
+    expect(
+      (
+        await call("PUT", "/api/v1/apps/rocket-crew/push-credentials", rcKey, {
+          android: { serviceAccount: sa },
+        })
+      ).status,
+    ).toBe(204);
+    expect(await fcmCredential(d1.db, "rocket-crew", PUSH_KEY_SECRET)).toMatchObject({
+      token_uri: "https://oauth2.googleapis.com/token",
+    });
+  });
 });
