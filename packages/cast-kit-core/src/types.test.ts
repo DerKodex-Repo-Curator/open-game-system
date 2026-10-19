@@ -273,34 +273,16 @@ describe("Cast-Kit Core Types (Zod Schemas)", () => {
 
 describe("view URL (what the TV shows)", () => {
   it("accepts SET_VIEW_URL with an https URL", () => {
-    expect(
-      CastEventsSchema.safeParse({ type: "SET_VIEW_URL", url: "https://game.example/tv/ABCD" })
-        .success,
-    ).toBe(true);
+    expect(CastEventsSchema.safeParse({ type: "SET_VIEW_URL", url: "https://game.example/tv/ABCD" }).success).toBe(true);
   });
 
   it("rejects SET_VIEW_URL with a non-URL", () => {
-    expect(CastEventsSchema.safeParse({ type: "SET_VIEW_URL", url: "not a url" }).success).toBe(
-      false,
-    );
+    expect(CastEventsSchema.safeParse({ type: "SET_VIEW_URL", url: "not a url" }).success).toBe(false);
   });
 
   it("keeps viewUrl in cast state (null until the game sets one)", () => {
-    const base = {
-      isAvailable: false,
-      devices: [],
-      session: {
-        status: "disconnected",
-        deviceId: null,
-        deviceName: null,
-        sessionId: null,
-        streamSessionId: null,
-      },
-      error: null,
-    };
+    const base = { isAvailable: false, devices: [], session: { status: "disconnected", deviceId: null, deviceName: null, sessionId: null, streamSessionId: null }, error: null };
     expect(CastStateSchema.safeParse({ ...base, viewUrl: null }).success).toBe(true);
-    expect(CastStateSchema.safeParse({ ...base, viewUrl: "https://game.example/tv" }).success).toBe(
-      true,
-    );
+    expect(CastStateSchema.safeParse({ ...base, viewUrl: "https://game.example/tv" }).success).toBe(true);
   });
 });

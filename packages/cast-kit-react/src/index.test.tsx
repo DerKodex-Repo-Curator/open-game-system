@@ -10,8 +10,8 @@ import {
   useCastDeviceCount,
   useCastDeviceName,
   useCastDispatch,
-  useCastState,
   useCastStatus,
+  useCastState,
   useCastViewUrl,
 } from "./index";
 
@@ -350,13 +350,8 @@ describe("Cast-Kit React Hooks", () => {
 
     it("tells the host app which page to put on the TV", () => {
       initCastStore(CAST_INITIAL_STATE);
-      renderHook(() => useCastViewUrl("https://game.example/tv/ABCD"), {
-        wrapper: createWrapper(),
-      });
-      expect(lastEvent()?.event).toEqual({
-        type: "SET_VIEW_URL",
-        url: "https://game.example/tv/ABCD",
-      });
+      renderHook(() => useCastViewUrl("https://game.example/tv/ABCD"), { wrapper: createWrapper() });
+      expect(lastEvent()?.event).toEqual({ type: "SET_VIEW_URL", url: "https://game.example/tv/ABCD" });
     });
 
     it("sends again when the URL changes", () => {
@@ -366,10 +361,7 @@ describe("Cast-Kit React Hooks", () => {
         initialProps: { url: "https://game.example/tv/AAAA" },
       });
       rerender({ url: "https://game.example/tv/BBBB" });
-      expect(lastEvent()?.event).toEqual({
-        type: "SET_VIEW_URL",
-        url: "https://game.example/tv/BBBB",
-      });
+      expect(lastEvent()?.event).toEqual({ type: "SET_VIEW_URL", url: "https://game.example/tv/BBBB" });
     });
 
     it("sends nothing for a null URL", () => {
