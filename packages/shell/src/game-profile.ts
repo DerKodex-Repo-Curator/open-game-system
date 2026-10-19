@@ -1,7 +1,7 @@
 import type { Store } from "@open-game-system/app-bridge-types";
 import type { ProfileBridgeState } from "@open-game-system/ogs-protocol";
 import { z } from "zod";
-import { createApiRequest, type OgsApiOptions } from "./api-request";
+import { createApiRequest, OgsApiError, type OgsApiOptions } from "./api-request";
 import { backgroundTimeout } from "./background-timer";
 
 /**
@@ -51,6 +51,12 @@ export const RETRY_MS = 60 * 1000;
 
 const NONE: ProfileBridgeState = { status: "none" };
 
+/** Expected for a new app whose game isn't listed yet: a note for the developer, not a warning. */
+const notListed = (appId: string) =>
+  `[ogs] "${appId}" is not in the OGS catalogue yet, so your page gets profile null ` +
+  "(as in a plain browser). Profiles start once the game is listed: " +
+  "https://ogs-docs.pages.dev/art-and-catalogue#submit-to-the-catalogue";
+
 export function createGameProfile(opts: { fetchToken: (appId: string) => Promise<GameGrant> }) {
   let state: ProfileBridgeState = NONE;
   let appId: string | null = null;
@@ -84,7 +90,9 @@ export function createGameProfile(opts: { fetchToken: (appId: string) => Promise
       if (gen !== generation) return;
       if (state.status === "ready") schedule(RETRY_MS, gen);
       else {
-        console.warn("[ogs] no game token for", id, err);
+        if (err instanceof OgsApiError && err.code === "game_not_found")
+          console.info(notListed(id));
+        else console.warn("[ogs] no game token for", id, err);
         set(NONE);
       }
     }
