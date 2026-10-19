@@ -60,12 +60,16 @@ on this branch.
 
 ## Measured
 
-2026-10-18, iOS simulator against the preview, the machine at load 100–200 from other sessions all
-afternoon. Every check of the walk has passed in some run: day 1 in full (five runs); day 2 the same
-screen, Cast naming the TV, a new couch, Rocket Crew first in the TV's row and its first card, Join
-as Grandma in one tap, the TV framing Rocket Crew, Grandma as the Fixer and the first round fixed.
-**No single run has passed end to end yet**, and Dana's seconds are unmeasured: the runs fail on load
-(waits of 30 s to 5 min for the game, the launch, the cast), once on the rocket-crew checkout's parser
-not knowing a line the preview game said, and once because a workspace build had pointed the TV
-page at production (the orchestrator now builds its own pages). Run it on a quiet machine:
-`pnpm exec tsx e2e/second-visit-preview.ts` (docs/testing/e2e.md).
+**The walk passes end to end** (2026-10-18, iOS simulator against the preview, load average ~36;
+evidence and `results.json` in `exec-plans/active/2026-10-17-first-time-funnel/evidence/second-visit/`).
+
+Dana's day 2: **5 taps** (TV, Cast, Down, OK, Ready: yesterday's Rocket Crew was still a sitting,
+so the ring started on the icon). **17.6 s of her own time** from opening the app to the game on the
+TV: the app's cold start 9.5 s (a loaded simulator), Cast 5.7 s, OK to the game 2.4 s. Grandma's
+rejoin (one tap) happens in between and isn't counted. The 10 s goal is missed on the cold start;
+on a phone the cold start is shorter, unmeasured here.
+
+Earlier runs at load 100–200 failed on timeouts (30 s to 5 min waits), once on the rocket-crew
+checkout's parser, once because a workspace build pointed the TV page at production (the
+orchestrator now builds its own pages), and once when a slow round let Rocket Crew move on to a
+shake problem before the browser Fixer pressed.

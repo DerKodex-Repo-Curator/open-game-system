@@ -1,0 +1,218 @@
+{
+  "timeline": [
+    {
+      "step": "start",
+      "at": 91.7
+    },
+    {
+      "step": "tv-code",
+      "at": 93.7
+    },
+    {
+      "step": "cast",
+      "at": 167.4
+    },
+    {
+      "step": "guest-on-couch",
+      "at": 170.8
+    },
+    {
+      "step": "host-in-game",
+      "at": 178.9
+    },
+    {
+      "step": "captain-ready",
+      "at": 195.1
+    },
+    {
+      "step": "launched",
+      "at": 241.8
+    },
+    {
+      "step": "captain-line",
+      "at": 241.8
+    },
+    {
+      "step": "round-done",
+      "at": 268.5
+    },
+    {
+      "step": "phone-closed",
+      "at": 268.9
+    },
+    {
+      "step": "everything closed",
+      "at": 269.3
+    },
+    {
+      "step": "day2-tv-ready",
+      "at": 271.8
+    },
+    {
+      "step": "day2-cast",
+      "at": 286.9
+    },
+    {
+      "step": "day2-guest-on-couch",
+      "at": 291.1
+    },
+    {
+      "step": "day2-host-in-game",
+      "at": 293.5
+    },
+    {
+      "step": "captain-ready-2",
+      "at": 307.8
+    },
+    {
+      "step": "launched-2",
+      "at": 331.5
+    },
+    {
+      "step": "captain-line-2",
+      "at": 331.5
+    },
+    {
+      "step": "round-done-2",
+      "at": 358.5
+    },
+    {
+      "step": "day2-taps",
+      "at": 358.5
+    }
+  ],
+  "results": [
+    {
+      "name": "day 1: the TV page shows a code",
+      "ok": true,
+      "detail": "E9G36F",
+      "soft": false
+    },
+    {
+      "name": "the TV's QR is a join link",
+      "ok": true,
+      "detail": "https://opengame.org/join/772UAM",
+      "soft": false
+    },
+    {
+      "name": "day 1: Grandma is on the couch",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "the TV frames Rocket Crew",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "the guest is the Fixer",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "the Captain's first problem is one the Fixer can fix",
+      "ok": true,
+      "detail": "The engine is overheating! Press the moon button! → single",
+      "soft": false
+    },
+    {
+      "name": "the first round is played: the TV says it's fixed",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "day 2: the TV page is the same screen as yesterday",
+      "ok": true,
+      "detail": "c8d4f0c3-db55-419e-b1b7-14b975307aa2",
+      "soft": false
+    },
+    {
+      "name": "day 2: the phone's Cast already names the TV (no code typed)",
+      "ok": true,
+      "detail": "Browser TV",
+      "soft": false
+    },
+    {
+      "name": "day 2: the cast is a new couch (a new join code)",
+      "ok": true,
+      "detail": "https://opengame.org/join/772UAM → https://opengame.org/join/EMWCRE",
+      "soft": false
+    },
+    {
+      "name": "day 2: the TV's first card is yesterday's game (Play again, or its sitting)",
+      "ok": true,
+      "detail": "sitting",
+      "soft": false
+    },
+    {
+      "name": "day 2: Rocket Crew is the first game in the TV's row",
+      "ok": true,
+      "detail": "game:rocket-crew",
+      "soft": false
+    },
+    {
+      "name": "the TV's QR is a join link",
+      "ok": true,
+      "detail": "https://opengame.org/join/EMWCRE",
+      "soft": false
+    },
+    {
+      "name": "day 2: the join page offers Join as Grandma",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "day 2: one tap puts Grandma on the couch",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "the TV frames Rocket Crew",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "the guest is the Fixer",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "the Captain's first problem is one the Fixer can fix",
+      "ok": true,
+      "detail": "The engine is overheating! Bop the frog! → single",
+      "soft": false
+    },
+    {
+      "name": "the first round is played: the TV says it's fixed",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    },
+    {
+      "name": "day 2: Dana's taps, app open to the first round",
+      "ok": true,
+      "detail": "5 taps: TV, Cast, Down, OK, Ready",
+      "soft": false
+    },
+    {
+      "name": "day 2: Dana's own time, app open to the game on the TV, under 10 s",
+      "ok": false,
+      "detail": "17.6 s (open 9.5 s, cast 15.2 s, OK to game 2.4 s; Grandma's join in between not counted)",
+      "soft": true
+    },
+    {
+      "name": "the phone finished its half",
+      "ok": true,
+      "detail": "",
+      "soft": false
+    }
+  ]
+}
