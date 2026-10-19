@@ -2,6 +2,7 @@ import type { Store } from "@open-game-system/app-bridge-types";
 import type { ProfileBridgeState } from "@open-game-system/ogs-protocol";
 import { z } from "zod";
 import { createApiRequest, type OgsApiOptions } from "./api-request";
+import { backgroundTimeout } from "./background-timer";
 
 /**
  * Games know who you are (slice 3): the game WebView's `profile` bridge store. When a game opens,
@@ -68,7 +69,7 @@ export function createGameProfile(opts: { fetchToken: (appId: string) => Promise
   };
   const schedule = (ms: number, gen: number) => {
     clearTimer();
-    timer = setTimeout(() => void ask(gen), Math.max(0, ms));
+    timer = backgroundTimeout(() => void ask(gen), Math.max(0, ms));
   };
 
   async function ask(gen: number) {
