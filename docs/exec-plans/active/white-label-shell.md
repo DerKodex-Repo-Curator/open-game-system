@@ -132,3 +132,26 @@ not yet measured. New tests: `packages/shell/src/__tests__/{cast-view,cast-sync,
 - Template entry (branch `claude/create-ogs-app-template-entry`, awaiting Jon because it changes an existing
   test): `app/index.tsx` imports `OgsShell` from `@open-game-system/shell/app` (the main entry no longer exports
   it) and passes `expo-apple-authentication`, so Sign in with Apple is offered.
+
+### Device-e2e gaps (Rocket Crew's Maestro run, 2026-10-18, branch `claude/shell-app`)
+
+Acceptance: `docs/acceptance/2026-10-18-shell-device-gaps.feature`.
+
+- **Browser-TV fallback:** the single-game cast store is always available (`createCastStore(commands,
+  { alwaysAvailable, showPicker })`; the OGS app passes no options), so the game's `<CastButton>` shows
+  with no Chromecast. `SHOW_CAST_PICKER` opens `CastPickerSheet` (runtime `castPicker`): Chromecasts +
+  paired browser TVs + "Use a browser TV" (pair by the code `ogs-tv.pages.dev` shows; `createShellScreensApi`
+  with the device token; paired TVs in AsyncStorage). A browser TV gets `show { token, app }` for a
+  chromeless cast; the API storing `app` and the TV page honouring it are on `claude/screens-chrome-none`
+  (off `claude/shell-platform`, where the TV's chrome=none lives). testIDs: ship-your-own-app "Testing on a device".
+- **Custom scheme:** `<scheme>://play/<appId>/<rest>`, `<scheme>://play/<rest>`, `<scheme>://<rest>` →
+  game origin + `/<rest>`; the plugin's `withShellScheme` sets Expo's `scheme` (config `scheme`, else appId)
+  when the app has none; the runtime reads the app's scheme(s).
+- **Packaging:** app-bridge-native/-types/-web/-react publish `src` (their `react-native` field);
+  app-bridge-react's `react-native`/`source` named `src/index.ts` for `.tsx`. `packages/shell/test/packed-exports.test.ts`
+  packs every shell dependency and game kit and checks every package.json target is in the tarball.
+- **create-ogs-app smoke (manual, 2026-10-18):** the template lists expo-application and expo-crypto. A fresh
+  app from HEAD (`dist/bin.mjs app --app-id smoke-game … --yes`) on tarballs from
+  `node packages/shell/scripts/pack-vendor.mjs <app>/vendor` (shell as `file:`, the rest as `pnpm.overrides`)
+  installs with `pnpm install --ignore-workspace` and `CI=1 npx expo export --platform ios` bundles
+  (1310 modules, 3.9 MB hbc); its `scheme` is `smoke-game`.
