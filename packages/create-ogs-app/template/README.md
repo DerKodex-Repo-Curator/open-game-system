@@ -27,32 +27,100 @@ link-files/            AASA + assetlinks.json for your own domain (only with a l
 examples/              the game side: cast button, profile, push link (copy into your web game)
 ```
 
-## Run it
+## What needs an account
 
-You need Node 20+, pnpm, Xcode (iOS) or Android Studio (Android). Casting and push need a
-development build (they are native), not Expo Go.
+| Step | What you need |
+|---|---|
+| Run the app in the iOS Simulator or an Android emulator | **No account.** A Mac with Xcode for iOS; Android Studio for Android. |
+| Profiles (`useOgsProfile()`) in your page | Your game **in the OGS catalogue** under the app id `__OGS_APP_ID__`. Until then your page gets `null`, as in a plain browser, and everything else works. |
+| Run it on your own iPhone, TestFlight, the App Store | An **Apple Developer** account (99 USD a year) and your Team ID in `app.config.ts`. |
+| Builds in the cloud, TestFlight and Play uploads | An **EAS** account (expo.dev, free tier) and `eas login`. |
+| Push links, sign-in with Apple / Google, your own link domain | Your game's OGS API key and the `ogs` CLI (`ogs login`, then `ogs apps register`). |
+
+## Run it in the simulator
+
+You need Node 20+, pnpm, and for iOS: Xcode with an iOS Simulator and
+[CocoaPods](https://cocoapods.org) (`brew install cocoapods`). For Android: Android Studio with an
+emulator (`ANDROID_HOME` set, as Android Studio's setup says).
+
+Install the app's packages:
 
 ```bash
 pnpm install
-pnpm ios        # builds and opens the app in the iOS Simulator
-pnpm android    # same on an Android emulator
-pnpm start      # later: just the JS server for an installed development build
 ```
 
-The app opens `__OGS_GAME_URL__`. To point it at your local game while developing, change
-`gameUrl` in `app.config.ts` to a URL the simulator can reach (an https tunnel, for example
-`cloudflared tunnel --url http://localhost:5173`), then `pnpm ios` again.
+Build the app and open it in the iOS Simulator:
+
+```bash
+pnpm ios
+```
+
+The first build takes 5 to 10 minutes (CocoaPods, then Xcode); later ones take a minute or two. It
+uses the simulator that is open, or starts one. To choose one, name it:
+
+```bash
+pnpm ios --device "iPhone 17"
+```
+
+On Android, with an emulator running (or one Android Studio can start):
+
+```bash
+pnpm android
+```
+
+The app opens on Expo's **developer menu** the first time: tap **Continue**, and your game is
+there. It is a development build (casting and push are native, so not Expo Go): the JS server
+keeps running in the terminal, and the gear button on screen opens that menu again. Next time,
+with the app already installed, start just the JS server:
+
+```bash
+pnpm start
+```
+
+The build prints warnings from Xcode, CocoaPods or Gradle about packages' deployment versions and
+deprecated APIs. They come from React Native and Expo libraries, not from your app, and need
+nothing from you. A `› Build Succeeded` / `BUILD SUCCESSFUL` line is what counts.
+
+**Profile `null`?** Your page gets `null` from `useOgsProfile()` (and the app's log says
+`"__OGS_APP_ID__" is not in the OGS catalogue yet`) until your game is listed: see
+[Submit to the catalogue](https://ogs-docs.pages.dev/art-and-catalogue#submit-to-the-catalogue).
+Your page works as it does in a plain browser meanwhile.
+
+**Your local game.** The app opens `__OGS_GAME_URL__`. To point it at your game on your machine,
+set `gameUrl` in `app.config.ts` to a URL the simulator can reach. An https tunnel works on a
+phone too:
+
+```bash
+cloudflared tunnel --url http://localhost:5173
+```
+
+Then build again with `pnpm ios`.
 
 What works where:
 
 | | Simulator / emulator | Real phone |
 |---|---|---|
 | The game, profile, sign-in sheet, offline screen | yes | yes |
-| Casting | no Chromecast discovery in the iOS Simulator; the Android emulator can see TVs on its network | yes |
+| Casting | no Chromecast discovery in the iOS Simulator (**Use a browser TV** works); the Android emulator can see TVs on its network | yes |
 | Push | iOS Simulator: no remote pushes from APNs; Android emulator with Google Play: yes | yes |
 
-For a real phone without TestFlight: `eas build --profile development --platform ios` and
-install it from the link (register the phone first with `eas device:create`).
+## On your own iPhone
+
+A real iPhone needs an **Apple Developer** account. Put your Team ID (developer.apple.com →
+Membership, 10 characters) in `app.config.ts` as `ios.appleTeamId`, and in `eas.json` under
+`submit.preview.ios` and `submit.production.ios` as `"appleTeamId"` if create-ogs-app left it out.
+
+Without TestFlight, a development build goes to your phone from EAS. Register the phone once:
+
+```bash
+eas device:create
+```
+
+Then build and install it from the link EAS prints:
+
+```bash
+eas build --profile development --platform ios
+```
 
 ## Cast to the TV
 
@@ -83,7 +151,8 @@ Your page reads the player with `useOgsProfile()` ([`examples/web/player-badge.t
 - `profile.login` is `"guest"` until the player signs in, then `"apple"` or `"google"`. Show a
   "Sign in" button to guests that calls `requestOgsSignIn()` (profile-kit): the app opens its native
   sheet, and the signed-in profile arrives through `useOgsProfile()` by itself.
-- `null` in a plain browser: ask for a name as you do today.
+- `null` in a plain browser, and in this app while your game is not in the OGS catalogue: ask for
+  a name as you do today.
 - Your server checks `profile.token` with `verifyOgsToken` (`profile-kit/server`).
 
 Sign in with Apple needs the capability on your bundle id (below). Google sign-in on Android
@@ -104,7 +173,8 @@ Firebase console, download `google-services.json` into this folder (it is not a 
 
 ## Ship it
 
-Each step once per app, in this order.
+Each step once per app, in this order. Every step here needs the accounts in
+[What needs an account](#what-needs-an-account).
 
 ### 1. Apple and Google accounts
 
@@ -117,13 +187,30 @@ Each step once per app, in this order.
 
 ### 2. Tell OGS about the app
 
-Install the OGS CLI (`pnpm add -g @open-game-system/cli`). Log in with your game's OGS API key,
-the one your server uses to send pushes:
+Install the OGS CLI:
 
 ```bash
-ogs login --app __OGS_APP_ID__ --key ogsk_…   # your game API key; OGS_API=<url> points at a preview
+pnpm add -g @open-game-system/cli
+```
+
+Log in with your game's OGS API key, the one your server uses to send pushes (`OGS_API=<url>`
+points the CLI at a preview API):
+
+```bash
+ogs login --app __OGS_APP_ID__ --key ogsk_…
+```
+
+Register the iOS app:
+
+```bash
 ogs apps register --ios __OGS_BUNDLE_ID__ --team-id __OGS_APPLE_TEAM_ID__
-ogs apps register --android __OGS_ANDROID_PACKAGE__ --sha256 <SHA-256 from eas credentials> --google-client-id <id>.apps.googleusercontent.com
+```
+
+Register the Android app, with the SHA-256 that `eas credentials` shows after the first Android
+build:
+
+```bash
+ogs apps register --android __OGS_ANDROID_PACKAGE__ --sha256 <SHA-256> --google-client-id <id>.apps.googleusercontent.com
 ```
 
 Registering lets OGS accept this app's sign-ins and pushes, and lists it in opengame.org's link
@@ -131,8 +218,15 @@ files for `/play/__OGS_APP_ID__`.
 
 ### 3. Push credentials
 
+iOS, with the APNs key from step 1:
+
 ```bash
 ogs push credentials --ios secrets/AuthKey_<KEYID>.p8 --key-id <KEYID> --team-id __OGS_APPLE_TEAM_ID__
+```
+
+Android, with the Firebase service account key:
+
+```bash
 ogs push credentials --android secrets/firebase-service-account.json
 ```
 
@@ -140,12 +234,34 @@ OGS stores them encrypted and prints what is configured, never the key.
 
 ### 4. Build with EAS
 
+Install the EAS CLI:
+
 ```bash
 pnpm add -g eas-cli
+```
+
+Log in to your Expo account:
+
+```bash
 eas login
-eas init                                     # links this folder to an EAS project
-eas build --profile preview --platform ios   # a store build for TestFlight
-eas submit --profile preview --platform ios  # uploads it to App Store Connect
+```
+
+Link this folder to an EAS project:
+
+```bash
+eas init
+```
+
+Make a store build for TestFlight:
+
+```bash
+eas build --profile preview --platform ios
+```
+
+Upload it to App Store Connect:
+
+```bash
+eas submit --profile preview --platform ios
 ```
 
 `preview` builds go to **TestFlight** (internal testers, no review) and to Google Play's

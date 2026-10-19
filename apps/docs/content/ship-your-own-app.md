@@ -32,7 +32,9 @@ pnpm create ogs-app app
 ```
 
 It asks for your OGS app id, the app's name, the game URL, the iOS bundle id, the Android package,
-your Apple Team ID, your link domains and the branding. Agents and CI pass flags instead:
+your Apple Team ID, your link domains and the branding. No Apple Developer account yet? Press
+Enter at the Team ID (or pass `--team-id -`): the simulator needs none, and you add it to
+`app.config.ts` later. Agents and CI pass flags instead:
 
 ```bash
 pnpm create ogs-app app --app-id rocket-crew --name "Rocket Crew" \
@@ -59,6 +61,46 @@ REVIEW_NOTES.md        your App Review note (guideline 4.2)
 link-files/            apple-app-site-association + assetlinks.json for your domain
 examples/              the game side: cast button, profile, push link
 ```
+
+## What needs an account
+
+| Step | What you need |
+|---|---|
+| Run the app in the iOS Simulator or an Android emulator | **No account.** A Mac with Xcode and CocoaPods for iOS; Android Studio for Android. |
+| Profiles (`useOgsProfile()`) in your page | Your game **in the OGS catalogue** under its app id ([Submit to the catalogue](art-and-catalogue.md#submit-to-the-catalogue)). Until then your page gets `null`, as in a plain browser. |
+| Your own iPhone, TestFlight, the App Store | An **Apple Developer** account and your Team ID in `app.config.ts` (`ios.appleTeamId`). |
+| Cloud builds, TestFlight and Play uploads | An **EAS** account and `eas login`. |
+| Push links, sign-in with Apple / Google, your own link domain | Your game's OGS API key and the `ogs` CLI (`ogs login`, `ogs apps register`). |
+
+## Run it in the simulator
+
+In the new app's folder, install its packages:
+
+```bash
+pnpm install
+```
+
+Build it and open it in the iOS Simulator (the first build takes 5 to 10 minutes):
+
+```bash
+pnpm ios
+```
+
+Choose a simulator by name:
+
+```bash
+pnpm ios --device "iPhone 17"
+```
+
+Or on an Android emulator:
+
+```bash
+pnpm android
+```
+
+The first launch shows Expo's developer menu: tap **Continue** and your game is there. The
+generated `README.md` covers the rest (the warnings a native build prints, pointing the app at
+your local game, what works in a simulator).
 
 ## 2. Configure
 

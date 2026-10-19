@@ -3,9 +3,16 @@
 These files are for **your game's web code**, not this app: copy what you need. They work the
 same in this app, in the OGS app and in a plain browser.
 
+In the phone page's package:
+
 ```bash
-pnpm add @open-game-system/cast-kit-react @open-game-system/profile-kit   # the phone page
-pnpm add @open-game-system/notification-kit-server                        # the game server
+pnpm add @open-game-system/cast-kit-react @open-game-system/profile-kit
+```
+
+In the game server's package:
+
+```bash
+pnpm add @open-game-system/notification-kit-server
 ```
 
 | File | What it shows |
