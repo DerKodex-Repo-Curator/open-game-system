@@ -15,7 +15,15 @@ export const IosAppSchema = z.object({
 });
 export const AndroidAppSchema = z.object({
   package: z.string().max(150).regex(ANDROID_PACKAGE),
-  sha256CertFingerprints: z.array(z.string().transform((s) => s.toUpperCase()).pipe(z.string().regex(FINGERPRINT))).min(1).max(10),
+  sha256CertFingerprints: z
+    .array(
+      z
+        .string()
+        .transform((s) => s.toUpperCase())
+        .pipe(z.string().regex(FINGERPRINT)),
+    )
+    .min(1)
+    .max(10),
   googleClientIds: z.array(z.string().regex(GOOGLE_CLIENT_ID)).max(10).default([]),
 });
 export type IosApp = z.infer<typeof IosAppSchema>;
@@ -37,7 +45,8 @@ const Strings = z.array(z.string());
 
 function fromRow(raw: unknown): NativeApp {
   const r = Row.parse(raw);
-  if (r.platform === "ios") return { appId: r.app_id, platform: "ios", bundleId: r.store_id, teamId: r.team_id ?? "" };
+  if (r.platform === "ios")
+    return { appId: r.app_id, platform: "ios", bundleId: r.store_id, teamId: r.team_id ?? "" };
   return {
     appId: r.app_id,
     platform: "android",
@@ -47,7 +56,20 @@ function fromRow(raw: unknown): NativeApp {
   };
 }
 
-const SELECT = "SELECT app_id, platform, store_id, team_id, sha256_fingerprints, google_client_ids FROM native_apps";
+const SELECT =
+  "SELECT app_id, platform, store_id, team_id, sha256_fingerprints, google_client_ids FROM native_apps";
+
+/** The row's platform-specific columns: iOS has a team id, Android fingerprints and client ids. */
+function columns(app: NativeApp) {
+  return app.platform === "ios"
+    ? { storeId: app.bundleId, teamId: app.teamId, fingerprints: [], clientIds: [] }
+    : {
+        storeId: app.package,
+        teamId: null,
+        fingerprints: app.sha256CertFingerprints,
+        clientIds: app.googleClientIds,
+      };
+}
 
 /** Registers (or updates) a game's app. "taken": that bundle id / package is another game's. */
 export async function registerApp(
@@ -55,13 +77,16 @@ export async function registerApp(
   app: NativeApp,
   now: number,
 ): Promise<{ status: "created" | "updated"; app: NativeApp } | { status: "taken" }> {
-  const storeId = app.platform === "ios" ? app.bundleId : app.package;
+  const { storeId, teamId, fingerprints, clientIds } = columns(app);
   const owner = await db
     .prepare("SELECT app_id FROM native_apps WHERE platform = ? AND store_id = ?")
     .bind(app.platform, storeId)
     .first<{ app_id: string }>();
   if (owner && owner.app_id !== app.appId) return { status: "taken" };
-  const existing = await db.prepare("SELECT 1 FROM native_apps WHERE app_id = ? AND platform = ?").bind(app.appId, app.platform).first();
+  const existing = await db
+    .prepare("SELECT 1 FROM native_apps WHERE app_id = ? AND platform = ?")
+    .bind(app.appId, app.platform)
+    .first();
   await db
     .prepare(
       `INSERT INTO native_apps (app_id, platform, store_id, team_id, sha256_fingerprints, google_client_ids, created_at, updated_at)
@@ -73,9 +98,9 @@ export async function registerApp(
       app.appId,
       app.platform,
       storeId,
-      app.platform === "ios" ? app.teamId : null,
-      JSON.stringify(app.platform === "android" ? app.sha256CertFingerprints : []),
-      JSON.stringify(app.platform === "android" ? app.googleClientIds : []),
+      teamId,
+      JSON.stringify(fingerprints),
+      JSON.stringify(clientIds),
       now,
       now,
     )
@@ -84,12 +109,22 @@ export async function registerApp(
 }
 
 export async function appsOf(db: D1Database, appId: string): Promise<NativeApp[]> {
-  const { results } = await db.prepare(`${SELECT} WHERE app_id = ? ORDER BY platform DESC`).bind(appId).all();
+  const { results } = await db
+    .prepare(`${SELECT} WHERE app_id = ? ORDER BY platform DESC`)
+    .bind(appId)
+    .all();
   return results.map(fromRow);
 }
 
-export async function appOf(db: D1Database, appId: string, platform: "ios" | "android"): Promise<NativeApp | null> {
-  const row = await db.prepare(`${SELECT} WHERE app_id = ? AND platform = ?`).bind(appId, platform).first();
+export async function appOf(
+  db: D1Database,
+  appId: string,
+  platform: "ios" | "android",
+): Promise<NativeApp | null> {
+  const row = await db
+    .prepare(`${SELECT} WHERE app_id = ? AND platform = ?`)
+    .bind(appId, platform)
+    .first();
   return row ? fromRow(row) : null;
 }
 
@@ -102,15 +137,22 @@ export async function allApps(db: D1Database): Promise<NativeApp[]> {
 export async function appLinks(db: D1Database) {
   const apps = await allApps(db);
   return {
-    ios: apps.flatMap((a) => (a.platform === "ios" ? [{ appId: a.appId, appleAppId: `${a.teamId}.${a.bundleId}` }] : [])),
+    ios: apps.flatMap((a) =>
+      a.platform === "ios" ? [{ appId: a.appId, appleAppId: `${a.teamId}.${a.bundleId}` }] : [],
+    ),
     android: apps.flatMap((a) =>
-      a.platform === "android" ? [{ appId: a.appId, package: a.package, sha256CertFingerprints: a.sha256CertFingerprints }] : [],
+      a.platform === "android"
+        ? [{ appId: a.appId, package: a.package, sha256CertFingerprints: a.sha256CertFingerprints }]
+        : [],
     ),
   };
 }
 
 /** Sign-in audiences of registered apps: Apple = bundle ids, Google = the apps' OAuth client ids. */
-export async function signInAudiences(db: D1Database, provider: "apple" | "google"): Promise<string[]> {
+export async function signInAudiences(
+  db: D1Database,
+  provider: "apple" | "google",
+): Promise<string[]> {
   const apps = await allApps(db);
   return provider === "apple"
     ? apps.flatMap((a) => (a.platform === "ios" ? [a.bundleId] : []))

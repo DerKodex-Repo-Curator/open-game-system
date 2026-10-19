@@ -1,8 +1,19 @@
 import { Hono } from "hono";
 import { assetlinks, siteAssociation } from "../lib/app-link-files";
 import { apiError, invalidBody, parseBody } from "../lib/http";
-import { AndroidAppSchema, appLinks, appOf, appsOf, IosAppSchema, registerApp } from "../lib/native-apps";
-import { CredentialsUploadSchema, credentialSummary, storeCredentials } from "../lib/push-credentials";
+import {
+  AndroidAppSchema,
+  appLinks,
+  appOf,
+  appsOf,
+  IosAppSchema,
+  registerApp,
+} from "../lib/native-apps";
+import {
+  CredentialsUploadSchema,
+  credentialSummary,
+  storeCredentials,
+} from "../lib/push-credentials";
 import { type GameKeyEnv, gameKeyAuth } from "../middleware/game-key-auth";
 
 /**
@@ -12,7 +23,9 @@ import { type GameKeyEnv, gameKeyAuth } from "../middleware/game-key-auth";
 const apps = new Hono<GameKeyEnv>();
 
 /** The path's appId (every route below has one). */
-const appIdOf = (c: { req: { param: (name: "appId") => string | undefined } }) => c.req.param("appId") ?? "";
+const appIdOf = (c: { req: { param: (name: "appId") => string | undefined } }) =>
+  // Stryker disable next-line StringLiteral: equivalent, every route here has :appId, so the fallback never runs
+  c.req.param("appId") ?? "";
 
 /** GET /app-links — public: every registered app (opengame.org AASA / assetlinks). */
 apps.get("/app-links", async (c) => {
@@ -51,25 +64,55 @@ apps.put("/:appId/native/:platform{ios|android}", gameKeyAuth, async (c) => {
         ? "bundleId (reverse DNS) and teamId (10 letters/digits) are required"
         : "package, sha256CertFingerprints (32 hex pairs each) and googleClientIds (…apps.googleusercontent.com) are required",
     );
-  if (result.status === "taken") return apiError(c, 409, "app_id_taken", "That bundle id / package is registered to another game");
+  if (result.status === "taken")
+    return apiError(
+      c,
+      409,
+      "app_id_taken",
+      "That bundle id / package is registered to another game",
+    );
   return c.json(result.app, result.status === "created" ? 201 : 200);
 });
 
 /** GET /:appId/native — the game's registered apps. */
-apps.get("/:appId/native", gameKeyAuth, async (c) => c.json({ apps: await appsOf(c.env.DB, appIdOf(c)) }));
+apps.get("/:appId/native", gameKeyAuth, async (c) =>
+  c.json({ apps: await appsOf(c.env.DB, appIdOf(c)) }),
+);
 
 /** PUT /:appId/push-credentials `{ ios: { p8, keyId, teamId } }` or `{ android: { serviceAccount } }` → 204. */
 apps.put("/:appId/push-credentials", gameKeyAuth, async (c) => {
   const appId = appIdOf(c);
   const secret = c.env.PUSH_KEY_SECRET;
-  if (!secret) return apiError(c, 503, "push_unavailable", "Push credentials can't be stored here (no PUSH_KEY_SECRET)");
+  if (!secret)
+    return apiError(
+      c,
+      503,
+      "push_unavailable",
+      "Push credentials can't be stored here (no PUSH_KEY_SECRET)",
+    );
   const body = await parseBody(c, CredentialsUploadSchema);
-  if (!body) return invalidBody(c, "{ ios: { p8, keyId, teamId } } or { android: { serviceAccount } } is required");
+  if (!body)
+    return invalidBody(
+      c,
+      "{ ios: { p8, keyId, teamId } } or { android: { serviceAccount } } is required",
+    );
   const platform = "ios" in body ? "ios" : "android";
   if (!(await appOf(c.env.DB, appId, platform)))
-    return apiError(c, 409, "app_not_registered", `Register the ${platform} app first (PUT /api/v1/apps/${appId}/native/${platform})`);
+    return apiError(
+      c,
+      409,
+      "app_not_registered",
+      `Register the ${platform} app first (PUT /api/v1/apps/${appId}/native/${platform})`,
+    );
   if (!(await storeCredentials(c.env.DB, appId, body, secret, Date.now())))
-    return apiError(c, 400, "invalid_credentials", platform === "ios" ? "The .p8 isn't a P-256 PKCS#8 private key" : "The service account's private_key isn't an RSA PKCS#8 key");
+    return apiError(
+      c,
+      400,
+      "invalid_credentials",
+      platform === "ios"
+        ? "The .p8 isn't a P-256 PKCS#8 private key"
+        : "The service account's private_key isn't an RSA PKCS#8 key",
+    );
   return c.body(null, 204);
 });
 
@@ -80,8 +123,12 @@ apps.get("/:appId/push-credentials", gameKeyAuth, async (c) => {
   const ios = await appOf(c.env.DB, appId, "ios");
   const android = await appOf(c.env.DB, appId, "android");
   return c.json({
-    ios: summary.ios.configured ? { ...summary.ios, bundleId: ios?.platform === "ios" ? ios.bundleId : null } : summary.ios,
-    android: summary.android.configured ? { ...summary.android, package: android?.platform === "android" ? android.package : null } : summary.android,
+    ios: summary.ios.configured
+      ? { ...summary.ios, bundleId: ios?.platform === "ios" ? ios.bundleId : null }
+      : summary.ios,
+    android: summary.android.configured
+      ? { ...summary.android, package: android?.platform === "android" ? android.package : null }
+      : summary.android,
   });
 });
 
