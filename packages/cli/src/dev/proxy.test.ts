@@ -200,6 +200,7 @@ describe("the phone proxy", { timeout: 20_000 }, () => {
         res.writeHead(200, {
           "content-type": "application/json",
           "content-encoding": "br",
+          "content-length": "7",
           connection: "close",
         });
         res.end('{"a":1}');

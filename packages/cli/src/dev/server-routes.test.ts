@@ -23,6 +23,41 @@ async function game(): Promise<string> {
   return `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
 }
 
+const bind = (port: number) =>
+  new Promise<Server | null>((resolve) => {
+    const s = http.createServer();
+    s.once("error", () => resolve(null));
+    s.listen(port, "127.0.0.1", () => resolve(s));
+  });
+
+/**
+ * The first of `n` ports in a row that were all free a moment ago: below the ephemeral range, so
+ * other tests' port-0 servers don't take them meanwhile.
+ */
+async function freePorts(n: number): Promise<number> {
+  for (;;) {
+    const base = 20_000 + Math.floor(Math.random() * 20_000);
+    const all = await Promise.all(Array.from({ length: n }, (_, i) => bind(base + i)));
+    await Promise.all(all.map((s) => (s ? new Promise<void>((r) => s.close(() => r())) : null)));
+    if (all.every((s) => s !== null)) return base;
+  }
+}
+
+/** Starts on fixed ports, trying new ones if another process took them in between. */
+async function startOnFreePorts(
+  n: number,
+  start: (port: number) => Promise<DevServer>,
+): Promise<{ port: number; server: DevServer }> {
+  for (let attempt = 1; ; attempt++) {
+    const port = await freePorts(n);
+    try {
+      return { port, server: await start(port) };
+    } catch (e) {
+      if (attempt === 5) throw e;
+    }
+  }
+}
+
 const manifestFor = (origin: string, tvUrl?: string) =>
   ManifestSchema.parse({
     appId: "fixture-game",
@@ -175,31 +210,50 @@ describe("the ogs dev server's routes", { timeout: 20_000 }, () => {
     expect(res.status).toBe(200);
   });
 
-  it("a phone port that's taken: closes what it opened and fails", async () => {
-    const busy = http.createServer();
-    servers.push(busy);
-    await new Promise<void>((r) => busy.listen(0, "127.0.0.1", () => r()));
-    const addr = busy.address();
-    const busyPort = typeof addr === "object" && addr ? addr.port : 0;
+  it("with a port, the phones take the ports after it, in order", async () => {
     const origin = await game();
     const manifest = manifestFor(origin);
+    const started = await startOnFreePorts(4, (port) =>
+      startDevServer({
+        manifest,
+        startUrl: manifest.startUrl,
+        port,
+        phones: 3,
+        lan: null,
+        host: "127.0.0.1",
+      }),
+    );
+    dev = started.server;
+    const { port } = started;
+    expect(dev.url).toBe(`http://localhost:${port}`);
+    expect(dev.phoneUrls.map((u) => Number(new URL(u).port))).toEqual([
+      port + 1,
+      port + 2,
+      port + 3,
+    ]);
+  });
+
+  it("a phone port that's taken: closes what it opened and fails", async () => {
+    const origin = await game();
+    const manifest = manifestFor(origin);
+    const harnessPort = await freePorts(2);
+    const busy = await bind(harnessPort + 1);
+    if (!busy) throw new Error("the phone's port was taken before the test took it");
+    servers.push(busy);
     await expect(
       startDevServer({
         manifest,
         startUrl: manifest.startUrl,
-        port: busyPort - 1,
+        port: harnessPort,
         phones: 1,
         lan: null,
         host: "127.0.0.1",
       }),
     ).rejects.toMatchObject({ code: "EADDRINUSE" });
     // The harness it bound first is closed again.
-    const again = http.createServer();
-    servers.push(again);
-    await new Promise<void>((resolve, reject) => {
-      again.once("error", reject);
-      again.listen(busyPort - 1, "127.0.0.1", () => resolve());
-    });
+    const again = await bind(harnessPort);
+    expect(again).not.toBeNull();
+    if (again) servers.push(again);
   });
 
   it("puts every local name on the LAN", () => {

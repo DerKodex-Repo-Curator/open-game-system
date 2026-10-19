@@ -198,6 +198,11 @@ describe("inserting the hookup", () => {
       'import a from "a"; run();\nmore();',
       'SNIPPET\nimport a from "a"; run();\nmore();',
     ],
+    [
+      "an import followed by code with no space between",
+      'import a from "a";run();\nmore();',
+      'SNIPPET\nimport a from "a";run();\nmore();',
+    ],
     ["indented imports", '  import a from "a";\nrun();', '  import a from "a";\nSNIPPET\nrun();'],
     [
       "a comment after the imports, then code",

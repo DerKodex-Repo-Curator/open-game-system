@@ -2,6 +2,7 @@ import http, { type Server } from "node:http";
 import { networkInterfaces } from "node:os";
 import type { Manifest } from "@open-game-system/ogs-protocol";
 import qrcode from "qrcode-generator";
+import { z } from "zod";
 import { bridgeScript, type PhoneBridge } from "./bridge-script";
 import {
   type DevCouch,
@@ -61,15 +62,16 @@ export function qrDataUrl(text: string): string {
   return qr.createDataURL(6, 2);
 }
 
+/** A listening TCP server's address: the port it took (port 0 picks one). */
+const ListeningSchema = z.object({ port: z.number() });
+
 const listen = (server: Server, port: number, host: string) =>
   new Promise<number>((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, () => {
       // Stryker disable next-line StringLiteral: equivalent, a later error would only call reject on a settled promise
       server.off("error", reject);
-      const addr = server.address();
-      // Stryker disable next-line ConditionalExpression,LogicalOperator: equivalent, a listening TCP server's address is always an object
-      resolve(typeof addr === "object" && addr ? addr.port : port);
+      resolve(ListeningSchema.parse(server.address()).port);
     });
   });
 

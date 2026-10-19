@@ -160,8 +160,7 @@ async function planManifest(
 function parseOrUndefined(text: string): unknown {
   try {
     return JSON.parse(text);
-    // Stryker disable next-line BlockStatement: equivalent, an empty catch returns undefined too
-  } catch {
+  } catch /* Stryker disable next-line BlockStatement: equivalent, an empty catch returns undefined too */ {
     return undefined;
   }
 }
