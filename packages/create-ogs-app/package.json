@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "create-ogs-app": "./dist/bin.mjs"
+    "create-ogs-app": "dist/bin.mjs"
   },
   "files": [
     "dist",

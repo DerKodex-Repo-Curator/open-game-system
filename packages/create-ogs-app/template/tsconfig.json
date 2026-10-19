@@ -3,5 +3,5 @@
   "compilerOptions": {
     "strict": true
   },
-  "include": ["app", "app.config.ts", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": ["app", "app.config.ts"]
 }
