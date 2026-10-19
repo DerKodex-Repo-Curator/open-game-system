@@ -68,4 +68,24 @@ describe("GET /api/v1/dev/kits", { timeout: 20_000 }, () => {
       },
     });
   });
+
+  it("an http docs base (local dev) is fine, and every trailing slash is dropped", async () => {
+    const res = await kits({ OGS_DOCS_BASE: "http://localhost:8788//" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ docs: "http://localhost:8788" });
+  });
+
+  it.each([
+    "ftp://docs.example",
+    "xhttp://docs.example",
+    "httpsx://docs.example",
+  ])("a docs base on another scheme (%s) is refused", async (base) => {
+    expect((await kits({ OGS_DOCS_BASE: base })).status).toBe(500);
+  });
+
+  it("answers with the default docs base when the Worker has no bindings at all", async () => {
+    const res = await app.request("/api/v1/dev/kits");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ docs: "https://ogs-docs.pages.dev" });
+  });
 });

@@ -18,10 +18,12 @@ const RowSchema = z.object({
 
 /** A stored manifest, parsed again on the way out (null when absent or no longer valid). */
 function manifestOf(json: string | null): Manifest | null {
+  // Stryker disable next-line ConditionalExpression: equivalent, JSON.parse(null) is null, which ManifestSchema refuses too
   if (json === null) return null;
   let raw: unknown;
   try {
     raw = JSON.parse(json);
+    // Stryker disable next-line BlockStatement: equivalent, raw stays undefined, which ManifestSchema refuses too
   } catch {
     return null;
   }

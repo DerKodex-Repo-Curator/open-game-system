@@ -75,6 +75,19 @@ tested: the React views (`ScreenApp.tsx`, `BrowserTv.tsx`, `pages/Join.tsx`, `pa
 Detox walks (`first-time-funnel.test.ts`, `browser-tv.test.ts`) and `e2e/first-time-funnel-web.mjs`
 drive them.
 
+## White-label apps and the developer API (2026-10-19)
+
+`claude/harden-api`: Stryker with `--mutate` (line ranges where noted), CRAP from `scripts/crap.mjs`.
+
+| Scope (services/api) | Mutation | Max CRAP |
+|-------|----------|----------|
+| `routes/apps.ts`, `routes/app-devices.ts`, `lib/native-apps.ts`, `lib/app-link-files.ts` | 100% | 7 |
+| `routes/auth.ts` POST /native (153-268), `lib/native-push.ts`, `lib/push-senders.ts` native path, `lib/push-delivery.ts` app-device path | 100% | 7 (`sendNative`, `deliver`) |
+| `routes/deliver.ts`, `routes/dev.ts`, `routes/catalogue-entries.ts`, `lib/try-paths.ts`, `lib/manifest-check.ts`, `lib/catalogue-entries.ts` | 100% | 7 |
+
+Equivalent mutants are marked in place. Many kills under load are timeouts; `--timeoutMS 20000` cuts
+the spurious ones.
+
 ## CRAP (2026-10-04)
 
 Target: CRAP < 8 for every function. Measure from a package dir after `pnpm test:coverage`:

@@ -186,15 +186,26 @@ auth.post("/native", async (c) => {
     );
   const ownerId = await loginOwner(c.env.DB, body.provider, login.subject);
   if ("device" in w) return signIn(c, ownerId, w.device);
-  const device = await guestDevice(c.env.DB, w.guest);
-  if (ownerId && ownerId !== w.guest.sub)
+  return guestLogin(c, w.guest, ownerId, body.provider, login);
+});
+
+/** A guest's login: a new one backs the guest up; one that backs another profile takes the device. */
+async function guestLogin(
+  c: Context<ProfileEnv>,
+  guest: Claims,
+  ownerId: string | null,
+  provider: Provider,
+  login: VerifiedLogin,
+) {
+  const device = await guestDevice(c.env.DB, guest);
+  if (ownerId && ownerId !== guest.sub)
     // The login backs another profile: this device signs in to it (the guest profile stays as it was).
     return signIn(c, ownerId, device);
-  const linked = await link(c, w.guest.sub, ownerId, body.provider, login);
+  const linked = await link(c, guest.sub, ownerId, provider, login);
   // Stryker disable next-line ConditionalExpression: equivalent, link() fails here only with 404 profile_not_found, which withToken() answers too
   if (linked.status !== 200) return linked;
-  return withToken(c, w.guest.sub, device);
-});
+  return withToken(c, guest.sub, device);
+}
 
 type NativeWho = { guest: Claims } | { device: Device };
 

@@ -371,3 +371,140 @@ describe("the admin's review", { timeout: 20_000 }, () => {
     expect(admin.status).toBe(401);
   });
 });
+
+describe("the catalogue developer API's words and edges", { timeout: 20_000 }, () => {
+  const errorOf = (b: unknown) =>
+    z.object({ error: z.object({ code: z.string(), message: z.string() }) }).parse(b).error;
+  const reviewPath = (appId: string, verb: string) =>
+    `/api/v1/admin/catalogue-entries/${appId}/${verb}`;
+
+  it("a check body that isn't JSON says it must be a JSON manifest", async () => {
+    const r = await call("POST", "/api/v1/manifests/check", null, "not json");
+    expect(errorOf(r.body)).toEqual({
+      code: "invalid_body",
+      message: "Body must be a JSON manifest",
+    });
+  });
+
+  it("a rate-limited check says to wait, and a request with no IP is keyed as unknown", async () => {
+    const keys: string[] = [];
+    const limiter: RateLimit = {
+      limit: async ({ key }) => {
+        keys.push(key);
+        return { success: false };
+      },
+    };
+    const res = await testApp().request(
+      "/api/v1/manifests/check",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(COMET),
+      },
+      { DB: d1.db, OGS_JWT_SECRET: "x", CLIENT_EVENTS_LIMITER: limiter },
+    );
+    expect(errorOf(await res.json())).toEqual({
+      code: "rate_limited",
+      message: "Too many manifest checks; try again in a minute",
+    });
+    expect(keys).toEqual(["manifest-check:unknown"]);
+    expect(probed).toEqual([]);
+  });
+
+  it("an entry body that isn't JSON is invalid_body, not invalid_manifest", async () => {
+    const r = await call("PUT", ENTRY, ccKey, "{");
+    expect(r.status).toBe(400);
+    expect(errorOf(r.body)).toEqual({
+      code: "invalid_body",
+      message: "Body must be a JSON manifest",
+    });
+  });
+
+  it("invalid_manifest's message names each issue's path, (root) for the whole body, joined with ;", async () => {
+    const root = await call("PUT", ENTRY, ccKey, '"nope"');
+    expect(errorOf(root.body).message).toMatch(/^\(root\): \S/);
+    const { startUrl: _s, ...noStart } = COMET;
+    const two = await call("PUT", ENTRY, ccKey, { ...noStart, shape: "solo" });
+    const issues = z
+      .object({
+        error: z.object({ issues: z.array(z.object({ path: z.string(), message: z.string() })) }),
+      })
+      .parse(two.body).error.issues;
+    expect(issues.map((i) => i.path).sort()).toEqual(["shape", "startUrl"]);
+    expect(errorOf(two.body).message).toBe(issues.map((i) => `${i.path}: ${i.message}`).join("; "));
+  });
+
+  it("the mismatch names both app ids", async () => {
+    const r = await call("PUT", ENTRY, ccKey, { ...COMET, appId: "comet-crash" });
+    expect(errorOf(r.body).message).toBe("The manifest's appId is comet-crash, not comet-catch");
+  });
+
+  it("a wrong or missing admin token says so; any whitespace after Bearer is fine", async () => {
+    const wrong = await call("POST", reviewPath("comet-catch", "approve"), "not-the-token");
+    expect(errorOf(wrong.body)).toEqual({
+      code: "unauthorized",
+      message: "The admin token is missing or wrong",
+    });
+    await call("PUT", ENTRY, ccKey, COMET);
+    const prefixed = await testApp().request(
+      reviewPath("comet-catch", "approve"),
+      { method: "POST", headers: { Authorization: `xBearer ${ADMIN}` } },
+      { DB: d1.db, OGS_JWT_SECRET: "x", OGS_ADMIN_TOKEN: ADMIN },
+    );
+    expect(prefixed.status).toBe(401);
+    const spaced = await testApp().request(
+      reviewPath("comet-catch", "approve"),
+      { method: "POST", headers: { Authorization: `bearer   ${ADMIN}` } },
+      { DB: d1.db, OGS_JWT_SECRET: "x", OGS_ADMIN_TOKEN: ADMIN },
+    );
+    expect(spaced.status).toBe(200);
+  });
+
+  it("nothing pending names the game", async () => {
+    const r = await call("POST", reviewPath("comet-catch", "approve"), ADMIN);
+    expect(errorOf(r.body)).toEqual({
+      code: "nothing_pending",
+      message: "comet-catch has no submission awaiting review",
+    });
+  });
+
+  it("a rejection note is trimmed, must have words, and stops at 2000 characters", async () => {
+    await call("PUT", ENTRY, ccKey, COMET);
+    const blank = await call("POST", reviewPath("comet-catch", "reject"), ADMIN, { note: "   " });
+    expect(errorOf(blank.body)).toEqual({
+      code: "invalid_body",
+      message: "{ note } (why, for the developer) is required",
+    });
+    expect(
+      (await call("POST", reviewPath("comet-catch", "reject"), ADMIN, { note: "x".repeat(2001) }))
+        .status,
+    ).toBe(400);
+    const ok = await call("POST", reviewPath("comet-catch", "reject"), ADMIN, {
+      note: `  ${"x".repeat(1998)}  `,
+    });
+    expect(ok.status).toBe(200);
+    expect(obj(ok.body).note).toBe("x".repeat(1998));
+  });
+
+  it("a stored live manifest that no longer parses is left out of the catalogue, the others stay", async () => {
+    await d1.db.batch([
+      d1.db
+        .prepare(
+          "INSERT INTO catalogue_entries (app_id, status, manifest_json, submitted_at) VALUES ('broken', 'live', ?, 1)",
+        )
+        .bind(JSON.stringify({ appId: "broken" })),
+      d1.db.prepare(
+        "INSERT INTO catalogue_entries (app_id, status, manifest_json, submitted_at) VALUES ('garbled', 'live', '{', 1)",
+      ),
+      d1.db
+        .prepare(
+          "INSERT INTO catalogue_entries (app_id, status, manifest_json, submitted_at) VALUES ('comet-catch', 'live', ?, 1)",
+        )
+        .bind(JSON.stringify(COMET)),
+    ]);
+    const ids = (await catalogueIds()).map((g) => g.appId);
+    expect(ids).toContain("comet-catch");
+    expect(ids).not.toContain("broken");
+    expect(ids).not.toContain("garbled");
+  });
+});
