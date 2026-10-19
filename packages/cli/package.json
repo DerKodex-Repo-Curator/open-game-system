@@ -21,6 +21,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.reporter=lcov --coverage.reporter=text-summary",
+    "test:mutate": "stryker run",
     "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "dependencies": {
@@ -33,6 +35,7 @@
     "@open-game-system/profile-kit": "workspace:*",
     "@open-game-system/ogs-protocol": "workspace:*",
     "@types/node": "^24",
+    "@vitest/coverage-v8": "^4.1.0",
     "esbuild": "^0.27.3",
     "jsdom": "^28.1.0",
     "playwright": "^1.58.2",

@@ -36,6 +36,20 @@ function rewriteLocation(location: string, upstream: URL, self: string): string 
   }
 }
 
+/** The game's response headers as the phone gets them: without DROPPED, redirects kept on this proxy. */
+function downstreamHeaders(
+  upHeaders: IncomingHttpHeaders,
+  upstream: URL,
+  self: string,
+): Record<string, string | string[]> {
+  const headers: Record<string, string | string[]> = {};
+  for (const [k, v] of Object.entries(upHeaders)) {
+    if (v === undefined || DROPPED.has(k)) continue;
+    headers[k] = k === "location" && typeof v === "string" ? rewriteLocation(v, upstream, self) : v;
+  }
+  return headers;
+}
+
 /**
  * One fake phone: a proxy of the game's start URL origin on its own port (so each phone has its
  * own origin, storage and profile, like a separate device), with the fake app bridge injected into
@@ -53,12 +67,7 @@ export function createPhoneProxy(opts: { upstream: URL; script: () => Promise<st
       target.href,
       { method: req.method, headers: upstreamHeaders(req, upstream, self) },
       (upRes) => {
-        const headers: Record<string, string | string[]> = {};
-        for (const [k, v] of Object.entries(upRes.headers)) {
-          if (v === undefined || DROPPED.has(k)) continue;
-          headers[k] =
-            k === "location" && typeof v === "string" ? rewriteLocation(v, upstream, self) : v;
-        }
+        const headers = downstreamHeaders(upRes.headers, upstream, self);
         const isHtml = (upRes.headers["content-type"] ?? "").includes("text/html");
         if (!isHtml) {
           res.writeHead(upRes.statusCode ?? 502, headers);

@@ -46,6 +46,19 @@ async function check(io: Io, appId: string, key: string, handles: string[]): Pro
   return reachable ? 0 : 1;
 }
 
+/** The send API's body: a default title and body for a test push; the link only when given. */
+const notification = (
+  to: string[],
+  values: { title?: string; body?: string; url?: string },
+  whenOpen: z.infer<typeof WhenOpenSchema>,
+) => ({
+  to,
+  title: values.title ?? "Test push",
+  body: values.body ?? "A test push from ogs push send.",
+  ...(values.url ? { url: values.url } : {}),
+  whenOpen,
+});
+
 export async function send(io: Io, args: string[]): Promise<number> {
   const { values } = parseArgs({
     args,
@@ -68,13 +81,13 @@ export async function send(io: Io, args: string[]): Promise<number> {
   const { appId, key } = session(io, values.app);
   if (values.check) return check(io, appId, key, handles);
   const { results } = ResultsSchema.parse(
-    await call(io, "POST", `/api/v1/games/${appId}/notifications`, key, {
-      to: handles,
-      title: values.title ?? "Test push",
-      body: values.body ?? "A test push from ogs push send.",
-      ...(values.url ? { url: values.url } : {}),
-      whenOpen: whenOpen.data,
-    }),
+    await call(
+      io,
+      "POST",
+      `/api/v1/games/${appId}/notifications`,
+      key,
+      notification(handles, values, whenOpen.data),
+    ),
   );
   for (const r of results) io.stdout(`${r.to}  ${r.status}`);
   return results.every((r) => r.status === "sent") ? 0 : 1;

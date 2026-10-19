@@ -3,7 +3,14 @@ import { networkInterfaces } from "node:os";
 import type { Manifest } from "@open-game-system/ogs-protocol";
 import qrcode from "qrcode-generator";
 import { bridgeScript, type PhoneBridge } from "./bridge-script";
-import { fakeCouch, phoneClaims, profileState, startMessage, tvClaims } from "./couch";
+import {
+  type DevCouch,
+  fakeCouch,
+  phoneClaims,
+  profileState,
+  startMessage,
+  tvClaims,
+} from "./couch";
 import { type HarnessPhone, harnessHtml } from "./harness";
 import { createPhoneProxy } from "./proxy";
 import { createDevSigner } from "./tokens";
@@ -72,6 +79,38 @@ const close = (server: Server) =>
 /** The phone page's path and query on a phone proxy's origin. */
 const phonePath = (startUrl: URL) => startUrl.pathname + startUrl.search + startUrl.hash;
 
+/** The harness page for this run: the TV's ogs:start (with its token), each phone, the QR codes. */
+function harnessPage(
+  opts: DevOptions,
+  run: {
+    couch: DevCouch;
+    token: string;
+    iss: string;
+    phoneUrls: string[];
+    lanPhoneUrls: string[];
+  },
+): string {
+  const phones: HarnessPhone[] = run.couch.players.map((p, i) => ({
+    phone: i + 1,
+    name: p.name,
+    avatar: p.avatar,
+    url: run.phoneUrls[i],
+    lanUrl: run.lanPhoneUrls[i] ?? null,
+    lanQr: run.lanPhoneUrls[i] ? qrDataUrl(run.lanPhoneUrls[i]) : null,
+  }));
+  const startLanUrl = opts.lan ? onLan(opts.startUrl, opts.lan) : null;
+  return harnessHtml({
+    appId: opts.manifest.appId,
+    name: opts.manifest.name,
+    tvUrl: opts.tvUrl ?? null,
+    start: startMessage(run.couch, run.token),
+    phones,
+    startLanUrl,
+    startLanQr: startLanUrl ? qrDataUrl(startLanUrl) : null,
+    jwksUrl: `${run.iss}/.well-known/jwks.json`,
+  });
+}
+
 /**
  * `ogs dev`: the harness on `port`, one bridge proxy per phone on the ports after it, and
  * `/.well-known/jwks.json` with this run's key. Tokens are signed fresh on every page load.
@@ -101,31 +140,11 @@ export async function startDevServer(opts: DevOptions): Promise<DevServer> {
     }
     if (path === "/" || path === "/index.html") {
       const token = await signer.sign(tvClaims(couch, manifest.appId, iss, Date.now()));
-      const phones: HarnessPhone[] = couch.players.map((p, i) => ({
-        phone: i + 1,
-        name: p.name,
-        avatar: p.avatar,
-        url: phoneUrls[i],
-        lanUrl: lanPhoneUrls[i] ?? null,
-        lanQr: lanPhoneUrls[i] ? qrDataUrl(lanPhoneUrls[i]) : null,
-      }));
-      const startLanUrl = opts.lan ? onLan(opts.startUrl, opts.lan) : null;
       res.writeHead(200, {
         "content-type": "text/html; charset=utf-8",
         "cache-control": "no-store",
       });
-      res.end(
-        harnessHtml({
-          appId: manifest.appId,
-          name: manifest.name,
-          tvUrl: opts.tvUrl ?? null,
-          start: startMessage(couch, token),
-          phones,
-          startLanUrl,
-          startLanQr: startLanUrl ? qrDataUrl(startLanUrl) : null,
-          jwksUrl: `${iss}/.well-known/jwks.json`,
-        }),
-      );
+      res.end(harnessPage(opts, { couch, token, iss, phoneUrls, lanPhoneUrls }));
       return;
     }
     res.writeHead(404, { "content-type": "text/plain" });

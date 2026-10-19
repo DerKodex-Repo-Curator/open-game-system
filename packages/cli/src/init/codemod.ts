@@ -40,15 +40,21 @@ const PHONE_NAMES = named([
 
 const toPosix = (path: string) => path.split(sep).join("/");
 
+/** A <script>'s src when it's a module on this site (not another origin's). */
+function localModuleSrc(attrs: string): string | null {
+  if (!/\btype\s*=\s*["']module["']/.test(attrs)) return null;
+  const src = attrs.match(/\bsrc\s*=\s*["']([^"']+)["']/)?.[1];
+  return !src || /^([a-z]+:)?\/\//i.test(src) ? null : src;
+}
+
 /** The local module scripts a page loads (repo-relative paths that exist). */
 function pageScripts(fs: Files, root: string, page: string): string[] {
   const path = join(root, page);
   if (!fs.exists(path)) return [];
   const scripts: string[] = [];
   for (const [, attrs = ""] of fs.read(path).matchAll(/<script\b([^>]*)>/g)) {
-    if (!/\btype\s*=\s*["']module["']/.test(attrs)) continue;
-    const src = attrs.match(/\bsrc\s*=\s*["']([^"']+)["']/)?.[1];
-    if (!src || /^([a-z]+:)?\/\//i.test(src)) continue;
+    const src = localModuleSrc(attrs);
+    if (!src) continue;
     const file = src.startsWith("/") ? join(root, src.slice(1)) : join(dirname(path), src);
     if (fs.exists(file)) scripts.push(toPosix(relative(root, file)));
   }
@@ -89,28 +95,33 @@ const IMPORT_END = /(\bfrom\s*["'][^"']+["']|^import\s*["'][^"']+["'])\s*;?\s*$/
 export function insertAfterImports(source: string, snippet: string): string | null {
   if (source.includes("@open-game-system/profile-kit")) return null;
   const lines = source.split("\n");
+  const at = afterImports(lines);
+  return [...lines.slice(0, at), snippet, ...lines.slice(at)].join("\n");
+}
+
+/** A trimmed line before the code: blank, an import (whole, or the start of one), or a preamble line. */
+function classify(text: string): "blank" | "import" | "import-start" | "preamble" | "code" {
+  if (text === "") return "blank";
+  if (/^import[\s{*"']/.test(text)) return IMPORT_END.test(text) ? "import" : "import-start";
+  if (/^(#!|\/\/|\/\*|\*)/.test(text) || /^["']use [\w ]+["'];?$/.test(text)) return "preamble";
+  return "code";
+}
+
+/** The index of the line after the leading imports and preamble. */
+function afterImports(lines: string[]): number {
   let at = 0;
   let inImport = false;
   for (const [i, line] of lines.entries()) {
     const text = line.trim();
     if (inImport) {
-      if (IMPORT_END.test(text)) {
-        inImport = false;
-        at = i + 1;
-      }
-      continue;
-    }
-    if (text === "") continue;
-    if (/^import[\s{*"']/.test(text)) {
       inImport = !IMPORT_END.test(text);
       if (!inImport) at = i + 1;
       continue;
     }
-    if (/^(#!|\/\/|\/\*|\*)/.test(text) || /^["']use [\w ]+["'];?$/.test(text)) {
-      at = i + 1;
-      continue;
-    }
-    break;
+    const kind = classify(text);
+    if (kind === "code") break;
+    if (kind === "import-start") inImport = true;
+    else if (kind !== "blank") at = i + 1;
   }
-  return [...lines.slice(0, at), snippet, ...lines.slice(at)].join("\n");
+  return at;
 }

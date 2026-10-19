@@ -120,15 +120,18 @@ export async function call(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await res.text();
-  if (!res.ok) {
-    const parsed = ErrorBodySchema.safeParse(text ? JSON.parse(text) : {});
-    throw new CliError(
-      parsed.success
-        ? `${parsed.data.error.code}: ${parsed.data.error.message ?? ""}`.trim()
-        : `HTTP ${res.status}`,
-    );
-  }
+  if (!res.ok) throw apiError(res.status, text);
   return text ? JSON.parse(text) : null;
+}
+
+/** The API's `{ error: { code, message } }` as a CliError ("code: message"), else the HTTP status. */
+function apiError(status: number, text: string): CliError {
+  const parsed = ErrorBodySchema.safeParse(text ? JSON.parse(text) : {});
+  return new CliError(
+    parsed.success
+      ? `${parsed.data.error.code}: ${parsed.data.error.message ?? ""}`.trim()
+      : `HTTP ${status}`,
+  );
 }
 
 /** The app and its key: --app, else the one logged in last. */

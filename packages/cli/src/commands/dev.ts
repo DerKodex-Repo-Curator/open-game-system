@@ -1,7 +1,7 @@
 import { parseArgs } from "node:util";
-import { ManifestSchema } from "@open-game-system/ogs-protocol";
+import { type Manifest, ManifestSchema } from "@open-game-system/ogs-protocol";
 import { MAX_PHONES } from "../dev/couch";
-import { type DevServer, lanAddress, startDevServer } from "../dev/server";
+import { type DevOptions, type DevServer, lanAddress, startDevServer } from "../dev/server";
 import { CliError, type Io } from "../io";
 
 const USAGE =
@@ -39,6 +39,45 @@ function readManifest(io: Io, path: string) {
   return parsed.data;
 }
 
+/** --port, --phones and the URLs make sense (the phones take the ports after --port). */
+const validOptions = (port: number, phones: number, urls: string[]) =>
+  Number.isInteger(port) &&
+  port >= 0 &&
+  port <= 65535 - MAX_PHONES &&
+  Number.isInteger(phones) &&
+  phones >= 1 &&
+  phones <= MAX_PHONES &&
+  urls.every(isUrl);
+
+/** The dev server; a port in use is said plainly. */
+async function start(opts: DevOptions): Promise<DevServer> {
+  try {
+    return await startDevServer(opts);
+  } catch (e) {
+    if (e instanceof Error && "code" in e && e.code === "EADDRINUSE")
+      throw new CliError(
+        `Port ${opts.port} (or one of the ${opts.phones} after it, for the phones) is in use. Pass --port <another>.`,
+      );
+    throw e;
+  }
+}
+
+/** What ogs dev prints once it serves: the harness, each phone, the LAN, the JWKS URL. */
+function banner(manifest: Manifest, server: DevServer, phones: number, tvUrl: string | undefined) {
+  return `ogs dev: ${manifest.name} (${manifest.appId})
+
+  Harness   ${server.url}   (TV page + ${phones} phone${phones > 1 ? "s" : ""}: open this)
+  TV page   ${tvUrl ?? "none yet: a phone sends it with cast-kit useCastViewUrl"}
+${server.phoneUrls.map((u, i) => `  Phone ${i + 1}   ${u}`).join("\n")}
+${
+  server.lanUrls
+    ? `\n  Real phones on this Wi-Fi: scan the QR codes in the harness (${server.lanUrls.harness}).\n  Your game's dev server must listen on the LAN too (vite --host) for ${server.lanUrls.start}.\n`
+    : "\n  No LAN address: real phones can't reach this machine.\n"
+}
+  Game server: verify tokens with OGS_JWKS_URL=${server.jwksUrl}
+  Ctrl-C stops.`;
+}
+
 /**
  * `ogs dev`: runs the game locally with a fake OGS app and TV (docs/design-docs/ogs-cli.md `ogs dev`).
  * `waitForStop` is how long it serves (tests resolve it themselves).
@@ -62,15 +101,7 @@ export async function runDev(
   const port = Number(values.port);
   const phones = Number(values.phones);
   const urls = [values["start-url"], values["tv-url"]].filter((u) => u !== undefined);
-  if (
-    !Number.isInteger(port) ||
-    port < 0 ||
-    port > 65535 - MAX_PHONES ||
-    !Number.isInteger(phones) ||
-    phones < 1 ||
-    phones > MAX_PHONES ||
-    urls.some((u) => !isUrl(u))
-  ) {
+  if (!validOptions(port, phones, urls)) {
     io.stderr(`${USAGE}\n(--phones is 1 to ${MAX_PHONES}; URLs are http or https)`);
     return 2;
   }
@@ -78,31 +109,8 @@ export async function runDev(
   const startUrl = values["start-url"] ?? manifest.startUrl;
   const tvUrl = values["tv-url"] ?? manifest.tvUrl;
   const lan = values.lan ?? lanAddress();
-
-  let server: DevServer;
-  try {
-    server = await startDevServer({ manifest, startUrl, tvUrl, port, phones, lan });
-  } catch (e) {
-    if (e instanceof Error && "code" in e && e.code === "EADDRINUSE")
-      throw new CliError(
-        `Port ${port} (or one of the ${phones} after it, for the phones) is in use. Pass --port <another>.`,
-      );
-    throw e;
-  }
-
-  io.stdout(`ogs dev: ${manifest.name} (${manifest.appId})
-
-  Harness   ${server.url}   (TV page + ${phones} phone${phones > 1 ? "s" : ""}: open this)
-  TV page   ${tvUrl ?? "none yet: a phone sends it with cast-kit useCastViewUrl"}
-${server.phoneUrls.map((u, i) => `  Phone ${i + 1}   ${u}`).join("\n")}
-${
-  server.lanUrls
-    ? `\n  Real phones on this Wi-Fi: scan the QR codes in the harness (${server.lanUrls.harness}).\n  Your game's dev server must listen on the LAN too (vite --host) for ${server.lanUrls.start}.\n`
-    : "\n  No LAN address: real phones can't reach this machine.\n"
-}
-  Game server: verify tokens with OGS_JWKS_URL=${server.jwksUrl}
-  Ctrl-C stops.`);
-
+  const server = await start({ manifest, startUrl, tvUrl, port, phones, lan });
+  io.stdout(banner(manifest, server, phones, tvUrl));
   await waitForStop(server);
   await server.close();
   return 0;

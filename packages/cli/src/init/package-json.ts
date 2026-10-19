@@ -15,20 +15,19 @@ export type DependencyChange = {
   kept: { name: string; spec: string }[];
 };
 
-export function addDependencies(
-  text: string | null,
-  deps: Record<string, string>,
-  fallbackName: string,
-): DependencyChange {
-  let parsed: z.infer<typeof PackageSchema>;
+/** package.json's fields (a new one: the name and private), or a CliError. */
+function parsePackage(text: string | null, fallbackName: string) {
   try {
-    parsed = PackageSchema.parse(
+    return PackageSchema.parse(
       text === null ? { name: fallbackName, private: true } : JSON.parse(text),
     );
   } catch {
     throw new CliError("package.json isn't valid JSON with a dependencies object");
   }
-  const current = parsed.dependencies ?? {};
+}
+
+/** The dependencies with `deps` added where missing; one already there under another spec is kept. */
+function merge(current: Record<string, string>, deps: Record<string, string>) {
   const added: string[] = [];
   const kept: { name: string; spec: string }[] = [];
   const next = { ...current };
@@ -39,6 +38,16 @@ export function addDependencies(
       added.push(name);
     } else if (existing !== spec) kept.push({ name, spec: existing });
   }
+  return { next, added, kept };
+}
+
+export function addDependencies(
+  text: string | null,
+  deps: Record<string, string>,
+  fallbackName: string,
+): DependencyChange {
+  const parsed = parsePackage(text, fallbackName);
+  const { next, added, kept } = merge(parsed.dependencies ?? {}, deps);
   if (added.length === 0 && text !== null) return { text, added, kept };
   const indent = text?.match(/^[ \t]+(?=")/m)?.[0] ?? "  ";
   return {
