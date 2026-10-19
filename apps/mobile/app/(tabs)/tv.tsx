@@ -18,6 +18,7 @@ import { castPromptError } from "../../components/ogs/library/play-action";
 import { padSize, RemotePad } from "../../components/ogs/RemotePad";
 import { BrowserTv } from "../../components/ogs/remote/BrowserTv";
 import { InviteFamily } from "../../components/ogs/remote/InviteFamily";
+import { InviteRecent } from "../../components/ogs/remote/InviteRecent";
 import { JoinTv } from "../../components/ogs/remote/JoinTv";
 import { castTarget, lastStop } from "../../components/ogs/remote/last-stop";
 import { HolderLine, NowOnTv } from "../../components/ogs/remote/NowOnTv";
@@ -46,6 +47,7 @@ import {
   couchHub,
   deviceId,
   endTonight,
+  lastTv,
   moveToTv,
   useApp,
   useCast,
@@ -170,6 +172,7 @@ function Remote({ castDeviceName }: { castDeviceName: string | null }) {
         onChangeTv={openPicker}
         rowEnd={controls.changeTv ? null : end}
       />
+      <InviteRecent />
       <ErrorLine
         text={switchError}
         action="retry"
@@ -226,7 +229,8 @@ function NotCast({ connecting }: { connecting: boolean }) {
     return () => clearTimeout(t);
   }, [phase, devices.length]);
 
-  const tv = castTarget(devices, picked, stopped);
+  const last = useSyncExternalStore(lastTv.subscribe, lastTv.get, lastTv.get);
+  const tv = castTarget(devices, picked, stopped, last);
   // With several TVs the chooser names the one Cast goes to; the caption would repeat it.
   const choosing = devices.length > 1 && !connecting && phase !== "searching";
 

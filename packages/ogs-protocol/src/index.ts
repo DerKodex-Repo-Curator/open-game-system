@@ -2,6 +2,7 @@ export * from "./family-invite";
 export * from "./frame";
 export * from "./friends";
 export * from "./game-token";
+export * from "./couch-invite";
 export * from "./guest";
 export * from "./instance";
 export * from "./join";

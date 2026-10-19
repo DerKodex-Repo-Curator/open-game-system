@@ -256,9 +256,9 @@ describe("NativeBridge", () => {
       // Non-object (null after JSON.parse)
       bridge.handleWebMessage(JSON.stringify(null));
       expect(store?.getSnapshot().value).toBe(0);
+      // Only that it was invalid, never the message (it may carry a token).
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         expect.stringContaining("Invalid message format"),
-        null,
       );
 
       consoleWarnSpy.mockClear();
@@ -274,7 +274,6 @@ describe("NativeBridge", () => {
       expect(store?.getSnapshot().value).toBe(0);
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         expect.stringContaining("Invalid message format"),
-        expect.objectContaining({ foo: "bar" }),
       );
 
       consoleWarnSpy.mockRestore();
@@ -323,10 +322,9 @@ describe("NativeBridge", () => {
 
       bridge.handleWebMessage("not valid json {{{");
 
+      // Only that it failed: the message and the parse error (which quotes it) may carry a token.
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         expect.stringContaining("Failed to parse message"),
-        expect.any(String),
-        expect.any(Error),
       );
       // Store state unchanged
       expect(bridge.getStore("counter")?.getSnapshot().value).toBe(0);

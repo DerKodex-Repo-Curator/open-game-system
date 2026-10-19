@@ -45,6 +45,18 @@ export type CardModel =
       upcoming: boolean;
     }
   | {
+      /** The game played last (its sitting over or long silent): OK starts a new game of it. */
+      kind: "again";
+      itemId: string;
+      appId: string;
+      name: string;
+      art: Art;
+      /** "Play again". */
+      tag: string;
+      /** When it was played, short ("Yesterday", "Thursday"). */
+      chip: string;
+    }
+  | {
       kind: "surprise";
       /** `play:<pick>`: OK starts the picked game at once. */
       itemId: string;
@@ -144,13 +156,27 @@ export function buildHome(input: {
         : // Stryker disable next-line ArrayDeclaration: equivalent, unreachable after the filter above
           [];
     });
+  // Play again comes first: the game played last, when Continue doesn't already hold it.
+  const again = rows.find((r) => r.id === "again")?.boxes[0];
+  const againGame = again ? byId.get(again.appId) : undefined;
+  if (again && againGame)
+    cards.unshift({
+      kind: "again",
+      itemId: playItem(again.appId),
+      appId: again.appId,
+      name: again.name,
+      art: roomArt(againGame),
+      tag: "Play again",
+      chip: again.chip,
+    });
   // Surprise me sits right after the latest sitting: the kids' button is never at the far end.
   const kids = icons.filter((i) => {
     const g = byId.get(i.appId);
     // Stryker disable next-line BooleanLiteral: equivalent, every icon's game is in input.games
     return g ? forKids(g) : false;
   });
-  const recent = input.suspended[0]?.appId ?? null;
+  // Never the game just played: neither the latest pause nor the Play again card's game.
+  const recent = input.suspended[0]?.appId ?? again?.appId ?? null;
   const pick = pickSurprise(kids, recent, () => input.surpriseSeed ?? 0);
   if (kids.length >= 2 && pick)
     cards.splice(Math.min(1, cards.length), 0, {
@@ -169,15 +195,24 @@ export const homeFocusRows = (home: HomeModel): FocusRow[] => [
   { id: "activity", items: home.cards.map((c) => c.itemId) },
 ];
 
-/** Where the ring goes when its item left the screen (a page closed): that game, else the first. */
+/** Where the ring starts on arriving home: the Play again card when there is one (OK plays it). */
+export const homeStart = (home: HomeModel): string | null =>
+  home.cards[0]?.kind === "again" ? home.cards[0].itemId : null;
+
+/**
+ * Where the ring goes when its item left the screen (a page closed): that game, else (arriving
+ * with no focus) `start`, else the first.
+ */
 export function recoverFocus(
   rows: FocusRow[],
   focus: string | null,
   lastPage: string | null,
+  start: string | null = null,
 ): string | null {
   if (locate(rows, focus)) return null;
   const back = lastPage ? `game:${lastPage}` : null;
-  return back && locate(rows, back) ? back : firstFocus(rows);
+  if (back && locate(rows, back)) return back;
+  return focus === null && start && locate(rows, start) ? start : firstFocus(rows);
 }
 
 /**

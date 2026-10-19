@@ -116,13 +116,18 @@ describe("A stranger household on the preview, from the catalogue to the first r
         .toExist()
         .withTimeout(30000);
       await step("host-in-game");
+      // A running game never lets the app go idle (its live connection, the overlays' animations),
+      // and Espresso Web on Android waits for idle before every script: each one timed out. The
+      // steps below poll on their own, so Detox's synchronization is off for the game.
+      await device.disableSynchronization();
 
       // Captain: Ready, then read the first problem's line aloud (to the orchestrator).
+      // Everything goes through .captain (its page reached via ownerDocument): on Android, Espresso
+      // Web hung on a second element lookup ("body") once the game was up.
       await untilInGame(".captain", 60000);
-      await untilInGame("body");
       // Ready asks iOS for motion (it needs a real touch, not a scripted click): tap where the button
       // is, then answer the motion prompt either way (Rocket Crew falls back to taps without it).
-      const readyAt = `(body) => { const b = [...body.querySelectorAll("button")].find((x) => x.textContent.trim() === "Ready"); if (!b) return ""; const r = b.getBoundingClientRect(); return JSON.stringify({ x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }); }`;
+      const readyAt = `(captain) => { const b = [...captain.ownerDocument.querySelectorAll("button")].find((x) => x.textContent.trim() === "Ready"); if (!b) return ""; const r = b.getBoundingClientRect(); return JSON.stringify({ x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }); }`;
       // The first visit's "Swipe to go home" hint covers the game until it is tapped.
       try {
         await waitFor(element(by.id("swipeHintOverlay")))
@@ -131,13 +136,17 @@ describe("A stranger household on the preview, from the catalogue to the first r
         await element(by.id("swipeHintOverlay")).tap();
       } catch {}
       for (let tries = 0; tries < 4; tries++) {
-        const at = await inGame("body", readyAt);
+        const at = await inGame(".captain", readyAt);
         if (typeof at !== "string" || !at) break;
         const point: unknown = JSON.parse(at);
         if (typeof point !== "object" || point === null || !("x" in point) || !("y" in point))
           break;
-        // A screen tap (the WebView fills the screen): the first one also dismisses a covering hint.
-        await device.tap({ x: Number(point.x), y: Number(point.y) });
+        const tapAt = { x: Number(point.x), y: Number(point.y) };
+        // iOS: a screen tap (the WebView fills the screen; the first also dismisses a covering
+        // hint). Android: the page's point is relative to the WebView, which starts below the
+        // status bar, so tap the WebView there.
+        if (device.getPlatform() === "android") await element(by.id("gameWebView")).tap(tapAt);
+        else await device.tap(tapAt);
         // iOS asks "<the game's domain> Would Like to Access Motion and Orientation" a moment later.
         try {
           await waitFor(element(by.text("Allow")))
@@ -153,6 +162,7 @@ describe("A stranger household on the preview, from the catalogue to the first r
       const line = await inGame(".line", "(el) => el.textContent");
       await step("captain-line", { line: str(line, "captain line") });
       await wait("round-done");
+      await device.enableSynchronization();
     },
     WALK_MS,
   );
