@@ -3,7 +3,8 @@ import { z } from "zod";
 export const CastDeviceSchema = z.object({
   id: z.string(),
   name: z.string(),
-  type: z.enum(["chromecast", "airplay"]),
+  /** "browser": a TV's browser paired by code (a white-label app's browser-TV fallback). */
+  type: z.enum(["chromecast", "airplay", "browser"]),
 });
 
 export type CastDevice = z.infer<typeof CastDeviceSchema>;

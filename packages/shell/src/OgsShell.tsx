@@ -2,6 +2,7 @@ import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 import { useEffect, useReducer, useState, useSyncExternalStore } from "react";
 import { AppState, Linking, StyleSheet, Text, View } from "react-native";
+import { CastPickerSheet } from "./CastPickerSheet";
 import { defaultShellDeps } from "./default-deps";
 import { type LinkingLike, type PushTapsLike, watchIncomingUrls } from "./incoming-links";
 import { DEFAULT_OFFLINE_THEME, OfflineScreen, type OfflineTheme } from "./OfflineScreen";
@@ -38,7 +39,8 @@ export interface OgsShellProps {
 
 /**
  * A single-game app: the game's phone page full screen in a bridged WebView, the native offline
- * screen, the native sign-in sheet when the game asks, links and push taps routed into the page. "Powered by
+ * screen, the native sign-in sheet when the game asks, the native TV picker when the game's cast
+ * button opens it (Chromecasts + "Use a browser TV"), links and push taps routed into the page. "Powered by
  * OGS" (branding: powered-by) shows on the loading and offline screens, never over the game.
  */
 export function OgsShell(props: OgsShellProps) {
@@ -57,6 +59,7 @@ export function OgsShell(props: OgsShellProps) {
   const [status, dispatch] = useReducer(webViewStatus, INITIAL_WEBVIEW_STATUS);
   const [uri, setUri] = useState(config.gameUrl);
   const sheet = useSyncExternalStore(runtime.sheet.subscribe, runtime.sheet.getSnapshot);
+  const picker = useSyncExternalStore(runtime.castPicker.subscribe, runtime.castPicker.getSnapshot);
   const theme: OfflineTheme = { ...DEFAULT_OFFLINE_THEME, ...props.theme };
 
   useEffect(() => {
@@ -121,6 +124,13 @@ export function OgsShell(props: OgsShellProps) {
         state={sheet.signIn}
         onSignIn={(p) => void runtime.signInWith(p)}
         onClose={() => runtime.closeSignIn()}
+      />
+      <CastPickerSheet
+        state={picker}
+        onPick={(id) => runtime.castPicker.pick(id)}
+        onOpenBrowserTv={() => runtime.castPicker.openBrowserTv()}
+        onPair={(code) => void runtime.castPicker.pairBrowserTv(code)}
+        onClose={() => runtime.castPicker.close()}
       />
     </View>
   );

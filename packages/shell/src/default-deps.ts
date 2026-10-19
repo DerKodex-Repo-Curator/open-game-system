@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Application from "expo-application";
 import * as Crypto from "expo-crypto";
 import * as Device from "expo-device";
@@ -59,6 +60,7 @@ export function defaultShellDeps(
     gameStores: (ctx) => ({
       ...castGameStores(createGoogleCastBackend(), {
         streamServerUrl: streamServerUrl({}, config.apiBase),
+        browserTvStorage: AsyncStorage,
       })(ctx),
       ...ogsGameStores({ askPlayer: askToNotify })(ctx),
     }),

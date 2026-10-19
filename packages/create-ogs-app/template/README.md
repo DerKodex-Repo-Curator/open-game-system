@@ -6,7 +6,7 @@ game's phone page (`__OGS_GAME_URL__`) and gives it the native powers of the OGS
 
 | Your page gets | How |
 |---|---|
-| **Play on TV** (Chromecast) | Your own button with `cast-kit-react`; the app runs the native picker and session. The TV shows your manifest's `tvUrl` full screen. |
+| **Play on TV** (Chromecast or a browser TV) | Your own button with `cast-kit-react`; the app runs the native picker and session. The TV shows your manifest's `tvUrl` full screen. |
 | **Who is playing** | `useOgsProfile()` from `profile-kit`: a guest profile from the first launch, then **Sign in with Apple / Google** in a native sheet. One OGS account works in every OGS-powered app. |
 | **Push links** | Your server sends one call; OGS delivers it to this app with your own APNs key / FCM account. A tap opens the page you name. |
 | **Links** | `__OGS_LINK_BASE__/…`, `opengame.org/play/__OGS_APP_ID__/…` and `__OGS_APP_ID__://<path>` (the app's scheme, for tests) open the app at that page. |
@@ -62,6 +62,10 @@ native Chromecast picker and session; the TV loads the OGS Cast receiver, which 
 manifest's `tvUrl` full screen with nothing around it, and your TV page gets the couch through
 `ogs:start` as it does in the OGS launcher. A room game names the TV page for its room with
 `useCastViewUrl(url)`.
+
+The button shows even with no Chromecast on the Wi-Fi: the picker it opens offers **Use a browser
+TV** (open `ogs-tv.pages.dev` in the TV's or a laptop's browser and type the code it shows), so
+you can test casting in the iOS Simulator too.
 
 Inside the OGS app the same page shows no cast button (OGS casts once for every game): the
 example checks `inOwnApp()` ([`examples/web/in-own-app.ts`](examples/web/in-own-app.ts)). This app's

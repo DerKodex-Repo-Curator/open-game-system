@@ -13,7 +13,8 @@ import type { SessionManagerLike } from "./cast-sync";
 /** The API calls a browser TV needs (services/ogs-api.ts). */
 export type ScreensApi = {
   claim(code: string): Promise<{ screenId: string; name: string }>;
-  show(screenId: string, token: string): Promise<void>;
+  /** `app`: a single-game app's chromeless launcher (chrome=none&app=<appId>); the OGS app never sends it. */
+  show(screenId: string, token: string, app?: string): Promise<void>;
   stop(screenId: string): Promise<void>;
 };
 
@@ -39,8 +40,11 @@ type Message = Record<string, unknown> | string;
 
 const LoadViewSchema = z.object({ type: z.literal("LOAD_VIEW"), viewUrl: z.string().url() });
 
-/** The launcher token a LOAD_VIEW's view URL carries (`?token=`), or null for any other message. */
-function launcherTokenOf(message: Message): string | null {
+/**
+ * The launcher token a LOAD_VIEW's view URL carries (`?token=`), and its app when the launcher is
+ * chromeless (`chrome=none&app=<appId>`); null for any other message.
+ */
+function launcherOf(message: Message): { token: string; app: string | null } | null {
   // Text that isn't JSON stays text and fails the schema.
   let data: unknown = message;
   // Stryker disable next-line ConditionalExpression: equivalent, an object fails JSON.parse and stays as it was
@@ -50,7 +54,11 @@ function launcherTokenOf(message: Message): string | null {
     } catch {}
   }
   const load = LoadViewSchema.safeParse(data);
-  return load.success ? new URL(load.data.viewUrl).searchParams.get("token") : null;
+  if (!load.success) return null;
+  const params = new URL(load.data.viewUrl).searchParams;
+  const token = params.get("token");
+  if (!token) return null;
+  return { token, app: params.get("chrome") === "none" ? params.get("app") : null };
 }
 
 const ErrorWithCode = z.object({ code: z.string() });
@@ -98,8 +106,10 @@ export function createScreenCastBackend(deps: { api: ScreensApi; storage: Storag
       getCastDevice: async () => ({ deviceId: deviceOf(screen).id, friendlyName: screen.name }),
       addChannel: async () => ({
         async sendMessage(message: Message) {
-          const token = launcherTokenOf(message);
-          if (token) await deps.api.show(screen.screenId, token);
+          const launcher = launcherOf(message);
+          if (!launcher) return;
+          if (launcher.app) await deps.api.show(screen.screenId, launcher.token, launcher.app);
+          else await deps.api.show(screen.screenId, launcher.token);
         },
         onMessage() {},
       }),

@@ -33,8 +33,9 @@ The game's screens are web technology, rendered in the app; everything around th
 
 - Demo account (Sign in with Apple is optional; guest play needs no account):
   [reviewer email / password, or "no account needed"].
-- Casting needs a Chromecast or Google TV on the same Wi-Fi. If you don't have one, please see the
-  video: [link to a 1-minute screen recording of casting and play].
+- Casting needs a Chromecast or Google TV on the same Wi-Fi, or any browser: tap "[Play on TV]",
+  then "Use a browser TV", open ogs-tv.pages.dev on a computer and type the code it shows. A video
+  of casting and play: [link to a 1-minute screen recording].
 - To see a push: [steps, e.g. "open the game link in Safari on a second device, join as a
   second player, play a turn; the first device gets 'Your turn'"]. We can also send one on
   request: [contact].

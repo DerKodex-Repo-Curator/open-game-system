@@ -149,6 +149,14 @@ on `false`, and only what was playing before. Pattern: `createAudioPause` in
   `packages/shell/src/user-agent.ts`). The page checks `navigator.userAgent.includes("OgsShell/<appId>")`:
   true only in its own app, where the cast button is the game's (the one exception to "no cast button").
   The OGS app adds nothing, and `isOGSCastAvailable()` is true in both apps (it only sees the bridge).
+- **Casting in a single-game app (OGS shell):** the app's `cast` store says `isAvailable: true` even with
+  no Chromecast found (a browser TV is always a target), so cast-kit-react's `<CastButton>` renders with
+  `deviceCount` 0. Its `showPicker()` (`SHOW_CAST_PICKER`) opens the app's native picker: every
+  Chromecast found and the phone's paired browser TVs (`CastDevice.type` `"browser"`), plus "Use a
+  browser TV" (open the OGS TV page on the TV's browser, type the code it shows). The TV shows the
+  launcher with `chrome=none&app=<appId>`; a browser TV gets the launcher token with `app`
+  (`POST /api/v1/screens/:id/show { token, app }`). In the OGS app the cast store is unchanged
+  (available only while a Chromecast is found; a game shows no cast button there).
 
 ## 4. Server: verify the token
 

@@ -15,7 +15,7 @@ profiles with native sign-in, push links, haptics and an offline screen.
 | | How |
 |---|---|
 | **Your game, live from the web** | The app opens your phone page (`gameUrl`). Deploy the web game and every installed app has it, with no store release. |
-| **Play on TV** | Chromecast only in v1. A cast button **you** draw with `cast-kit-react`; the app runs the native picker and session. The TV loads the OGS Cast receiver, which shows your manifest's `tvUrl` full screen with no OGS launcher around it, and your TV page still gets `ogs:start` with the couch. |
+| **Play on TV** | A Chromecast, or any TV with a browser (paired by a code). A cast button **you** draw with `cast-kit-react`; the app runs the native picker and session. The TV shows your manifest's `tvUrl` full screen with no OGS launcher around it, and your TV page still gets `ogs:start` with the couch. |
 | **Who is playing** | `useOgsProfile()` (profile-kit), as in the OGS app. Players start as a guest with a real OGS profile; **Sign in with Apple** (Google on Android) is a native sheet in the app, never in your page. One OGS account works in every OGS-powered app. |
 | **Push links** | Your server sends with your game's API key, as on [Notifications](notifications.md). OGS delivers to your app with **your** APNs key and FCM service account. A tap opens the page you name. |
 | **Links** | `https://<your domain>/…` (with the link files below), `https://opengame.org/play/<appId>/…` and your app's own scheme, `<appId>://<path>`, open the app at that page of your game. |
@@ -102,7 +102,11 @@ On the game side, copy what you need from `examples/`:
 - **Cast button** (`examples/web/cast-button.tsx`): `CastProvider` and `CastButton` from
   `@open-game-system/cast-kit-react`, styled like your game; `useCastViewUrl(url)` names the TV page
   for a room. Show it **only in your own app**: inside the OGS app, OGS casts once for every game
-  ([Rules, no cast button](rules.md#1-no-cast-button)).
+  ([Rules, no cast button](rules.md#1-no-cast-button)). In your app the button always shows, even
+  with no Chromecast on the Wi-Fi (`deviceCount` is then 0): its `showPicker()` opens the app's
+  native picker, which lists the Chromecasts found and **Use a browser TV**: open the OGS TV page
+  (`ogs-tv.pages.dev`) in the TV's or a laptop's browser and type the code it shows. A paired
+  browser TV stays in the list (`type: "browser"`).
 - **Your own app or not** (`examples/web/in-own-app.ts`): the app's WebView adds
   `OgsShell/<appId>` to the user agent, so `navigator.userAgent.includes("OgsShell/rocket-crew")` is
   true only in your own app: not in a plain browser, and not inside the OGS app (whose WebView also
@@ -211,6 +215,17 @@ under `/play/` can't be named this way:
 xcrun simctl openurl booted "rocket-crew://play/rocket-crew/join/ABCD"
 adb shell am start -a android.intent.action.VIEW -d "rocket-crew://join/ABCD"
 ```
+
+## Testing on a device
+
+The shell's native screens have testIDs and labels an e2e tool (Maestro, Detox) can find:
+
+| Screen | testID (label) |
+|---|---|
+| TV picker | `castPicker`; each TV `castPickerDevice-<id>` (its name); `castPickerNoDevices`; `castPickerClose` ("Not now") |
+| Browser TV | `browserTvOpen` ("Use a browser TV"), `browserTv`, `browserTvAddress` (the TV page's address), `browserTvCode` ("Code on the TV"), `browserTvPair` ("Pair"), `browserTvPairing`, `browserTvError` |
+| Sign-in sheet | `signInSheet`, `signInApple`, `signInGoogle`, `signInNotNow`, `signInError` |
+| Offline | `gameErrorScreen`, `gameRetryButton` |
 
 ## Keeping it up to date
 

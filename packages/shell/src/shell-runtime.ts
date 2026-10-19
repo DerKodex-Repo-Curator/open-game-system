@@ -10,6 +10,7 @@ import { createAccountStore } from "./account-store";
 import { createShellRequest, type ShellRequest } from "./api-client";
 import type { FetchLike, OgsApiOptions } from "./api-request";
 import { castLauncherUrl } from "./cast-launcher-url";
+import { type CastPicker, createCastPicker } from "./cast-picker";
 import { createGuestApi, ensureGuestProfile, type ShellDevice } from "./guest-profile";
 import { createHapticsStore, type HapticsPlayer } from "./haptics-store";
 import type { SecureStorage } from "./identity";
@@ -59,6 +60,8 @@ export interface ShellContext {
   requestPush(): Promise<PushRegistration>;
   /** Called when the runtime stops (the shell unmounts): close timers and listeners. */
   onStop(listener: () => void): void;
+  /** The shell's native TV picker: the cast store attaches its TVs and opens it (SHOW_CAST_PICKER). */
+  castPicker: CastPicker;
 }
 
 type AnyStore = Store<State, Event>;
@@ -147,7 +150,9 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
   }
 
   const stopListeners = new Set<() => void>();
+  const castPicker = createCastPicker();
   const ctx: ShellContext = {
+    castPicker,
     config,
     request,
     apiOptions: {
@@ -181,6 +186,7 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
   return {
     bridge,
     config,
+    castPicker,
     getIdentity: () => identity,
     onIdentity: ctx.onIdentity,
     requestPush: ctx.requestPush,

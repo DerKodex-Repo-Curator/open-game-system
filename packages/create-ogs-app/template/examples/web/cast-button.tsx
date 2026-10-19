@@ -9,11 +9,12 @@ import { inOwnApp } from "./in-own-app";
 
 /**
  * Casting, from your phone page. The button is yours (style it like your game); the app gives it
- * the native Chromecast picker and session through the app bridge. The TV shows your manifest's
- * `tvUrl` full screen.
+ * its native TV picker and session through the app bridge: the Chromecasts on the Wi-Fi and "Use a
+ * browser TV" (a code typed from the TV's browser), so it shows even with no Chromecast. The TV
+ * shows your manifest's `tvUrl` full screen.
  *
- * It renders nothing in a plain browser (no app), when no Chromecast is on the network, and
- * inside the OGS app: there OGS casts once for every game, so a game never shows a cast button.
+ * It renders nothing in a plain browser (no app) and inside the OGS app: there OGS casts once for
+ * every game, so a game never shows a cast button.
  */
 export function TvCasting({ tvUrl, children }: { tvUrl: string | null; children?: ReactNode }) {
   if (!inOwnApp()) return <>{children}</>;

@@ -137,6 +137,20 @@ function applyCastEvent<K extends NativeCastEvents["type"]>(
 const castProducer: Producer<NativeCastState, NativeCastEvents> = (draft, event) =>
   applyCastEvent(event.type, draft, event);
 
+/** A single-game app's TV is always a target (a browser TV needs no Chromecast). */
+const alwaysAvailableProducer: Producer<NativeCastState, NativeCastEvents> = (draft, event) => {
+  castProducer(draft, event);
+  draft.isAvailable = true;
+};
+
+/** How a single-game app's cast store differs from the OGS app's (which passes none). */
+export type CastStoreOptions = {
+  /** Casting is available with no Chromecast found (the shell's picker offers a browser TV). */
+  alwaysAvailable?: boolean;
+  /** Opens the app's own device picker on SHOW_CAST_PICKER, instead of Google Cast's dialog. */
+  showPicker?: () => void;
+};
+
 /** What the game's START_CASTING / STOP_CASTING commands do natively (see cast-sync.ts). */
 export type CastCommands = {
   startCasting(deviceId: string, devices: CastDevice[]): void;
@@ -145,16 +159,23 @@ export type CastCommands = {
 
 /**
  * Creates the native cast store instance.
- * Side effects: SHOW_CAST_PICKER opens the native Cast dialog; START/STOP_CASTING from the game
+ * Side effects: SHOW_CAST_PICKER opens the native Cast dialog (or `options.showPicker`); START/STOP_CASTING from the game
  * run the given commands against the real Google Cast session.
  */
-export function createCastStore(commands?: CastCommands): Store<NativeCastState, NativeCastEvents> {
+export function createCastStore(
+  commands?: CastCommands,
+  options: CastStoreOptions = {},
+): Store<NativeCastState, NativeCastEvents> {
+  const showPicker = options.showPicker;
   return createStore<NativeCastState, NativeCastEvents>({
-    initialState: CAST_INITIAL_STATE,
-    producer: castProducer,
+    initialState: options.alwaysAvailable
+      ? { ...CAST_INITIAL_STATE, isAvailable: true }
+      : CAST_INITIAL_STATE,
+    producer: options.alwaysAvailable ? alwaysAvailableProducer : castProducer,
     on: {
       SHOW_CAST_PICKER: () => {
-        GoogleCast.showCastDialog();
+        if (showPicker) showPicker();
+        else GoogleCast.showCastDialog();
       },
       START_CASTING: (event, store) => {
         commands?.startCasting(event.deviceId, store.getSnapshot().devices);
