@@ -9,7 +9,7 @@ game's phone page (`__OGS_GAME_URL__`) and gives it the native powers of the OGS
 | **Play on TV** (Chromecast) | Your own button with `cast-kit-react`; the app runs the native picker and session. The TV shows your manifest's `tvUrl` full screen. |
 | **Who is playing** | `useOgsProfile()` from `profile-kit`: a guest profile from the first launch, then **Sign in with Apple / Google** in a native sheet. One OGS account works in every OGS-powered app. |
 | **Push links** | Your server sends one call; OGS delivers it to this app with your own APNs key / FCM account. A tap opens the page you name. |
-| **Links** | `__OGS_LINK_BASE__/…` and `opengame.org/play/__OGS_APP_ID__/…` open the app at that page. |
+| **Links** | `__OGS_LINK_BASE__/…`, `opengame.org/play/__OGS_APP_ID__/…` and `__OGS_APP_ID__://<path>` (the app's scheme, for tests) open the app at that page. |
 | **Haptics, offline screen** | Native, from the shell. |
 
 The game itself stays on the web: deploy it and the app has the new version, no store release.

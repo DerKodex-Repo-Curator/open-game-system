@@ -2,6 +2,7 @@
 // `app.plugin.js` loads the default export (withOgsShell).
 import { withOgsShell } from "./with-ogs-shell";
 
+export { withAppScheme } from "./app-scheme";
 export { mergeNativeConfig, type NativeConfigPart } from "./merge-native-config";
 export {
   type IntentFilter,
@@ -25,6 +26,7 @@ export {
   withShellCast,
   withShellLinks,
   withShellPush,
+  withShellScheme,
   withShellSignIn,
 } from "./with-ogs-shell";
 

@@ -1,5 +1,6 @@
 import type { ExpoConfig } from "expo/config";
 import { type ConfigPlugin, createRunOncePlugin, withPlugins } from "expo/config-plugins";
+import { withAppScheme } from "./app-scheme";
 import { mergeNativeConfig, type NativeConfigPart } from "./merge-native-config";
 import { type NativeConfig, nativeConfigFor, type PluginEntry } from "./native-config";
 import { parseShellConfig } from "./shell-config";
@@ -37,12 +38,17 @@ export function createShellPlugins(applyPlugins: ApplyPlugins) {
       const { config: merged, pendingPlugins } = mergeNativeConfig(config, part);
       return applyPlugins(merged, pendingPlugins);
     };
+  const withShellScheme: ConfigPlugin<unknown> = (config, props) =>
+    withAppScheme(config, parseShellConfig(props));
+  const all = partPlugin(parts.all);
   return {
     withShellLinks: partPlugin(parts.links),
     withShellCast: partPlugin(parts.cast),
     withShellPush: partPlugin(parts.push),
     withShellSignIn: partPlugin(parts.signIn),
-    withOgsShell: partPlugin(parts.all),
+    withShellScheme,
+    withOgsShell: ((config, props) =>
+      all(withShellScheme(config, props), props)) satisfies ConfigPlugin<unknown>,
   };
 }
 
@@ -52,6 +58,8 @@ export const withShellLinks = expoPlugins.withShellLinks;
 export const withShellCast = expoPlugins.withShellCast;
 export const withShellPush = expoPlugins.withShellPush;
 export const withShellSignIn = expoPlugins.withShellSignIn;
+/** The app's custom URL scheme (the shell config's `scheme`, else the appId) when it has none. */
+export const withShellScheme = expoPlugins.withShellScheme;
 /** `plugins: [["@open-game-system/shell", shellConfig]]`: everything, once per config. */
 export const withOgsShell: ConfigPlugin<unknown> = createRunOncePlugin(
   expoPlugins.withOgsShell,

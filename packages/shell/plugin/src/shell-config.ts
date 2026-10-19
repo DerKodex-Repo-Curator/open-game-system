@@ -29,6 +29,14 @@ export const ShellConfigSchema = z.object({
   linkDomains: z.array(HostSchema).default([]),
   cast: z.object({ receiver: z.literal("ogs") }).default({ receiver: "ogs" }),
   /**
+   * The app's custom URL scheme, for `<scheme>://play/<rest>` links (tests, and before link domains
+   * are verified). Default: the appId. An app that sets Expo's own `scheme` keeps it.
+   */
+  scheme: z
+    .string()
+    .regex(/^[a-z][a-z0-9+.-]*$/i, "a URL scheme (a letter, then letters, digits, + . -)")
+    .optional(),
+  /**
    * The OGS API the app talks to. Leave it out for production (the runtime's DEFAULT_OGS_API); set
    * it to point a test build at a preview API.
    */

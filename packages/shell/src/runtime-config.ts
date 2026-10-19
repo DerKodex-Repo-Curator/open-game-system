@@ -6,6 +6,8 @@ export const DEFAULT_OGS_API = "https://opengame-api.jonathanrmumm.workers.dev";
 
 const ExpoConfigSchema = z.object({
   name: z.string().min(1),
+  /** The app's custom URL scheme(s); the plugin sets the appId when the app has none. */
+  scheme: z.union([z.string().min(1), z.array(z.string().min(1))]).optional(),
   extra: z.object({
     ogsShell: z.object({
       appId: z.string().min(1),
@@ -37,7 +39,14 @@ export function readRuntimeConfig(expoConfig: unknown): OgsShellConfig {
       `@open-game-system/shell: no shell config in the app (add the plugin to app.config). ${problems}`,
     );
   }
-  const { name, extra } = parsed.data;
+  const { name, extra, scheme } = parsed.data;
   const { apiBase, tvBase, ...shell } = extra.ogsShell;
-  return { ...shell, name, apiBase: apiBase ?? DEFAULT_OGS_API, ...(tvBase ? { tvBase } : {}) };
+  const schemes = scheme === undefined ? [] : [scheme].flat();
+  return {
+    ...shell,
+    name,
+    apiBase: apiBase ?? DEFAULT_OGS_API,
+    ...(tvBase ? { tvBase } : {}),
+    ...(schemes.length > 0 ? { schemes } : {}),
+  };
 }

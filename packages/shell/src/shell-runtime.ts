@@ -37,6 +37,8 @@ export interface ShellRuntimeConfig {
   /** The OGS API, e.g. https://api.opengame.org */
   apiBase: string;
   linkDomains: readonly string[];
+  /** The app's custom URL schemes (`<scheme>://…` links open in the game); default: the appId. */
+  schemes?: readonly string[];
   /** The OGS TV launcher the Chromecast shows (default https://ogs-tv.pages.dev). */
   tvBase?: string;
   /** The guest profile's name (default "Player"). */

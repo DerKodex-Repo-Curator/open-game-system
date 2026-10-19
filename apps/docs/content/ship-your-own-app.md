@@ -18,7 +18,7 @@ profiles with native sign-in, push links, haptics and an offline screen.
 | **Play on TV** | Chromecast only in v1. A cast button **you** draw with `cast-kit-react`; the app runs the native picker and session. The TV loads the OGS Cast receiver, which shows your manifest's `tvUrl` full screen with no OGS launcher around it, and your TV page still gets `ogs:start` with the couch. |
 | **Who is playing** | `useOgsProfile()` (profile-kit), as in the OGS app. Players start as a guest with a real OGS profile; **Sign in with Apple** (Google on Android) is a native sheet in the app, never in your page. One OGS account works in every OGS-powered app. |
 | **Push links** | Your server sends with your game's API key, as on [Notifications](notifications.md). OGS delivers to your app with **your** APNs key and FCM service account. A tap opens the page you name. |
-| **Links** | `https://<your domain>/…` (with the link files below) and `https://opengame.org/play/<appId>/…` open the app at that page of your game. |
+| **Links** | `https://<your domain>/…` (with the link files below), `https://opengame.org/play/<appId>/…` and your app's own scheme, `<appId>://<path>`, open the app at that page of your game. |
 | **Branding** | OGS is invisible by default (`branding: "hidden"`), or shows a small "Powered by OGS" mark (`"powered-by"`). |
 
 What it is not (v1): no in-app purchases or ads, no AirPlay or screen mirroring, one game per app.
@@ -200,6 +200,17 @@ ogs doctor --domain rocketcrew.tv
 
 It checks the registration, the push credentials, opengame.org's and your domain's link files, and
 that your manifest's `tvUrl` answers, and exits non-zero with what to fix.
+
+**Custom scheme.** Before the link files work (tests, a simulator, an unregistered app), the app's
+own scheme opens it: the plugin sets Expo's `scheme` to your appId (or the shell config's `scheme`)
+unless the app already has one. `<scheme>://play/<appId>/<path>`, `<scheme>://play/<path>` and
+`<scheme>://<path>` all open `<path>` of your game (query and hash kept), so a route of your own
+under `/play/` can't be named this way:
+
+```bash
+xcrun simctl openurl booted "rocket-crew://play/rocket-crew/join/ABCD"
+adb shell am start -a android.intent.action.VIEW -d "rocket-crew://join/ABCD"
+```
 
 ## Keeping it up to date
 
