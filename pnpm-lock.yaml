@@ -1546,6 +1546,9 @@ importers:
       '@open-game-system/profile-kit':
         specifier: workspace:*
         version: link:../../packages/profile-kit
+      '@open-game-system/shell':
+        specifier: workspace:*
+        version: link:../../packages/shell
       '@playwright/test':
         specifier: ^1.58.2
         version: 1.58.2
