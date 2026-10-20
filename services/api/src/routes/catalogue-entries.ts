@@ -13,18 +13,15 @@ import { type GameKeyEnv, gameKeyAuth } from "../middleware/game-key-auth";
  */
 
 /** The JSON body, whatever its shape; undefined when it isn't JSON. */
-async function jsonBody(c: Context): Promise<unknown> {
-  try {
-    return await c.req.json();
-  } catch {
-    return undefined;
-  }
+function jsonBody(c: Context): Promise<unknown> {
+  return c.req.json().catch((): undefined => undefined);
 }
 
 /** The catalogue reviewer: `Authorization: Bearer <OGS_ADMIN_TOKEN>`; unset refuses everyone. */
 async function adminAuth(c: Context<GameKeyEnv>, next: Next) {
   const expected = c.env.OGS_ADMIN_TOKEN;
-  const presented = (c.req.header("Authorization") ?? "").match(/^Bearer\s+(.+)$/i)?.[1];
+  // Stryker disable next-line StringLiteral: equivalent, an absent header and any non-Bearer text both match nothing
+  const presented = (c.req.header("Authorization") ?? "").match(/^Bearer\s+(.+)/i)?.[1];
   if (!expected || !presented || !timingSafeEqual(presented, expected))
     return apiError(c, 401, "unauthorized", "The admin token is missing or wrong");
   await next();
@@ -37,6 +34,7 @@ const notPending = (c: Context, appId: string) =>
 
 export function catalogueEntries(probe: Probe) {
   const routes = new Hono<GameKeyEnv>();
+  // Stryker disable next-line StringLiteral: equivalent, every route using it has :appId, so the fallback never runs
   const appIdOf = (c: Context<GameKeyEnv>) => c.req.param("appId") ?? "";
 
   /** POST /manifests/check — public, rate limited per IP; 200 for any JSON body. */

@@ -12,6 +12,7 @@ const deliver = new Hono<GameKeyEnv>();
 
 /** PUT /apps/:appId/try `{ url }` — checks the game's try-kit Worker, then records it. */
 deliver.put("/apps/:appId/try", gameKeyAuth, async (c) => {
+  // Stryker disable next-line StringLiteral: equivalent, the route always has the param, so the fallback never runs
   const appId = c.req.param("appId") ?? "";
   const body = await parseBody(c, TryPathRequestSchema);
   if (!body) return invalidBody(c, "url (https) is required");
@@ -22,6 +23,7 @@ deliver.put("/apps/:appId/try", gameKeyAuth, async (c) => {
 
 /** GET /apps/:appId/try — the recorded try path. */
 deliver.get("/apps/:appId/try", gameKeyAuth, async (c) => {
+  // Stryker disable next-line StringLiteral: equivalent, the route always has the param, so the fallback never runs
   const found = await tryPathOf(c.env.DB, c.req.param("appId") ?? "");
   if (!found)
     return apiError(c, 404, "no_try_path", "No try path registered for this game; run: ogs try");
@@ -30,7 +32,9 @@ deliver.get("/apps/:appId/try", gameKeyAuth, async (c) => {
 
 /** GET /games/:appId/push-handles/:handle — where a push to this handle would go (sends nothing). */
 deliver.get("/games/:appId/push-handles/:handle", gameKeyAuth, async (c) => {
+  // Stryker disable next-line StringLiteral: equivalent, the route always has the param, so the fallback never runs
   const handle = c.req.param("handle") ?? "";
+  // Stryker disable next-line StringLiteral: equivalent, the route always has the param, so the fallback never runs
   const surfaces = await surfacesOf(c.env.DB, c.req.param("appId") ?? "", handle);
   if (!surfaces)
     return apiError(c, 404, "handle_not_found", "No push handle with that id for this game");

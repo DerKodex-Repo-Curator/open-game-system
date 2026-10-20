@@ -9,7 +9,10 @@ export type AppLinks = {
   android: { appId: string; package: string; sha256CertFingerprints: string[] }[];
 };
 
-export const OGS_AASA = { appID: "34S957HD77.org.opengame.app", paths: ["/open", "/open/*", "/play/*", "/join/*"] };
+export const OGS_AASA = {
+  appID: "34S957HD77.org.opengame.app",
+  paths: ["/open", "/open/*", "/play/*", "/join/*"],
+};
 
 export const OGS_ASSETLINKS = {
   relation: ["delegate_permission/common.handle_all_urls"],
@@ -28,7 +31,10 @@ export function siteAssociation(links: AppLinks) {
     applinks: {
       apps: [] as string[],
       details: [
-        ...links.ios.map((a) => ({ appID: a.appleAppId, paths: [`/play/${a.appId}`, `/play/${a.appId}/*`] })),
+        ...links.ios.map((a) => ({
+          appID: a.appleAppId,
+          paths: [`/play/${a.appId}`, `/play/${a.appId}/*`],
+        })),
         OGS_AASA,
       ],
     },
@@ -39,7 +45,11 @@ export function assetlinks(links: AppLinks) {
   return [
     ...links.android.map((a) => ({
       relation: OGS_ASSETLINKS.relation,
-      target: { namespace: "android_app", package_name: a.package, sha256_cert_fingerprints: a.sha256CertFingerprints },
+      target: {
+        namespace: "android_app",
+        package_name: a.package,
+        sha256_cert_fingerprints: a.sha256CertFingerprints,
+      },
     })),
     OGS_ASSETLINKS,
   ];

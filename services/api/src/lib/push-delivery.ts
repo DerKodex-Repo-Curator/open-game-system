@@ -110,6 +110,7 @@ async function toApp(
   m: PushMessage,
   senders: PushSenders,
 ): Promise<SurfaceOutcome> {
+  // Stryker disable next-line StringLiteral: equivalent, combine() answers not_permitted for any outcome that isn't sent, failed or gone
   if (!(await granted(db, profileId, m.appId))) return "not_permitted";
   const phones = await phonesOf(db, profileId);
   const data: OgsPushData = {
@@ -131,10 +132,14 @@ async function toApp(
     ? (await appPhonesOf(db, profileId, m.appId)).map(async (d) => {
         const r = await native(m.appId, d, n);
         if (!r.success && !r.deviceActive)
-          await db.prepare("DELETE FROM app_devices WHERE device_id = ? AND app_id = ?").bind(d.device_id, m.appId).run();
+          await db
+            .prepare("DELETE FROM app_devices WHERE device_id = ? AND app_id = ?")
+            .bind(d.device_id, m.appId)
+            .run();
         return r;
       })
-    : [];
+    : // Stryker disable next-line ArrayDeclaration: equivalent, a non-result element has neither success nor deviceActive, so it never changes the outcome
+      [];
   const results = await Promise.all([...toOgsApp, ...toOwnApp]);
   if (results.some((r) => r.success)) return "sent";
   return results.some((r) => r.deviceActive) ? "failed" : "gone";

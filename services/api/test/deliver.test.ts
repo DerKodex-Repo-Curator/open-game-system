@@ -354,3 +354,55 @@ describe("GET /api/v1/games/:appId/push-handles/:handle", { timeout: 20_000 }, (
     ).toBe(401);
   });
 });
+
+describe("the try path's checks and words, at their edges", { timeout: 20_000 }, () => {
+  /** `/` answers `status` with a Location; `/ws-probe` is try-kit's. */
+  const homeAnswers = (status: number) => async (input: RequestInfo | URL, init?: RequestInit) => {
+    const req = new Request(input, init);
+    return new URL(req.url).pathname === "/"
+      ? new Response(null, { status, headers: { Location: `${TRY}/tv/ABCD` } })
+      : realTryWorker(req);
+  };
+
+  it.each([300, 399])("a %i with a Location is a redirect to a TV page", async (status) => {
+    expect(await checkTryPath(TRY, homeAnswers(status))).toEqual([]);
+  });
+
+  it.each([299, 400])("a %i (even with a Location) is not", async (status) => {
+    expect(await checkTryPath(TRY, homeAnswers(status))).toEqual([
+      `GET ${TRY}/ answered ${status}, not a redirect to a TV page`,
+    ]);
+  });
+
+  it("every trailing slash of the URL is dropped before its routes", async () => {
+    const seen: string[] = [];
+    await checkTryPath(`${TRY}/try//`, async (input, init) => {
+      seen.push(new Request(input, init).url);
+      return new Response("x");
+    });
+    expect(seen).toEqual([`${TRY}/try/`, `${TRY}/try/ws-probe`]);
+  });
+
+  it.each([
+    "xhttps://x.example/",
+    "httpsx://x.example/",
+  ])("refuses %s (only https)", async (url) => {
+    expect((await putTry(url)).status).toBe(400);
+  });
+
+  it("a bad body says an https url is required", async () => {
+    expect(errorOf(await putTry("http://x.example/"))).toEqual({
+      code: "invalid_body",
+      message: "url (https) is required",
+      status: 400,
+    });
+  });
+
+  it("no try path says how to register one", async () => {
+    expect(errorOf(await call("GET", "/api/v1/apps/rocket-crew/try", rcKey))).toEqual({
+      code: "no_try_path",
+      message: "No try path registered for this game; run: ogs try",
+      status: 404,
+    });
+  });
+});

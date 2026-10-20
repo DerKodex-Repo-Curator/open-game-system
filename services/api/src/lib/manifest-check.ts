@@ -38,15 +38,20 @@ export const fetchProbe: Probe = async (url) => {
 /** The OGS TV launcher, which frames every game's TV page. */
 export const LAUNCHER_ORIGIN = "https://tv.opengame.org";
 
+const HOST_SOURCE = /^(?:([a-z][a-z0-9+.-]*):\/\/)?(\*\.)?([a-z0-9.-]+)(?::(\d+|\*))?$/;
+
 /** Whether one CSP frame-ancestors source expression lets the launcher frame the page. */
 function allowsLauncher(source: string): boolean {
-  const launcher = new URL(LAUNCHER_ORIGIN);
   const s = source.toLowerCase().replace(/\/+$/, "");
   if (s === "*") return true;
-  if (s.endsWith(":") && !s.includes("/")) return s === launcher.protocol;
-  const match = s.match(/^(?:([a-z][a-z0-9+.-]*):\/\/)?(\*\.)?([a-z0-9.-]+)(?::(\d+|\*))?$/);
-  if (!match) return false;
-  const [, scheme, wildcard, host, port] = match;
+  if (s.endsWith(":") && !s.includes("/")) return s === new URL(LAUNCHER_ORIGIN).protocol;
+  const match = s.match(HOST_SOURCE);
+  return match ? hostSourceAllows(match) : false;
+}
+
+/** A host-source (`[scheme://][*.]host[:port]`): the launcher's https, port 443, its host. */
+function hostSourceAllows([, scheme, wildcard, host, port]: RegExpMatchArray): boolean {
+  const launcher = new URL(LAUNCHER_ORIGIN);
   if (scheme && scheme !== launcher.protocol.slice(0, -1)) return false;
   if (port && port !== "*" && port !== "443") return false;
   return wildcard ? launcher.hostname.endsWith(`.${host}`) : launcher.hostname === host;
@@ -57,12 +62,19 @@ function allowsLauncher(source: string): boolean {
  * present (browsers then ignore X-Frame-Options); otherwise X-Frame-Options DENY / SAMEORIGIN block.
  */
 export function frameable(headers: Headers): boolean {
-  const ancestors = (headers.get("content-security-policy") ?? "")
-    .split(";")
-    .map((d) => d.trim().split(/\s+/))
-    .find(([name]) => name?.toLowerCase() === "frame-ancestors");
-  if (ancestors) return ancestors.slice(1).some(allowsLauncher);
-  const xfo = (headers.get("x-frame-options") ?? "").trim().toLowerCase();
+  // Stryker disable next-line StringLiteral: equivalent, any text without a frame-ancestors directive reads the same as none
+  const csp = headers.get("content-security-policy") ?? "";
+  // Stryker disable next-line Regex: equivalent, /\s/ only adds empty sources, which never allow the launcher
+  const directives = csp.split(";").map((d) => d.trim().split(/\s+/));
+  // Stryker disable next-line OptionalChaining: equivalent, split always yields a first element
+  const ancestors = directives.find(([name]) => name?.toLowerCase() === "frame-ancestors");
+  if (ancestors) {
+    const [, ...sources] = ancestors;
+    return sources.some(allowsLauncher);
+  }
+  // Headers.get answers the value already trimmed.
+  // Stryker disable next-line StringLiteral: equivalent, any text but deny / sameorigin reads the same as no header
+  const xfo = (headers.get("x-frame-options") ?? "").toLowerCase();
   return xfo !== "deny" && xfo !== "sameorigin";
 }
 
@@ -98,6 +110,22 @@ export function parseManifest(raw: unknown): { manifest: Manifest } | { issues: 
 
 const reachable = (status: number) => status >= 200 && status < 400;
 
+type ProbeAnswer = Awaited<ReturnType<Probe>>;
+
+/** start_url_unreachable unless startUrl answered 2xx / 3xx. */
+function startWarning(start: ProbeAnswer): ManifestWarning | null {
+  if (start && reachable(start.status)) return null;
+  return {
+    code: "start_url_unreachable",
+    message: start ? `startUrl answered ${start.status}` : "startUrl didn't answer within 5 s",
+  };
+}
+
+const NOT_FRAMEABLE: ManifestWarning = {
+  code: "tv_page_not_frameable",
+  message: `tvUrl's X-Frame-Options or CSP frame-ancestors keeps the OGS launcher (${LAUNCHER_ORIGIN}) from framing it`,
+};
+
 /** Schema, then (for a valid manifest) the catalogue rules and the live checks. */
 export async function checkManifest(raw: unknown, probe: Probe): Promise<ManifestCheck> {
   const parsed = parseManifest(raw);
@@ -107,19 +135,12 @@ export async function checkManifest(raw: unknown, probe: Probe): Promise<Manifes
   const checked: ManifestCheck["checked"] = {};
   const [start, tv] = await Promise.all([probe(m.startUrl), m.tvUrl ? probe(m.tvUrl) : null]);
   if (start) checked.startUrl = start.status;
-  if (!start || !reachable(start.status))
-    warnings.push({
-      code: "start_url_unreachable",
-      message: start ? `startUrl answered ${start.status}` : "startUrl didn't answer within 5 s",
-    });
+  const unreachable = startWarning(start);
+  if (unreachable) warnings.push(unreachable);
   if (tv) {
     checked.tvUrl = tv.status;
     checked.frameable = frameable(tv.headers);
-    if (!checked.frameable)
-      warnings.push({
-        code: "tv_page_not_frameable",
-        message: `tvUrl's X-Frame-Options or CSP frame-ancestors keeps the OGS launcher (${LAUNCHER_ORIGIN}) from framing it`,
-      });
+    if (!checked.frameable) warnings.push(NOT_FRAMEABLE);
   }
   return { valid: true, issues: [], warnings, checked };
 }

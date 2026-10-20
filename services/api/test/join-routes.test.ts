@@ -70,6 +70,31 @@ describe("GET /api/v1/join/:code", () => {
       expect(text).not.toContain(secret);
   });
 
+  it("people who joined in the same millisecond are listed in the order they joined", async () => {
+    const at = 1_000;
+    await d1.db.batch([
+      d1.db.prepare("DELETE FROM session_members"),
+      ...[
+        ["zed", "Zed"],
+        ["amy", "Amy"],
+      ].flatMap(([id, name]) => [
+        d1.db
+          .prepare("INSERT INTO profiles (id, handle, name, sticker) VALUES (?, ?, ?, 'owl')")
+          .bind(id, `${id}.k`, name),
+        d1.db
+          .prepare(
+            "INSERT INTO session_members (session_id, profile_id, joined_at) VALUES ('s1', ?, ?)",
+          )
+          .bind(id, at),
+      ]),
+    ]);
+    expect((await get("NT9WPH")).body.couch).toEqual([
+      { name: "Mom", sticker: "sun" },
+      { name: "Zed", sticker: "owl" },
+      { name: "Amy", sticker: "owl" },
+    ]);
+  });
+
   it("reads a typed code: lower case, spaces and dashes", async () => {
     expect((await get("nt9-wph")).status).toBe(200);
   });
