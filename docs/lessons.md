@@ -339,3 +339,11 @@ green whatever npm says. The org's `NPM_TOKEN` gets `E404 Not Found - PUT …/@o
   `rootDir: <repo>`, `collectCoverageFrom: ["packages/shell/src/**/*.{ts,tsx}"]`, `coverageProvider: "v8"`
   works (run from apps/mobile). `game-rig crap` parses `.ts` with the JSX plugin and stops at a generic
   arrow (`<T>(x) =>`); parse `.ts` without it.
+
+## Mutation testing a CLI can write the developer's real config (2026-10-19)
+
+Stryker runs mutated code: a mutant of `configDir` that ignored `OGS_CONFIG_DIR` made the CLI's tests
+save their fake logins to the real `~/.config/ogs/credentials.json`, replacing production game keys
+(revoked and re-minted). packages/cli's tests now run with a throwaway HOME (`test/isolated-home.ts`,
+a Vitest setup file). Any package whose code writes under the home folder needs the same before
+Stryker runs on it.

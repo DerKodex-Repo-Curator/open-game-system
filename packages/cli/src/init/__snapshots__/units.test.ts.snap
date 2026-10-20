@@ -1,0 +1,103 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`OGS.md > is exactly this for a room game on Vite 1`] = `
+"# OGS for Comet Catch
+
+\`ogs init\` started adding OGS to this Vite game. This is the
+[OGS quickstart](https://docs.test/quickstart.md) as a checklist for this repo: work down it test-first and commit
+after each green step. Everything in one file, for agents: https://docs.test/llms.txt
+
+- appId: \`comet-catch\` (the catalogue, the art folder and the \`aud\` of your game tokens)
+- Manifest: \`ogs.manifest.json\` (start URL https://comet.example/, no static TV page)
+- Kits in \`vendor/\`: \`@open-game-system/profile-kit\`, \`@open-game-system/cast-kit-core\`
+- TV entry: not found (the module that boots your TV page)
+- Phone entry: not found (the module that boots your phone page)
+
+## Prompt for your agent
+
+Copy this into your agent, in this repository:
+
+\`\`\`text
+Make this web game OGS-compatible. Follow the step-by-step checklist at
+https://docs.test/quickstart.md and treat https://docs.test/contract.md as the
+contract (if the two disagree, the contract wins). APIs: https://docs.test/profile-kit.md and
+https://docs.test/messages.md. Everything in one file: https://docs.test/llms-full.txt
+
+Rules: the game never casts and shows no cast button; on an OGS TV it shows no room code, join QR or
+"join at" URL; nothing covers the TV's focal area; the TV page goes silent on ogs:suspend; the game
+still works in a plain browser. Work test-first: write the seam tests from
+https://docs.test/testing.md before the code they cover. Tell me which steps are done,
+which tests prove each one, and anything you could not verify.
+\`\`\`
+
+## The checklist
+
+Details for every step: https://docs.test/quickstart.md
+
+- [ ] **1. Install profile-kit** \`ogs init\` put the kits in \`vendor/\` and added them to package.json as \`file:vendor/…\`. Run \`pnpm install\` (after a newer kit under the same file name, \`pnpm install --force\`). Done when \`import { onOgsPause } from "@open-game-system/profile-kit"\` type-checks.
+- [ ] **2. Make the TV page frameable** No \`X-Frame-Options\` or \`frame-ancestors\` that blocks the launcher, start without a tap, no full-screen button when framed. Done when \`<iframe src="YOUR_TV_URL">\` shows it playing.
+- [ ] **3. TV page: hear the launcher** \`getOgsSessionSource()\` at module load of the TV entry; \`onOgsPause\` silences every \`AudioContext\`, \`<audio>\` and \`<video>\` on \`ogs:suspend\` and resumes only what played.
+- [ ] **4. TV page: no join UI inside OGS** With a session, hide the room code, join QR, "join at" URL and cast button; with \`null\` (a plain browser) keep them.
+- [ ] **5. Phone page: use the OGS profile** \`useOgsProfile()\` / \`getOgsProfileSource()\`: in the OGS app join once under the OGS name and avatar, no name form; in a plain browser the form stays.
+- [ ] **6. Server: verify game tokens** \`verifyOgsToken(token, { appId: "comet-catch", jwksUrl: env.OGS_JWKS_URL })\` before a seat, a score or a name counts.
+- [ ] **7. Report the sitting's label** \`reportOgsSitting({ instanceId, appId: "comet-catch", status, title })\` whenever the label changes.
+- [ ] **8. Room games: declare the TV page from the phone** The host's phone page calls cast-kit's \`useCastViewUrl(tvUrl)\` inside OGS (cast-kit is in \`vendor/\`). No \`<CastButton>\`.
+- [ ] **9. Rooms: the couch's phones, and other homes** \`reportOgsRoom(room)\` from the TV page; phones join \`ogsRoomFromUrl(location.href)\` when it isn't \`null\`. Several homes: \`multiCouch: true\` in the manifest.
+- [ ] **10. Art kit and manifest** \`ogs.manifest.json\` names the art kit at \`/art/comet-catch/…\`: make the four images (icon, cover, logo, heroClean) and \`tv.jpg\`, and add \`roles\` (one a kid can play, unless it's for grown-ups).
+- [ ] **11. Test it** The seam tests from the docs' Testing page: the TV page in a stand-in launcher, the phone page in a fake WebView, no full-screen button when framed, the plain-browser check.
+- [ ] **12. Submit to the catalogue** A pull request to the OGS repository with your manifest and art kit (the docs' Art kit and catalogue page).
+- [ ] **13. Tell players when it's their turn (optional)** Only for games where a player waits on someone who isn't looking: \`requestOgsNotifications()\` from a tap, then \`createOgsNotifier\` on your server.
+"
+`;
+
+exports[`OGS.md > is exactly this for a static TV page on Next 1`] = `
+"# OGS for Comet Catch
+
+\`ogs init\` started adding OGS to this Next.js game. This is the
+[OGS quickstart](https://docs.test/quickstart.md) as a checklist for this repo: work down it test-first and commit
+after each green step. Everything in one file, for agents: https://docs.test/llms.txt
+
+- appId: \`comet-catch\` (the catalogue, the art folder and the \`aud\` of your game tokens)
+- Manifest: \`ogs.manifest.json\` (start URL https://comet.example/, TV page https://comet.example/tv)
+- Kits in \`vendor/\`: \`@open-game-system/profile-kit\`, \`@open-game-system/cast-kit-core\`
+- TV entry: not found (the module that boots your TV page)
+- Phone entry: not found (the module that boots your phone page)
+
+**Next.js:** profile-kit reads \`window\` and listens for messages: call it only in client code (a \`"use client"\` component, inside \`useEffect\`), never during server rendering.
+
+## Prompt for your agent
+
+Copy this into your agent, in this repository:
+
+\`\`\`text
+Make this web game OGS-compatible. Follow the step-by-step checklist at
+https://docs.test/quickstart.md and treat https://docs.test/contract.md as the
+contract (if the two disagree, the contract wins). APIs: https://docs.test/profile-kit.md and
+https://docs.test/messages.md. Everything in one file: https://docs.test/llms-full.txt
+
+Rules: the game never casts and shows no cast button; on an OGS TV it shows no room code, join QR or
+"join at" URL; nothing covers the TV's focal area; the TV page goes silent on ogs:suspend; the game
+still works in a plain browser. Work test-first: write the seam tests from
+https://docs.test/testing.md before the code they cover. Tell me which steps are done,
+which tests prove each one, and anything you could not verify.
+\`\`\`
+
+## The checklist
+
+Details for every step: https://docs.test/quickstart.md
+
+- [ ] **1. Install profile-kit** \`ogs init\` put the kits in \`vendor/\` and added them to package.json as \`file:vendor/…\`. Run \`pnpm install\` (after a newer kit under the same file name, \`pnpm install --force\`). Done when \`import { onOgsPause } from "@open-game-system/profile-kit"\` type-checks.
+- [ ] **2. Make the TV page frameable** No \`X-Frame-Options\` or \`frame-ancestors\` that blocks the launcher, start without a tap, no full-screen button when framed. Done when \`<iframe src="https://comet.example/tv">\` shows it playing.
+- [ ] **3. TV page: hear the launcher** \`getOgsSessionSource()\` at module load of the TV entry; \`onOgsPause\` silences every \`AudioContext\`, \`<audio>\` and \`<video>\` on \`ogs:suspend\` and resumes only what played.
+- [ ] **4. TV page: no join UI inside OGS** With a session, hide the room code, join QR, "join at" URL and cast button; with \`null\` (a plain browser) keep them.
+- [ ] **5. Phone page: use the OGS profile** \`useOgsProfile()\` / \`getOgsProfileSource()\`: in the OGS app join once under the OGS name and avatar, no name form; in a plain browser the form stays.
+- [ ] **6. Server: verify game tokens** \`verifyOgsToken(token, { appId: "comet-catch", jwksUrl: env.OGS_JWKS_URL })\` before a seat, a score or a name counts.
+- [ ] **7. Report the sitting's label** \`reportOgsSitting({ instanceId, appId: "comet-catch", status, title })\` whenever the label changes.
+- [ ] **8. Room games: declare the TV page from the phone** Skip this: the manifest has a static \`tvUrl\`.
+- [ ] **9. Rooms: the couch's phones, and other homes** \`reportOgsRoom(room)\` from the TV page; phones join \`ogsRoomFromUrl(location.href)\` when it isn't \`null\`. Several homes: \`multiCouch: true\` in the manifest.
+- [ ] **10. Art kit and manifest** \`ogs.manifest.json\` names the art kit at \`/art/comet-catch/…\`: make the four images (icon, cover, logo, heroClean) and \`tv.jpg\`, and add \`roles\` (one a kid can play, unless it's for grown-ups).
+- [ ] **11. Test it** The seam tests from the docs' Testing page: the TV page in a stand-in launcher, the phone page in a fake WebView, no full-screen button when framed, the plain-browser check.
+- [ ] **12. Submit to the catalogue** A pull request to the OGS repository with your manifest and art kit (the docs' Art kit and catalogue page).
+- [ ] **13. Tell players when it's their turn (optional)** Only for games where a player waits on someone who isn't looking: \`requestOgsNotifications()\` from a tap, then \`createOgsNotifier\` on your server.
+"
+`;

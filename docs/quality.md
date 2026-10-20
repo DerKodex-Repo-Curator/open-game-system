@@ -60,6 +60,15 @@ misattributes the D1-proxy route tests and reports false survivors):
 
 CRAP: every function in the new modules is under 8 (API max 7, app max 6, notification-kit-web max 6, profile-kit max 4, notification-kit-server max 3). The sw.js listeners have no unit coverage; they are one-line wrappers over tested functions and run in the Chromium e2e (`packages/notification-kit-web/e2e/sw.e2e.ts`).
 
+## White-label platform and the ogs CLI (2026-10-19)
+
+Stryker with `--mutate` on the new code; CRAP from `scripts/crap.mjs` after coverage.
+
+| Scope | Mutation | Max CRAP |
+|-------|----------|----------|
+| packages/cli (all of src but bin.ts; 419 tests) | 100% (was 72.6%; 23 equivalents marked in place) | 7 (was 44.2, `doctor`) |
+| services/api `lib/secret-box.ts`, `lib/push-credentials.ts` (push-credentials-security.test.ts) | 100% (5 equivalents marked) | 7 |
+
 ## First-time funnel (2026-10-18)
 
 New code on `claude/first-time-funnel-0e55ec` (join link and page, browser TVs, browser guests).

@@ -1,8 +1,9 @@
+// The app's own client log and JS-error capture (the shell, which apps/mobile re-exports), end to
+// end against the Worker.
+import { clientEventsSender, createClientLog } from "@open-game-system/shell/modules/client-log";
+import { captureJsErrors, type GlobalHandler } from "@open-game-system/shell/modules/js-errors";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-// The app's own client log and JS-error capture (apps/mobile), end to end against the Worker.
-import { clientEventsSender, createClientLog } from "../../../apps/mobile/services/client-log";
-import { captureJsErrors, type GlobalHandler } from "../../../apps/mobile/services/js-errors";
 import app from "../src/index";
 import { issueToken } from "../src/lib/identity";
 import { openTestD1, type TestD1 } from "./support/d1";

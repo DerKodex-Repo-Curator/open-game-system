@@ -30,6 +30,7 @@ const PackageJsonSchema = z.looseObject({
 /** package.json at `root`, or null when there is none or it isn't JSON of that shape. */
 export function readPackageJson(fs: Files, root: string) {
   const path = join(root, "package.json");
+  // Stryker disable next-line ConditionalExpression: equivalent, reading a missing file throws, and the catch gives null too
   if (!fs.exists(path)) return null;
   try {
     const parsed = PackageJsonSchema.safeParse(JSON.parse(fs.read(path)));
@@ -60,12 +61,18 @@ const configFile = (fs: Files, root: string, name: string) =>
   ["ts", "mts", "js", "mjs", "cjs"].some((ext) => fs.exists(join(root, `${name}.config.${ext}`)));
 
 /** TanStack Start and Next before Vite (Start runs on Vite); anything else is plain HTML. */
-export function detectFramework(fs: Files, root: string): Framework {
+const TANSTACK_START = ["@tanstack/react-start", "@tanstack/solid-start", "@tanstack/start"];
+
+/** Every dependency and devDependency in package.json. */
+function dependencies(fs: Files, root: string): Record<string, string> {
   const pkg = readPackageJson(fs, root);
-  const deps = { ...pkg?.dependencies, ...pkg?.devDependencies };
+  return { ...pkg?.dependencies, ...pkg?.devDependencies };
+}
+
+export function detectFramework(fs: Files, root: string): Framework {
+  const deps = dependencies(fs, root);
   const has = (name: string) => name in deps;
-  if (has("@tanstack/react-start") || has("@tanstack/solid-start") || has("@tanstack/start"))
-    return "tanstack-start";
+  if (TANSTACK_START.some(has)) return "tanstack-start";
   if (has("next") || configFile(fs, root, "next")) return "next";
   if (has("vite") || configFile(fs, root, "vite")) return "vite";
   return "plain";

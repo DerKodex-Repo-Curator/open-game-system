@@ -84,10 +84,10 @@ export function configDir(io: Io) {
 }
 
 export function readCredentials(io: Io): CredentialsFile {
+  const path = join(configDir(io), "credentials.json");
   try {
-    return CredentialsFileSchema.parse(
-      JSON.parse(readFileSync(join(configDir(io), "credentials.json"), "utf8")),
-    );
+    // Stryker disable next-line StringLiteral: equivalent, without an encoding it's a Buffer, which JSON.parse reads as UTF-8 too
+    return CredentialsFileSchema.parse(JSON.parse(readFileSync(path, "utf8")));
   } catch {
     return { apps: {} };
   }
@@ -97,6 +97,8 @@ export function saveCredentials(io: Io, file: CredentialsFile) {
   const dir = configDir(io);
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const path = join(dir, "credentials.json");
+  // The mode makes a new file private from the start; chmod covers one that was already there.
+  // Stryker disable next-line ObjectLiteral: equivalent once chmod has run, which no test can come between
   writeFileSync(path, `${JSON.stringify(file, null, 2)}\n`, { mode: 0o600 });
   chmodSync(path, 0o600);
 }
@@ -117,18 +119,22 @@ export async function call(
       authorization: `Bearer ${key}`,
       ...(body === undefined ? {} : { "content-type": "application/json" }),
     },
+    // Stryker disable next-line ConditionalExpression: equivalent, JSON.stringify(undefined) is undefined too
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await res.text();
-  if (!res.ok) {
-    const parsed = ErrorBodySchema.safeParse(text ? JSON.parse(text) : {});
-    throw new CliError(
-      parsed.success
-        ? `${parsed.data.error.code}: ${parsed.data.error.message ?? ""}`.trim()
-        : `HTTP ${res.status}`,
-    );
-  }
+  if (!res.ok) throw apiError(res.status, text);
   return text ? JSON.parse(text) : null;
+}
+
+/** The API's `{ error: { code, message } }` as a CliError ("code: message"), else the HTTP status. */
+function apiError(status: number, text: string): CliError {
+  const parsed = ErrorBodySchema.safeParse(text ? JSON.parse(text) : {});
+  return new CliError(
+    parsed.success
+      ? `${parsed.data.error.code}: ${parsed.data.error.message ?? ""}`.trim()
+      : `HTTP ${status}`,
+  );
 }
 
 /** The app and its key: --app, else the one logged in last. */
