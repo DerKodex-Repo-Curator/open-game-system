@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import path from "node:path";
 import { defineConfig } from "vitest/config";
 
@@ -33,6 +34,14 @@ export default defineConfig({
       {
         find: /^\.\/support\/d1$/,
         replacement: path.resolve(__dirname, "test/node/support-d1.ts"),
+      },
+      // The shell's plain-TypeScript modules run from source (as in vitest.config.ts).
+      {
+        find: "@open-game-system/shell/modules",
+        replacement: path.join(
+          realpathSync(path.resolve(__dirname, "node_modules/@open-game-system/shell")),
+          "src",
+        ),
       },
     ],
   },

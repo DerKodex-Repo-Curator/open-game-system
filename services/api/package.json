@@ -31,6 +31,7 @@
     "@cloudflare/vitest-pool-workers": "^0.22.0",
     "@cloudflare/workers-types": "^5.20261004.1",
     "@open-game-system/profile-kit": "workspace:*",
+    "@open-game-system/shell": "workspace:*",
     "@playwright/test": "^1.58.2",
     "@vitest/coverage-v8": "^4.1.0",
     "emulate": "0.12.1",
