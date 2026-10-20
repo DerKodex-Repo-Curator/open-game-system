@@ -33,6 +33,7 @@ export function createAccountStore(opts: { requestSignIn: () => void }) {
   return {
     store,
     setLogin: (login: AccountBridgeState["login"]) => inner.dispatch({ type: "LOGIN", login }),
+    // Stryker disable next-line StringLiteral: equivalent, the producer treats every event that isn't LOGIN as SIGNING_IN
     setSigningIn: (on: boolean) => inner.dispatch({ type: "SIGNING_IN", on }),
   };
 }

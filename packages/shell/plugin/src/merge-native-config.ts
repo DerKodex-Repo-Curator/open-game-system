@@ -53,33 +53,52 @@ function appPluginNames(plugins: AppPlugins): string[] {
   return names;
 }
 
-function mergeIos(
-  ios: IosConfig | undefined,
-  part: NonNullable<NativeConfigPart["ios"]>,
-): IosConfig {
+type IosPart = NonNullable<NativeConfigPart["ios"]>;
+
+/** The local-network keys Google Cast needs, added to the app's Info.plist without replacing its own. */
+function mergeInfoPlist(
+  existing: NonNullable<IosConfig["infoPlist"]>,
+  part: NonNullable<IosPart["infoPlist"]>,
+): NonNullable<IosConfig["infoPlist"]> {
+  const bonjour = StringListSchema.safeParse(existing.NSBonjourServices);
+  const description = z.string().min(1).safeParse(existing.NSLocalNetworkUsageDescription);
+  return {
+    ...existing,
+    // The app's own words win: additive only.
+    NSLocalNetworkUsageDescription: description.success
+      ? description.data
+      : part.NSLocalNetworkUsageDescription,
+    NSBonjourServices: union(bonjour.success ? bonjour.data : [], part.NSBonjourServices, same),
+  };
+}
+
+function mergeIos(ios: IosConfig | undefined, part: IosPart): IosConfig {
   const out: IosConfig = { ...ios };
   if (part.associatedDomains) {
-    out.associatedDomains = union(ios?.associatedDomains ?? [], part.associatedDomains, same);
+    out.associatedDomains = union(out.associatedDomains ?? [], part.associatedDomains, same);
   }
   if (part.usesAppleSignIn) out.usesAppleSignIn = true;
-  if (part.infoPlist) {
-    const existing = ios?.infoPlist ?? {};
-    const bonjour = StringListSchema.safeParse(existing.NSBonjourServices);
-    const description = z.string().min(1).safeParse(existing.NSLocalNetworkUsageDescription);
-    out.infoPlist = {
-      ...existing,
-      // The app's own words win: additive only.
-      NSLocalNetworkUsageDescription: description.success
-        ? description.data
-        : part.infoPlist.NSLocalNetworkUsageDescription,
-      NSBonjourServices: union(
-        bonjour.success ? bonjour.data : [],
-        part.infoPlist.NSBonjourServices,
-        same,
-      ),
-    };
-  }
+  if (part.infoPlist) out.infoPlist = mergeInfoPlist(out.infoPlist ?? {}, part.infoPlist);
   return out;
+}
+
+function mergeAndroid(
+  android: ExpoConfig["android"],
+  part: NonNullable<NativeConfigPart["android"]>,
+): NonNullable<ExpoConfig["android"]> {
+  return {
+    ...android,
+    intentFilters: union(android?.intentFilters ?? [], part.intentFilters, canonical),
+  };
+}
+
+/** The part's plugins the app doesn't list and Expo hasn't run. */
+function pluginsToApply(config: ExpoConfig, part: NativeConfigPart): PluginEntry[] {
+  const done = new Set([
+    ...appPluginNames(config.plugins),
+    ...Object.keys(config._internal?.pluginHistory ?? {}),
+  ]);
+  return (part.plugins ?? []).filter((entry) => !done.has(pluginName(entry)));
 }
 
 /**
@@ -95,21 +114,8 @@ export function mergeNativeConfig(
   const next: ExpoConfig = { ...config };
   if (part.icon) next.icon = part.icon;
   if (part.ios) next.ios = mergeIos(config.ios, part.ios);
-  if (part.android) {
-    next.android = {
-      ...config.android,
-      intentFilters: union(
-        config.android?.intentFilters ?? [],
-        part.android.intentFilters,
-        canonical,
-      ),
-    };
-  }
+  if (part.android) next.android = mergeAndroid(config.android, part.android);
   if (part.extra) next.extra = { ...config.extra, ...part.extra };
-  const done = new Set([
-    ...appPluginNames(config.plugins),
-    ...Object.keys(config._internal?.pluginHistory ?? {}),
-  ]);
-  const pendingPlugins = (part.plugins ?? []).filter((entry) => !done.has(pluginName(entry)));
+  const pendingPlugins = pluginsToApply(config, part);
   return { config: next, pendingPlugins };
 }

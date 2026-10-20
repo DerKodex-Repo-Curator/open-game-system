@@ -1,0 +1,278 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<OgsShell />, edges the loading screen in the app's theme, Powered by OGS in its muted color 1`] = `
+<View
+  style={
+    [
+      {
+        "flex": 1,
+      },
+      {
+        "backgroundColor": "#101010",
+      },
+    ]
+  }
+  testID="ogsShell"
+>
+  <View
+    style={
+      {
+        "flex": 1,
+      }
+    }
+    testID="gameWebView"
+  >
+    <View
+      allowsInlineMediaPlayback={true}
+      applicationNameForUserAgent="OgsShell/rocket-crew"
+      bridge={
+        {
+          "getReadyState": [Function],
+          "getStore": [Function],
+          "handleWebMessage": [Function],
+          "isSupported": [Function],
+          "registerWebView": [Function],
+          "setStore": [Function],
+          "subscribe": [Function],
+          "subscribeToReadyState": [Function],
+          "unregisterWebView": [Function],
+        }
+      }
+      domStorageEnabled={true}
+      javaScriptEnabled={true}
+      mediaPlaybackRequiresUserAction={false}
+      onError={[Function]}
+      onHttpError={[Function]}
+      onLoad={[Function]}
+      onNavigationStateChange={[Function]}
+      source={
+        {
+          "uri": "https://play.rocketcrew.tv/phone",
+        }
+      }
+      startInLoadingState={false}
+      style={
+        {
+          "backgroundColor": "transparent",
+          "flex": 1,
+        }
+      }
+      testID="bridged"
+    />
+  </View>
+  <View
+    pointerEvents="none"
+    style={
+      [
+        {
+          "bottom": 0,
+          "left": 0,
+          "position": "absolute",
+          "right": 0,
+          "top": 0,
+        },
+        {
+          "alignItems": "center",
+          "justifyContent": "center",
+        },
+        {
+          "backgroundColor": "#101010",
+        },
+      ]
+    }
+    testID="shellLoading"
+  >
+    <Text
+      style={
+        [
+          {
+            "fontSize": 24,
+            "fontWeight": "700",
+          },
+          {
+            "color": "#FAFAFA",
+          },
+        ]
+      }
+    >
+      Rocket Crew
+    </Text>
+    <Text
+      style={
+        [
+          {
+            "alignSelf": "center",
+            "bottom": 40,
+            "fontSize": 12,
+            "position": "absolute",
+          },
+          {
+            "color": "#777777",
+          },
+        ]
+      }
+      testID="poweredByOgs"
+    >
+      Powered by OGS
+    </Text>
+  </View>
+</View>
+`;
+
+exports[`<OgsShell />, edges the offline screen keeps Powered by OGS 1`] = `
+<View
+  style={
+    [
+      {
+        "flex": 1,
+      },
+      {
+        "backgroundColor": "#0B0B12",
+      },
+    ]
+  }
+  testID="ogsShell"
+>
+  <View
+    style={
+      {
+        "flex": 1,
+      }
+    }
+  >
+    <View
+      style={
+        [
+          {
+            "alignItems": "center",
+            "flex": 1,
+            "gap": 8,
+            "justifyContent": "center",
+            "paddingHorizontal": 40,
+          },
+          {
+            "backgroundColor": "#0B0B12",
+          },
+        ]
+      }
+      testID="gameErrorScreen"
+    >
+      <Text
+        style={
+          [
+            {
+              "fontSize": 20,
+              "fontWeight": "600",
+              "letterSpacing": -0.3,
+              "textAlign": "center",
+            },
+            {
+              "color": "#E8E8ED",
+            },
+          ]
+        }
+        testID="gameErrorTitle"
+      >
+        Can't reach Rocket Crew
+      </Text>
+      <Text
+        style={
+          [
+            {
+              "fontSize": 15,
+              "lineHeight": 22,
+              "marginBottom": 16,
+              "textAlign": "center",
+            },
+            {
+              "color": "#8888A0",
+            },
+          ]
+        }
+      >
+        Check your connection and try again.
+      </Text>
+      <View
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "borderRadius": 12,
+              "minHeight": 48,
+              "paddingHorizontal": 32,
+              "paddingVertical": 14,
+            },
+            {
+              "backgroundColor": "#A855F6",
+            },
+          ]
+        }
+        testID="gameRetryButton"
+      >
+        <Text
+          style={
+            [
+              {
+                "fontSize": 16,
+                "fontWeight": "600",
+              },
+              {
+                "color": "#FFFFFF",
+              },
+            ]
+          }
+        >
+          Try again
+        </Text>
+      </View>
+    </View>
+    <Text
+      style={
+        [
+          {
+            "alignSelf": "center",
+            "bottom": 40,
+            "fontSize": 12,
+            "position": "absolute",
+          },
+          {
+            "color": "#8888A0",
+          },
+        ]
+      }
+      testID="poweredByOgs"
+    >
+      Powered by OGS
+    </Text>
+  </View>
+</View>
+`;

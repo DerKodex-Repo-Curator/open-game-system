@@ -23,6 +23,7 @@ const KEY = "ogs.identity";
 
 export async function loadIdentity(storage: SecureStorage): Promise<Identity | null> {
   const raw = await storage.getItemAsync(KEY);
+  // Stryker disable next-line ConditionalExpression: equivalent, JSON.parse("") throws and JSON.parse(null) is null: both load as null
   if (!raw) return null;
   try {
     const parsed = IdentitySchema.safeParse(JSON.parse(raw));

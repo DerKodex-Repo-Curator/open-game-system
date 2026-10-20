@@ -69,7 +69,9 @@ export function createGameProfile(opts: { fetchToken: (appId: string) => Promise
     state = next;
     for (const l of listeners) l(state);
   };
+  // Stryker disable next-line BlockStatement: equivalent, a refresh that fires after close finds no app id and does nothing
   const clearTimer = () => {
+    // Stryker disable next-line ConditionalExpression: equivalent, clearTimeout(null) does nothing, and a stray refresh finds no app id
     if (timer) clearTimeout(timer);
     timer = null;
   };
@@ -80,6 +82,7 @@ export function createGameProfile(opts: { fetchToken: (appId: string) => Promise
 
   async function ask(gen: number) {
     const id = appId;
+    // Stryker disable next-line ConditionalExpression: equivalent, close clears the timer, so ask always runs with an app id
     if (!id) return;
     try {
       const grant = await opts.fetchToken(id);
@@ -87,18 +90,21 @@ export function createGameProfile(opts: { fetchToken: (appId: string) => Promise
       set({ status: "ready", profile: { ...grant.profile, token: grant.token } });
       schedule(grant.expiresAt - REFRESH_MARGIN_MS - Date.now(), gen);
     } catch (err) {
-      if (gen !== generation) return;
-      if (state.status === "ready") schedule(RETRY_MS, gen);
-      else {
-        if (err instanceof OgsApiError && err.code === "game_not_found")
-          console.info(notListed(id));
-        else console.warn("[ogs] no game token for", id, err);
-        set(NONE);
-      }
+      failed(err, id, gen);
     }
   }
 
+  /** A failed refresh is retried; a first ask that fails leaves no profile, and says why. */
+  function failed(err: unknown, id: string, gen: number) {
+    if (gen !== generation) return;
+    if (state.status === "ready") return schedule(RETRY_MS, gen);
+    if (err instanceof OgsApiError && err.code === "game_not_found") console.info(notListed(id));
+    else console.warn("[ogs] no game token for", id, err);
+    set(NONE);
+  }
+
   const close = () => {
+    // Stryker disable next-line UpdateOperator: equivalent, counting down also gives every open its own number
     generation++;
     appId = null;
     clearTimer();
@@ -123,6 +129,7 @@ export function createGameProfile(opts: { fetchToken: (appId: string) => Promise
     store,
     /** The game screen shows `next` (null: a page OGS can't name). */
     open(next: string | null) {
+      // Stryker disable next-line ConditionalExpression: equivalent, with no app open, close changes nothing
       if (next !== null && next === appId) return;
       close();
       if (next === null) return;

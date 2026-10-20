@@ -103,9 +103,9 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
   // Before anything that may tell the page (the sign-in flow reports at once on subscribe).
   const account = createAccountStore({ requestSignIn: () => void track(openSignIn()) });
 
-  const setIdentity = (next: ShellIdentity | null) => {
+  const setIdentity = (next: ShellIdentity) => {
     identity = next;
-    account.setLogin(next ? next.login : "none");
+    account.setLogin(next.login);
     for (const l of identityListeners) l(next);
   };
 
@@ -119,6 +119,7 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
   });
 
   // The sign-in sheet's state, for React (useSyncExternalStore).
+  // Stryker disable next-line ObjectLiteral,StringLiteral: equivalent, signIn.subscribe below sets the sheet's signIn at once
   let sheet: SignInSheetState = { visible: false, providers: [], signIn: { status: "idle" } };
   const sheetListeners = new Set<() => void>();
   const setSheet = (patch: Partial<SignInSheetState>) => {
@@ -134,6 +135,7 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
     providers: deps.signInProviders,
     onIdentity: (id) => {
       setIdentity(id);
+      // Stryker disable next-line ObjectLiteral: equivalent, {} leaves ask undefined, which asks no more than false
       void track(push.register({ ask: false }));
     },
   });
@@ -209,6 +211,7 @@ export function createShellRuntime(config: ShellRuntimeConfig, deps: ShellRuntim
         console.warn("[ogs-shell] no OGS profile yet:", err);
         return;
       }
+      // Stryker disable next-line ObjectLiteral: equivalent, {} leaves ask undefined, which asks no more than false
       await track(push.register({ ask: false }));
     },
     stop() {

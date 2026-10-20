@@ -48,6 +48,7 @@ export function createGameNotifications(deps: GameNotificationsDeps) {
   async function consent(join?: string): Promise<PushConsentResult> {
     const appId = deps.appId();
     if (!appId || deps.isKidDevice()) return DENIED;
+    // Stryker disable next-line ArrowFunction: equivalent, undefined is as false as false
     const allowed = await deps.alreadyAllowed(appId).catch(() => false);
     if (!allowed && !(await deps.askPlayer(deps.gameName()))) return DENIED;
     if (!(await deps.osPermission())) return DENIED;

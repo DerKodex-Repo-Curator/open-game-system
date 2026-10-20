@@ -168,3 +168,10 @@ Acceptance: `docs/acceptance/2026-10-18-shell-device-gaps.feature`.
   `config.apiBase` to the guest and native sign-in flows, so production ↔ preview builds never reuse a token
   the other API rejects. Same key `ogs.identity`; apps/mobile uses its own `identity.ts` (unchanged).
   Tests: `shell-identity-api-base.test.ts`.
+
+### Shell hardening (2026-10-19, branch `claude/shell-harden`)
+
+Every `packages/shell/src` module (and the `.tsx` views) mutation-scored: 100% of the non-equivalent
+mutants in each, equivalents marked in place; create-ogs-app 96.2%. CRAP < 8 everywhere (shell max 7,
+plugin 6, create-ogs-app 7). New tests only. Numbers and the equivalent list: docs/quality.md
+"Shell hardening"; run gotchas: docs/lessons.md "Shell mutation and CRAP runs".
