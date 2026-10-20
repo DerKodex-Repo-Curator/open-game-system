@@ -33,9 +33,12 @@ interface HttpsParts {
 function httpsParts(url: string): HttpsParts | null {
   const m = /^https:\/\/([^/?#]+)(.*)$/i.exec(url);
   if (!m) return null;
+  // Stryker disable next-line StringLiteral: equivalent, the group always matches
   const authority = (m[1] ?? "").toLowerCase();
+  // Stryker disable next-line ConditionalExpression: equivalent, no OGS host, link domain or game origin has an @, so such a link matches none
   if (authority.includes("@")) return null;
   const host = authority.replace(/:\d+$/, "");
+  // Stryker disable next-line StringLiteral: equivalent, the group always matches
   return { authority, host, rest: m[2] ?? "" };
 }
 
@@ -50,22 +53,42 @@ function playRest(rest: string, appId: string): string | null {
   return null;
 }
 
-/** The path, query and hash a `<scheme>://…` link names on the game, or null if it isn't one. */
-function schemeRest(url: string, config: ShellLinkConfig): string | null {
+/** What follows `://` in a link on one of the app's custom schemes, or null for any other link. */
+function ownSchemeRest(url: string, config: ShellLinkConfig): string | null {
+  // Stryker disable next-line Regex: equivalent, with the s flag .* reaches the end anyway
   const m = /^([a-z][a-z0-9+.-]*):\/\/(.*)$/is.exec(url);
   if (!m) return null;
   const schemes = (config.schemes ?? [config.appId]).map((s) => s.toLowerCase());
-  if (!schemes.includes((m[1] ?? "").toLowerCase())) return null;
-  let after = m[2] ?? "";
-  if (/^expo-development-client([/?#]|$)/i.test(after)) return null;
-  for (const prefix of [`play/${config.appId}`, "play"]) {
+  // Stryker disable next-line StringLiteral: equivalent, both groups always match
+  return schemes.includes((m[1] ?? "").toLowerCase()) ? (m[2] ?? "") : null;
+}
+
+/** Drops a leading `play/<appId>` or `play` segment. */
+function withoutPlayPrefix(after: string, appId: string): string {
+  for (const prefix of [`play/${appId}`, "play"]) {
     const next = after.slice(prefix.length, prefix.length + 1);
+    // Stryker disable next-line ConditionalExpression,StringLiteral: equivalent, "/?#".includes("") is true
     if (after.startsWith(prefix) && (next === "" || "/?#".includes(next))) {
-      after = after.slice(prefix.length);
-      break;
+      return after.slice(prefix.length);
     }
   }
-  return `/${after.replace(/^\/+/, "")}`;
+  return after;
+}
+
+/** The path, query and hash a `<scheme>://…` link names on the game, or null if it isn't one. */
+function schemeRest(url: string, config: ShellLinkConfig): string | null {
+  const after = ownSchemeRest(url, config);
+  if (after === null || /^expo-development-client([/?#]|$)/i.test(after)) return null;
+  return `/${withoutPlayPrefix(after, config.appId).replace(/^\/+/, "")}`;
+}
+
+/** An https link on one of the game's link domains (no port), or on the game's own origin. */
+function opensAsIs(link: HttpsParts, game: HttpsParts, config: ShellLinkConfig): boolean {
+  const domains = config.linkDomains.map((d) => d.toLowerCase());
+  return (
+    (link.authority === link.host && domains.includes(link.host)) ||
+    link.authority === game.authority
+  );
 }
 
 export function webViewUrlFor(incoming: string, config: ShellLinkConfig): string | null {
@@ -79,8 +102,5 @@ export function webViewUrlFor(incoming: string, config: ShellLinkConfig): string
     const rest = playRest(link.rest, config.appId);
     return rest === null ? null : `https://${game.authority}${rest}`;
   }
-  const domains = config.linkDomains.map((d) => d.toLowerCase());
-  if (link.authority === link.host && domains.includes(link.host)) return incoming;
-  if (link.authority === game.authority) return incoming;
-  return null;
+  return opensAsIs(link, game, config) ? incoming : null;
 }

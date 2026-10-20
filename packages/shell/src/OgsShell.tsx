@@ -76,6 +76,7 @@ export function OgsShell(props: OgsShellProps) {
   useEffect(() => {
     void runtime.start();
     return () => runtime.stop();
+    // Stryker disable next-line ArrayDeclaration: equivalent, runtime comes from useState and never changes
   }, [runtime]);
 
   useEffect(() => watchForeground(appState, () => dispatch({ type: "FOREGROUND" })), [appState]);

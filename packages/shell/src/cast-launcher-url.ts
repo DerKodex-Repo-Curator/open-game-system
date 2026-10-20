@@ -14,6 +14,7 @@ export function castLauncherUrl(launcherUrl: string, appId: string): string {
   const query = queryAt === -1 ? "" : beforeHash.slice(queryAt + 1);
   const kept = query
     .split("&")
+    // Stryker disable next-line StringLiteral: equivalent, split always gives a first element
     .filter((pair) => pair !== "" && !["chrome", "app"].includes(pair.split("=")[0] ?? ""));
   const params = [...kept, "chrome=none", `app=${encodeURIComponent(appId)}`];
   return `${base}?${params.join("&")}${hash}`;

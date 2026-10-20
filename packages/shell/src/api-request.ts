@@ -1,5 +1,6 @@
 import type { Instance } from "@open-game-system/ogs-protocol";
 import { z } from "zod";
+import { failureOf, jsonRequestInit, responseJson } from "./http-json";
 
 /**
  * The OGS API's request and parse, shared by every OGS API client (apps/mobile's ogs-api and
@@ -40,10 +41,6 @@ export type Credential =
   | { provider: "google"; idToken: string }
   | { provider: "email"; email: string; code: string };
 
-const ErrorBodySchema = z.object({
-  error: z.object({ code: z.string(), message: z.string(), status: z.number() }),
-});
-
 export type InstanceSource = Exclude<Instance["source"], "server">;
 
 export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
@@ -65,39 +62,25 @@ export function createApiRequest({ baseUrl, fetch, auth }: OgsApiOptions) {
     path: string,
     init: { method?: string; body?: unknown; authed?: boolean } = {},
   ): Promise<unknown> {
-    const headers: Record<string, string> = { Accept: "application/json" };
-    if (init.body !== undefined) headers["Content-Type"] = "application/json";
-    if (init.authed) {
-      const id = auth();
-      if (!id) throw new OgsApiError("NO_PROFILE", "This device has no OGS profile yet", 0);
-      headers.Authorization = `Bearer ${id.token}`;
-    }
+    const token = init.authed ? profileToken() : undefined;
     let res: Response;
     try {
-      res = await fetch(`${baseUrl}${path}`, {
-        method: init.method ?? "GET",
-        headers,
-        body: init.body === undefined ? undefined : JSON.stringify(init.body),
-      });
+      res = await fetch(`${baseUrl}${path}`, jsonRequestInit(init, token));
     } catch (err) {
       throw new OgsApiError("OFFLINE", `Can't reach OGS: ${String(err)}`, 0);
     }
-    const text = await res.text();
-    let json: unknown = null;
-    try {
-      json = text ? JSON.parse(text) : null;
-    } catch {
-      json = null;
-    }
+    const json = await responseJson(res);
     if (!res.ok) {
-      const parsed = ErrorBodySchema.safeParse(json);
-      if (parsed.success) {
-        const { code, message, status } = parsed.data.error;
-        throw new OgsApiError(code, message, status);
-      }
-      throw new OgsApiError(`HTTP_${res.status}`, `OGS answered ${res.status}`, res.status);
+      const { code, message, status } = failureOf(res.status, json);
+      throw new OgsApiError(code, message, status);
     }
     return json;
+  }
+
+  function profileToken(): string {
+    const id = auth();
+    if (!id) throw new OgsApiError("NO_PROFILE", "This device has no OGS profile yet", 0);
+    return id.token;
   }
 
   function parse<T>(schema: z.ZodType<T>, data: unknown): T {

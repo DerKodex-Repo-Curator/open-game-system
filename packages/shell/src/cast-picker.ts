@@ -53,6 +53,11 @@ export function createCastPicker() {
       ? { ...state.browserTv, open: false, pairing: false, error: null }
       : null,
   });
+  /** Casts to a TV (if the cast store is still attached) and closes the picker. */
+  const castTo = (deviceId: string) => {
+    targets?.cast(deviceId);
+    set(closed());
+  };
 
   return {
     getSnapshot: () => state,
@@ -82,20 +87,17 @@ export function createCastPicker() {
     },
     open: () => set({ ...state, visible: true }),
     close: () => set(closed()),
-    pick(deviceId: string) {
-      targets?.cast(deviceId);
-      set(closed());
-    },
+    pick: castTo,
     openBrowserTv: () => setBrowserTv({ open: true, error: null }),
     /** The code the browser TV shows: pair it, then cast to it. */
     async pairBrowserTv(code: string): Promise<void> {
       const add = targets?.addBrowserTv;
+      // Stryker disable next-line OptionalChaining: equivalent, attach sets browserTv whenever the targets offer addBrowserTv
       if (!add || state.browserTv?.pairing) return;
       setBrowserTv({ pairing: true, error: null });
       const result = await add(code.trim().toUpperCase());
       if (!result.ok) return setBrowserTv({ pairing: false, error: result.message });
-      targets?.cast(result.device.id);
-      set(closed());
+      castTo(result.device.id);
     },
   };
 }

@@ -26,6 +26,7 @@ type Internal = { type: "REPORTED"; appId: string };
  */
 export function createOgsBridgeStore(
   post: (report: InstanceReport, source: InstanceSource) => Promise<unknown>,
+  // Stryker disable next-line ArrowFunction: equivalent, undefined ?? instanceId is null ?? instanceId
   sittingFor: (appId: string) => string | null = () => null,
 ): Store<OgsBridgeState, UntrustedEvent> {
   const inner = createStore<OgsBridgeState, Internal>({
@@ -43,6 +44,7 @@ export function createOgsBridgeStore(
       const parsed = OgsBridgeEventSchema.safeParse(event);
       if (!parsed.success) return;
       const { report } = parsed.data;
+      // Stryker disable next-line StringLiteral: equivalent, the producer reads only appId
       inner.dispatch({ type: "REPORTED", appId: report.appId });
       const instanceId = sittingFor(report.appId) ?? report.instanceId;
       post({ ...report, instanceId }, "bridge").catch((err: unknown) => {
